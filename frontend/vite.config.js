@@ -4,8 +4,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '../', '');
 
-  // Lấy target từ VITE_API_URL / VITE_API_TARGET trong .env nếu có, mặc định là localhost:5000
-  const apiTarget = env.VITE_API_TARGET || (env.VITE_API_URL && env.VITE_API_URL.startsWith('http') ? env.VITE_API_URL : 'http://localhost:5000');
+  // Lấy target từ VITE_API_TARGET nếu có, mặc định trỏ đến backend Render: https://rent-house-3jm7.onrender.com
+  const apiTarget = env.VITE_API_TARGET || (env.VITE_API_URL && env.VITE_API_URL.startsWith('http') ? env.VITE_API_URL : 'https://rent-house-3jm7.onrender.com');
 
   return {
     plugins: [react()],
@@ -13,23 +13,23 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       proxy: {
-        // 1. API chính (mặc định trỏ đến backend local: http://localhost:5000 hoặc theo .env)
+        // 1. API chính kết nối đến backend Render
         '/api': {
-          target: apiTarget,
+          target: 'https://rent-house-3jm7.onrender.com',
           changeOrigin: true,
           secure: false,
         },
         '/uploads': {
-          target: apiTarget,
+          target: 'https://rent-house-3jm7.onrender.com',
           changeOrigin: true,
           secure: false,
         },
-        // 2. API kết nối trực tiếp đến link public Netlify: https://nhatrothanhtam.netlify.app
-        '/api-netlify': {
-          target: 'https://nhatrothanhtam.netlify.app',
+        // 2. Proxy phụ hỗ trợ kết nối trực tiếp
+        '/api-render': {
+          target: 'https://rent-house-3jm7.onrender.com',
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/api-netlify/, '/api'),
+          rewrite: (path) => path.replace(/^\/api-render/, '/api'),
         }
       }
     }
