@@ -40,7 +40,7 @@ export const getTenantById = async (req, res) => {
 
 export const createTenant = async (req, res) => {
   try {
-    const { room_id, full_name, phone, email } = req.body;
+    const { room_id, full_name, phone, email, status = 'active' } = req.body;
     if (!full_name || !phone) {
       return errorResponse(res, 'Vui lòng cung cấp họ tên và số điện thoại.', 'BAD_REQUEST', 400);
     }
@@ -55,11 +55,12 @@ export const createTenant = async (req, res) => {
       room_id: room_id || null,
       full_name,
       phone: phone.trim(),
-      email: email ? email.trim() : null
+      email: email ? email.trim() : null,
+      status: status || 'active'
     });
 
-    // If assigned to room, update room status to occupied
-    if (room_id) {
+    // If assigned to room AND status is active, update room status to occupied
+    if (room_id && (status === 'active' || !status)) {
       await roomRepo.update(room_id, { status: 'occupied' });
     }
 

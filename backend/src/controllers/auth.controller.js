@@ -95,7 +95,7 @@ export const tenantLogin = async (req, res) => {
     }
 
     if (tenant.status && tenant.status !== 'active') {
-      return errorResponse(res, 'Tài khoản người thuê đang tạm khóa.', 'ACCOUNT_DISABLED', 403);
+      return errorResponse(res, 'Người thuê đã chuyển sang trạng thái Hết thuê hoặc tài khoản đã ngừng hoạt động. Vui lòng liên hệ chủ nhà.', 'ACCOUNT_DISABLED', 403);
     }
 
     // Set Tenant HTTP-Only Cookie

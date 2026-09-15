@@ -84,13 +84,13 @@ export default function AdminTenants() {
     }
   };
 
-  // Quick toggle between 'active' (Đang thuê) and 'inactive' (Hết thuê)
-  const handleToggleStatus = async (tenant) => {
-    const isCurrentlyActive = tenant.status === 'active';
-    const newStatus = isCurrentlyActive ? 'inactive' : 'active';
-    const actionLabel = isCurrentlyActive ? 'HẾT THUÊ' : 'ĐANG THUÊ';
+  // Handle status selection between 'active' (Đang thuê) and 'inactive' (Hết thuê)
+  const handleStatusChange = async (tenant, newStatus) => {
+    if (tenant.status === newStatus) return;
+    const isSwitchingToInactive = newStatus === 'inactive';
+    const actionLabel = isSwitchingToInactive ? 'HẾT THUÊ' : 'ĐANG THUÊ';
 
-    const confirmMsg = isCurrentlyActive
+    const confirmMsg = isSwitchingToInactive
       ? `Xác nhận chuyển khách "${tenant.full_name}" sang trạng thái "${actionLabel}"?\n\n- Khách sẽ không thể đăng nhập vào cổng quản lý người thuê nữa.\n- Nếu phòng ${tenant.room_number || ''} không còn ai ở, phòng sẽ tự động chuyển sang trạng thái "Còn trống".`
       : `Xác nhận kích hoạt lại khách "${tenant.full_name}" sang trạng thái "${actionLabel}"?`;
 
@@ -108,7 +108,7 @@ export default function AdminTenants() {
   };
 
   const handleDeleteTenant = async (tenant) => {
-    const confirmMsg = `Bạn có chắc chắn muốn XÓA NGƯỜI THUÊ "${tenant.full_name}" (SĐT: ${tenant.phone})?\n\nHành động này sẽ gỡ bỏ hồ sơ người thuê khỏi danh sách quản lý.`;
+    const confirmMsg = `Bạn có chắc chắn muốn XÓA NGƯỜI THUÊ "${tenant.full_name}" (SĐT: ${tenant.phone})?\n\n- Hồ sơ người thuê sẽ được gỡ bỏ khỏi hệ thống.\n- Nếu phòng ${tenant.room_number || ''} không còn người thuê nào khác, phòng sẽ tự động chuyển về trạng thái "Còn trống".\n\nBạn có muốn tiếp tục xóa không?`;
     if (!window.confirm(confirmMsg)) return;
 
     try {
@@ -358,47 +358,38 @@ export default function AdminTenants() {
                         )}
                       </td>
                       
-                      {/* Trạng Thái Thuê (Interactive Quick Toggle Button) */}
+                      {/* Trạng Thái Thuê (Lựa chọn Đang thuê / Hết thuê trực tiếp) */}
                       <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleToggleStatus(t)}
-                            title={`Bấm để chuyển sang trạng thái "${isActive ? 'Hết thuê' : 'Đang thuê'}"`}
-                            style={{
-                              border: isActive ? '1px solid #86efac' : '1px solid #fca5a5',
-                              background: isActive ? '#dcfce7' : '#fee2e2',
-                              color: isActive ? '#15803d' : '#b91c1c',
-                              padding: '5px 12px',
-                              borderRadius: '20px',
-                              fontSize: '12px',
-                              fontWeight: '700',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              transition: 'all 0.15s ease'
-                            }}
-                          >
-                            {isActive ? (
-                              <>
-                                <CheckCircle2 size={13} color="#16a34a" />
-                                <span>Đang thuê</span>
-                              </>
-                            ) : (
-                              <>
-                                <XCircle size={13} color="#dc2626" />
-                                <span>Hết thuê</span>
-                              </>
-                            )}
-                            <RefreshCw size={11} style={{ opacity: 0.6 }} />
-                          </button>
-                        </div>
+                        <select
+                          value={t.status || 'active'}
+                          onChange={(e) => handleStatusChange(t, e.target.value)}
+                          title="Lựa chọn trạng thái: Đang thuê hoặc Hết thuê"
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            border: isActive ? '1.5px solid #86efac' : '1.5px solid #fca5a5',
+                            background: isActive ? '#dcfce7' : '#fee2e2',
+                            color: isActive ? '#15803d' : '#b91c1c',
+                            outline: 'none',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <option value="active" style={{ background: '#ffffff', color: '#15803d', fontWeight: '700' }}>
+                            🟢 Đang thuê
+                          </option>
+                          <option value="inactive" style={{ background: '#ffffff', color: '#b91c1c', fontWeight: '700' }}>
+                            🔴 Hết thuê
+                          </option>
+                        </select>
                       </td>
 
                       {/* Thao tác */}
                       <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(t)}
@@ -408,7 +399,7 @@ export default function AdminTenants() {
                               background: '#f1f5f9',
                               color: '#334155',
                               borderRadius: '8px',
-                              border: '1px solid #e2e8f0',
+                              border: '1px solid #cbd5e1',
                               cursor: 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
@@ -424,20 +415,24 @@ export default function AdminTenants() {
                           <button
                             type="button"
                             onClick={() => handleDeleteTenant(t)}
-                            title="Xóa hồ sơ người thuê"
+                            title="Xóa người thuê này khỏi hệ thống"
                             style={{
-                              padding: '8px 10px',
-                              background: '#fff1f2',
-                              color: '#be123c',
+                              padding: '8px 12px',
+                              background: '#fee2e2',
+                              color: '#dc2626',
                               borderRadius: '8px',
-                              border: '1px solid #fecdd3',
+                              border: '1px solid #fca5a5',
                               cursor: 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
-                              fontSize: '12px'
+                              gap: '4px',
+                              fontSize: '12px',
+                              fontWeight: '700',
+                              transition: 'all 0.15s ease'
                             }}
                           >
                             <Trash2 size={14} />
+                            Xóa
                           </button>
                         </div>
                       </td>
@@ -558,20 +553,48 @@ export default function AdminTenants() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  style={{ padding: '10px 16px', background: '#e2e8f0', color: '#475569', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  style={{ padding: '10px 20px', background: '#2563eb', color: '#ffffff', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer' }}
-                >
-                  Lưu thông tin
-                </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                {editingTenant ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowModal(false);
+                      handleDeleteTenant(editingTenant);
+                    }}
+                    style={{
+                      padding: '10px 16px',
+                      background: '#fee2e2',
+                      color: '#dc2626',
+                      borderRadius: '8px',
+                      border: '1px solid #fca5a5',
+                      fontWeight: '700',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Trash2 size={15} />
+                    Xóa người thuê này
+                  </button>
+                ) : <div />}
+
+                <div style={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    style={{ padding: '10px 16px', background: '#e2e8f0', color: '#475569', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    style={{ padding: '10px 20px', background: '#2563eb', color: '#ffffff', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer' }}
+                  >
+                    Lưu thông tin
+                  </button>
+                </div>
               </div>
             </form>
           </div>
