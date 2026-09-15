@@ -18,6 +18,18 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  // Attach fallback session headers for cross-site cookie resilience (e.g. iOS Safari, Chrome incognito)
+  try {
+    const adminSession = localStorage.getItem('admin_session_id');
+    const tenantSession = localStorage.getItem('tenant_session_id');
+    if (adminSession) {
+      config.headers['x-admin-session'] = adminSession;
+    }
+    if (tenantSession) {
+      config.headers['x-tenant-session'] = tenantSession;
+    }
+  } catch (e) {}
+
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type'];
     // FormData uploads may take longer
@@ -97,8 +109,12 @@ export function getFullApiUrl(path = '') {
   }
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   if (API_BASE_URL.startsWith('http://') || API_BASE_URL.startsWith('https://')) {
-    if (API_BASE_URL.endsWith('/api') && cleanPath.startsWith('/api/')) {
-      return `${API_BASE_URL}${cleanPath.slice(4)}`;
+    const backendOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
+    if (cleanPath.startsWith('/api/')) {
+      return `${backendOrigin}${cleanPath}`;
+    }
+    if (cleanPath.startsWith('/uploads/')) {
+      return `${backendOrigin}${cleanPath}`;
     }
     return `${API_BASE_URL}${cleanPath}`;
   }

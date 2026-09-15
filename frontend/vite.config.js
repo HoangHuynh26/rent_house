@@ -1,32 +1,42 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const frontendDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '../', '');
+  // Only load variables prefixed with VITE_ to avoid NODE_ENV conflicts
+  const envLocal = loadEnv(mode, frontendDir, 'VITE_');
+  let envParent = {};
+  try {
+    envParent = loadEnv(mode, path.resolve(frontendDir, '..'), 'VITE_');
+  } catch (e) {}
+  const env = { ...envParent, ...envLocal };
 
-  // Lấy target từ VITE_API_TARGET nếu có, mặc định trỏ đến backend Render: https://rent-house-3jm7.onrender.com
-  const apiTarget = env.VITE_API_TARGET || (env.VITE_API_URL && env.VITE_API_URL.startsWith('http') ? env.VITE_API_URL : 'https://rent-house-3jm7.onrender.com');
+  // Resolve API target: priority from VITE_API_TARGET, then VITE_API_URL, default to Render backend
+  const apiTarget = env.VITE_API_TARGET || (env.VITE_API_URL && env.VITE_API_URL.startsWith('http') ? env.VITE_API_URL.replace(/\/api\/?$/, '') : 'https://rent-house-3jm7.onrender.com');
 
   return {
     plugins: [react()],
-    envDir: '../',
+    envDir: frontendDir,
     server: {
       port: 5173,
       proxy: {
-        // 1. API chính kết nối đến backend Render
+        // 1. API chính kết nối đến backend
         '/api': {
-          target: 'https://rent-house-3jm7.onrender.com',
+          target: apiTarget,
           changeOrigin: true,
           secure: false,
         },
         '/uploads': {
-          target: 'https://rent-house-3jm7.onrender.com',
+          target: apiTarget,
           changeOrigin: true,
           secure: false,
         },
         // 2. Proxy phụ hỗ trợ kết nối trực tiếp
         '/api-render': {
-          target: 'https://rent-house-3jm7.onrender.com',
+          target: apiTarget,
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/api-render/, '/api'),

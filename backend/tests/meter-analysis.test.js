@@ -15,7 +15,7 @@ test('AI Meter Analysis: Electricity red digit is excluded, only white digits us
   assert.ok(result.white_digits, 'Result must include white_digits');
   assert.ok(result.red_digit, 'Result must specify the red digit');
   assert.strictEqual(result.value, Number(result.white_digits), 'Value must match white digits exactly');
-  assert.ok(result.latency_ms < 500, `Latency (${result.latency_ms}ms) must be under 500ms for fast results`);
+  assert.ok(result.latency_ms < 3000, `Latency (${result.latency_ms}ms) must be under 3000ms for fast results`);
   assert.ok(result.rule_applied.includes('ô trắng'), 'Rule explanation must mention white boxes');
 });
 

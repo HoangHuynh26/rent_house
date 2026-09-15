@@ -8,7 +8,7 @@ import { UPLOAD_DIR } from './services/storage.service.js';
 
 const app = express();
 
-// Trust reverse proxy (Netlify, Render, Nginx)
+// Trust reverse proxy (Netlify, Render, Cloudflare, Load Balancer)
 app.set('trust proxy', 1);
 
 // Security Headers
@@ -16,7 +16,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
-// CORS Configuration (supports credentials for cookies)
+// CORS Configuration (supports credentials for cookies & custom session headers)
 const envOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
   .map(s => s.trim())
@@ -37,10 +37,20 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.netlify.app')) {
       callback(null, true);
     } else {
-      callback(null, true); // Fallback for flexible access
+      callback(null, true); // Fallback for flexible public access
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'x-admin-session',
+    'x-tenant-session',
+    'X-Requested-With',
+    'Accept',
+    'Origin'
+  ]
 }));
 
 // Parsers
@@ -48,8 +58,9 @@ app.use(express.json({ limit: '15mb' })); // Allows Base64 canvas signatures
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(cookieParser());
 
-// Static uploads (meter photos and contracts)
+// Static uploads (meter photos and contracts) - support both /uploads and /api/uploads
 app.use('/uploads', express.static(UPLOAD_DIR));
+app.use('/api/uploads', express.static(UPLOAD_DIR));
 
 import { isPostgresActive, query } from './config/db.js';
 

@@ -64,7 +64,7 @@ export const adminLogin = async (req, res) => {
 };
 
 export const adminLogout = async (req, res) => {
-  res.clearCookie('admin_session');
+  res.clearCookie('admin_session', COOKIE_OPTIONS);
   return successResponse(res, null, 'Đăng xuất thành công.');
 };
 
@@ -224,7 +224,7 @@ export const tenantVerifyConfirm = async (req, res) => {
 };
 
 export const tenantLogout = async (req, res) => {
-  res.clearCookie('tenant_session');
+  res.clearCookie('tenant_session', COOKIE_OPTIONS);
   return successResponse(res, null, 'Đăng xuất thành công.');
 };
 

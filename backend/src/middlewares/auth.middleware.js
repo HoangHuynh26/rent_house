@@ -1,9 +1,25 @@
 import { memoryStore, isPostgresActive, query } from '../config/db.js';
 import { errorResponse } from '../utils/response.util.js';
 
+/**
+ * Extract session token supporting both HTTP-Only Cookies and custom headers / Bearer token
+ * (Crucial for mobile browsers & Safari cross-site third-party cookie restrictions)
+ */
+export const getAdminSessionId = (req) => {
+  return req.cookies?.admin_session ||
+    req.headers['x-admin-session'] ||
+    (req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : null);
+};
+
+export const getTenantSessionId = (req) => {
+  return req.cookies?.tenant_session ||
+    req.headers['x-tenant-session'] ||
+    (req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : null);
+};
+
 export const requireAdmin = async (req, res, next) => {
   try {
-    const adminSessionId = req.cookies?.admin_session;
+    const adminSessionId = getAdminSessionId(req);
     if (!adminSessionId) {
       return errorResponse(res, 'Vui lòng đăng nhập quyền Quản trị viên.', 'UNAUTHORIZED', 401);
     }
@@ -44,7 +60,7 @@ export const requireAdmin = async (req, res, next) => {
 
 export const requireTenant = async (req, res, next) => {
   try {
-    const tenantSessionId = req.cookies?.tenant_session;
+    const tenantSessionId = getTenantSessionId(req);
     if (!tenantSessionId) {
       return errorResponse(res, 'Vui lòng xác thực số điện thoại người thuê.', 'UNAUTHORIZED', 401);
     }
@@ -89,8 +105,8 @@ export const requireTenant = async (req, res, next) => {
 
 export const optionalAuth = async (req, res, next) => {
   try {
-    const adminSessionId = req.cookies?.admin_session;
-    const tenantSessionId = req.cookies?.tenant_session;
+    const adminSessionId = getAdminSessionId(req);
+    const tenantSessionId = getTenantSessionId(req);
 
     if (adminSessionId) {
       if (isPostgresActive()) {
@@ -144,4 +160,3 @@ export const optionalAuth = async (req, res, next) => {
   }
   return next();
 };
-

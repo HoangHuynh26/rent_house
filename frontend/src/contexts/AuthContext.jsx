@@ -16,8 +16,12 @@ export const AuthProvider = ({ children }) => {
         const resAdmin = await api.get('/auth/admin/me');
         if (resAdmin?.data) {
           setAdmin(resAdmin.data);
+          if (resAdmin.data.id) {
+            localStorage.setItem('admin_session_id', resAdmin.data.id);
+          }
         }
       } catch (e) {
+        localStorage.removeItem('admin_session_id');
         setAdmin(null);
       }
 
@@ -26,8 +30,12 @@ export const AuthProvider = ({ children }) => {
         const resTenant = await api.get('/auth/tenant/me');
         if (resTenant?.data) {
           setTenant(resTenant.data);
+          if (resTenant.data.id) {
+            localStorage.setItem('tenant_session_id', resTenant.data.id);
+          }
         }
       } catch (e) {
+        localStorage.removeItem('tenant_session_id');
         setTenant(null);
       }
     } finally {
@@ -41,17 +49,29 @@ export const AuthProvider = ({ children }) => {
 
   const loginAdmin = async (username, password) => {
     const res = await api.post('/auth/admin/login', { username, password });
+    if (res?.data?.id) {
+      localStorage.setItem('admin_session_id', res.data.id);
+    }
     setAdmin(res.data);
     return res.data;
   };
 
   const logoutAdmin = async () => {
-    await api.post('/auth/admin/logout');
-    setAdmin(null);
+    try {
+      await api.post('/auth/admin/logout');
+    } catch (e) {
+      console.warn('[Admin Logout Warning]:', e.message);
+    } finally {
+      localStorage.removeItem('admin_session_id');
+      setAdmin(null);
+    }
   };
 
   const loginTenant = async (phone) => {
     const res = await api.post('/auth/tenant/login', { phone });
+    if (res?.data?.id) {
+      localStorage.setItem('tenant_session_id', res.data.id);
+    }
     setTenant(res.data);
     return res.data;
   };
@@ -62,13 +82,22 @@ export const AuthProvider = ({ children }) => {
 
   const confirmTenantOTP = async (phone, otp) => {
     const res = await api.post('/auth/tenant/verify-confirm', { phone, otp });
+    if (res?.data?.id) {
+      localStorage.setItem('tenant_session_id', res.data.id);
+    }
     setTenant(res.data);
     return res.data;
   };
 
   const logoutTenant = async () => {
-    await api.post('/auth/tenant/logout');
-    setTenant(null);
+    try {
+      await api.post('/auth/tenant/logout');
+    } catch (e) {
+      console.warn('[Tenant Logout Warning]:', e.message);
+    } finally {
+      localStorage.removeItem('tenant_session_id');
+      setTenant(null);
+    }
   };
 
   return (

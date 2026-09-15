@@ -38,14 +38,14 @@ services:
     networks:
       - rent_network
 
-  # 3. React Frontend (Nginx Production Serve)
+  # 3. React Frontend (Node.js Static Serve - No Nginx)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: rent_house_frontend
     ports:
-      - "80:80"
+      - "3000:3000"
     depends_on:
       - backend
     networks:
