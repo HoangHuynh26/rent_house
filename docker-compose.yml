@@ -1,0 +1,59 @@
+services:
+  # 1. Local AI Microservice (FastAPI + OpenCV)
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: rent_house_ai
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - rent_network
+
+  # 2. Node.js Express Backend API (Direct Neon PostgreSQL Cloud Connection)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rent_house_backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - DATABASE_URL=${DATABASE_URL:-postgresql://neondb_owner:npg_bgpEdnH4Q5XK@ep-soft-unit-ayxcyazu-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require}
+      - SESSION_SECRET=${SESSION_SECRET:-super_secure_rental_session_secret_key_2026_jwt_or_cookie}
+      - ADMIN_COOKIE_SECRET=${ADMIN_COOKIE_SECRET:-admin_secret_key_long_and_cryptographically_strong_random_hash}
+      - AI_SERVICE_URL=http://ai-service:8000
+      - STORAGE_TYPE=local
+      - UPLOAD_DIR=./uploads
+    depends_on:
+      - ai-service
+    volumes:
+      - backend_uploads:/app/uploads
+    networks:
+      - rent_network
+
+  # 3. React Frontend (Nginx Production Serve)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rent_house_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - rent_network
+
+volumes:
+  backend_uploads:
+
+networks:
+  rent_network:
+    driver: bridge

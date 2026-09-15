@@ -1,0 +1,27 @@
+{
+  "name": "rent-house-backend",
+  "version": "1.0.0",
+  "description": "Rental House Management System - Backend API",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test tests/**/*.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "multer": "^1.4.5-lts.1",
+    "pdfkit": "^0.16.0",
+    "pg": "^8.13.3",
+    "serverless-http": "^3.2.0",
+    "sharp": "^0.35.4",
+    "tesseract.js": "^7.0.0"
+  }
+}
