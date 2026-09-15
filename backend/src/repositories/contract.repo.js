@@ -352,6 +352,8 @@ export const reopen = async (id, { status = 'pending_signature', end_date, rent_
 
 export const deleteById = async (id) => {
   if (isPostgresActive()) {
+    // Unblock trigger in case OLD.status was 'signed'
+    await query(`UPDATE contracts SET status = 'draft' WHERE id = $1 AND status = 'signed'`, [id]);
     const res = await query(`DELETE FROM contracts WHERE id = $1 RETURNING *`, [id]);
     return res.rows[0] || null;
   }

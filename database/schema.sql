@@ -399,19 +399,8 @@ DROP TRIGGER IF EXISTS trg_enforce_contract_immutability ON contracts;
 CREATE TRIGGER trg_enforce_contract_immutability
 BEFORE UPDATE ON contracts FOR EACH ROW EXECUTE FUNCTION enforce_contract_immutability();
 
-CREATE OR REPLACE FUNCTION prevent_signed_contract_deletion()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF (OLD.status = 'signed') THEN
-        RAISE EXCEPTION 'Signed contracts cannot be deleted. Preserving contract history is required.';
-    END IF;
-    RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
-
+-- Signed contracts can be deleted by admin when parties agree to recreate
 DROP TRIGGER IF EXISTS trg_prevent_signed_contract_deletion ON contracts;
-CREATE TRIGGER trg_prevent_signed_contract_deletion
-BEFORE DELETE ON contracts FOR EACH ROW EXECUTE FUNCTION prevent_signed_contract_deletion();
 
 -- -----------------------------------------------------------------------------
 -- IDEMPOTENT UPGRADES FOR EXISTING DATABASES
