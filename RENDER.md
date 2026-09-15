@@ -1,26 +1,35 @@
-# Hướng Dẫn Tách Triển Khai: Backend (Render) + Frontend (Netlify)
+# Hướng Dẫn Triển Khai: Backend + AI Service (Render) & Frontend (Netlify)
 
-Mô hình này là mô hình chuẩn mực và ổn định nhất:
-- **Backend**: Chạy liên tục trên Render (hỗ trợ đầy đủ Node.js, AI OCR, sharp, tự động tạo hóa đơn ngày 10 hàng tháng và kết nối Neon PostgreSQL).
-- **Frontend**: Chạy siêu tốc độ trên Netlify CDN dưới dạng Single Page Application (React Vite).
+Hệ thống được thiết kế linh hoạt:
+- **Frontend**: Triển khai trên Netlify CDN (tốc độ cao, không bao giờ nghẽn).
+- **Backend**: Triển khai trên Render Web Service (Node.js).
+- **AI Service**: Có thể chạy đồng thời trên **Render (Public)** và **Máy tính của bạn (Local)**!
+
+---
+
+## 🤖 Cách AI Service hoạt động ĐỒNG THỜI trên Public và Local
+
+Backend Node.js được tích hợp cơ chế tự động tìm kiếm AI thông minh:
+1. **Khi chạy Public (trên Render)**: Backend gọi trực tiếp link AI trên Render (ví dụ `https://nhatrothanhtam-ai.onrender.com`).
+2. **Khi chạy Local (trên máy bạn)**: Backend trong máy bạn có thể kết nối thẳng vào link AI public trên Render mà **không cần cài Python trong máy tính**! Nếu máy bạn có bật Python local (`http://localhost:8000`), backend sẽ ưu tiên local.
+3. **Cơ chế dự phòng an toàn (Fallback)**: Kể cả khi AI Service chưa bật hoặc mạng chập chờn, backend tự động chuyển sang bộ nhận diện OCR Tesseract & Perceptual Hash tích hợp sẵn trong Node.js, đảm bảo **không bao giờ bị lỗi hay dừng hệ thống**!
 
 ---
 
 ## BƯỚC 1: Triển khai Backend lên Render (https://render.com)
 
 1. Đăng nhập vào [Render Dashboard](https://dashboard.render.com).
-2. Nhấn nút **New +** ở góc trên cùng bên phải → chọn **Web Service**.
-3. Kết nối với kho lưu trữ GitHub của bạn chứa project này.
-4. Điền các thông số cấu hình như sau:
-   - **Name**: `nhatrothanhtam-backend` (hoặc tên tùy bạn thích)
+2. Nhấn nút **New +** → chọn **Web Service**.
+3. Chọn kho lưu trữ GitHub: **`HoangHuynh26/rent_house`**.
+4. Cấu hình:
+   - **Name**: `nhatrothanhtam-backend`
    - **Language / Runtime**: `Node`
-   - **Branch**: `main` (hoặc `master`)
+   - **Branch**: `main`
    - **Root Directory**: `backend`
    - **Build Command**: `npm install`
    - **Start Command**: `npm start`
-   - **Instance Type**: Chọn gói **Free**
-
-5. Kéo xuống mục **Environment Variables** (Biến môi trường) và thêm các biến:
+   - **Instance Type**: **Free**
+5. Thêm các **Environment Variables**:
 
 | Key (Tên biến) | Value (Giá trị) |
 | :--- | :--- |
@@ -31,41 +40,45 @@ Mô hình này là mô hình chuẩn mực và ổn định nhất:
 | `FRONTEND_URL` | `https://nhatrothanhtam.netlify.app` |
 | `COOKIE_SAMESITE` | `none` |
 | `COOKIE_SECURE` | `true` |
+| `AI_SERVICE_URL` | `https://nhatrothanhtam-ai.onrender.com` *(nếu tạo thêm service AI ở Bước 1.1)* |
 
-6. Bấm **Deploy Web Service** và chờ Render triển khai trong khoảng 2-3 phút.
-7. Khi Render báo **Live**, bạn sẽ nhận được đường link API của mình, có dạng:
-   👉 `https://nhatrothanhtam-backend.onrender.com`
+6. Bấm **Create Web Service** → Khi hoàn tất, bạn có link backend: `https://nhatrothanhtam-backend.onrender.com`.
 
 ---
 
-## BƯỚC 2: Kết nối Frontend trên Netlify với Backend Render
+## BƯỚC 1.1: Triển khai Python AI Service lên Render (Tùy chọn)
 
-Sau khi đã có link Render từ Bước 1:
+Nếu bạn muốn có một server Python OpenCV riêng trên Cloud để phục vụ phân tích ảnh công tơ:
+1. Trên Render Dashboard, bấm **New +** → chọn **Web Service**.
+2. Chọn repo: **`HoangHuynh26/rent_house`**.
+3. Cấu hình:
+   - **Name**: `nhatrothanhtam-ai`
+   - **Language / Runtime**: `Python`
+   - **Root Directory**: `ai-service`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - **Instance Type**: **Free**
+4. Bấm **Create Web Service** → Khi xong bạn sẽ có link: `https://nhatrothanhtam-ai.onrender.com`.
+5. **Cách dùng cho cả Public lẫn Local**:
+   - Gắn link `https://nhatrothanhtam-ai.onrender.com` vào biến `AI_SERVICE_URL` trên Render Backend.
+   - Gắn link `AI_SERVICE_URL=https://nhatrothanhtam-ai.onrender.com` vào file `.env` trên máy bạn. Lúc này, backend ở máy tính của bạn cũng sẽ sử dụng được AI trên cloud mà không cần cài đặt Python!
 
-### Lựa chọn A: Nếu bạn kéo thả thư mục thủ công lên Netlify (Netlify Drop)
-1. Mở file `.env` ở thư mục gốc `c:\rent_house\.env`:
-   Sửa dòng:
+---
+
+## BƯỚC 2: Kết nối Frontend trên Netlify
+
+1. Trong file `.env` trên máy bạn, cập nhật:
    ```env
    VITE_API_URL=https://nhatrothanhtam-backend.onrender.com/api
    ```
-   *(Thay bằng link Render thực tế của bạn, nhớ có đuôi `/api`)*
-2. Mở terminal và chạy lệnh build frontend:
+2. Chạy lệnh build:
    ```powershell
    npm run build --workspace=rent-house-frontend
    ```
-3. Kéo thả toàn bộ thư mục **`c:\rent_house\frontend\dist`** lên trang Netlify Deploys của bạn.
-
-### Lựa chọn B: Nếu Netlify tự động build qua GitHub
-1. Vào Netlify Dashboard → chọn trang **nhatrothanhtam**.
-2. Vào **Site configuration** → **Environment variables**.
-3. Thêm biến:
-   - **Key**: `VITE_API_URL`
-   - **Value**: `https://nhatrothanhtam-backend.onrender.com/api`
-4. Vào tab **Deploys** → bấm **Trigger deploy** → **Deploy site**.
+3. Kéo thả thư mục `frontend/dist` lên Netlify Deploys (hoặc để Netlify tự build qua GitHub).
 
 ---
 
-## BƯỚC 3: Mở khóa quyền truy cập trên Netlify (Khắc phục lỗi 401)
-
-1. Trong Netlify Dashboard, vào **Site configuration** → **Access management** → **Visitor access**.
-2. Chuyển chế độ sang **Public** (Không cài Password / Team protection) để khách thuê và quản trị viên có thể truy cập tự do từ điện thoại và máy tính.
+## BƯỚC 3: Mở khóa quyền truy cập Netlify (Tránh lỗi 401)
+1. Netlify Dashboard → Site **nhatrothanhtam** → **Site configuration** → **Access management** → **Visitor access**.
+2. Chuyển sang **Public**.

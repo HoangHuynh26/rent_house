@@ -19,7 +19,21 @@ export async function getSharp() {
   return sharpInstance;
 }
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+export const getCandidateAiUrls = () => {
+  const urls = [];
+  if (process.env.AI_SERVICE_URL) {
+    let raw = process.env.AI_SERVICE_URL.trim().replace(/\/+$/, '');
+    if (!raw.startsWith('http://') && !raw.startsWith('https://')) {
+      raw = 'https://' + raw;
+    }
+    urls.push(raw);
+  }
+  // Localhost fallback
+  if (!urls.some(u => u.includes('localhost:8000') || u.includes('127.0.0.1:8000'))) {
+    urls.push('http://localhost:8000');
+  }
+  return urls;
+};
 
 // Circuit breaker for offline Python microservice to avoid connection timeouts
 let isAiServiceAvailable = false;
@@ -737,43 +751,49 @@ export const analyzeMeterImage = async (filePath, readingType = 'electricity', p
     const fileBuffer = fs.readFileSync(filePath);
     const fileName = path.basename(filePath);
 
-    // 1. Check if external Python AI microservice is reachable (circuit breaker pattern)
+    // 1. Check external Python AI microservice (supports both Public Cloud URL and Localhost)
     const now = Date.now();
     const shouldCheckExternal = isAiServiceAvailable || (now - lastAiCheckTime > AI_CHECK_COOLDOWN_MS);
 
     if (shouldCheckExternal) {
       lastAiCheckTime = now;
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 350); // Fast 350ms probe
+      const candidateUrls = getCandidateAiUrls();
 
-        const formData = new FormData();
-        const blob = new Blob([fileBuffer], { type: 'image/jpeg' });
-        formData.append('file', blob, fileName);
-        formData.append('reading_type', readingType);
-        if (previousValue !== null) {
-          formData.append('previous_value', previousValue.toString());
+      for (const targetUrl of candidateUrls) {
+        try {
+          const isLocal = targetUrl.includes('localhost') || targetUrl.includes('127.0.0.1');
+          const timeoutMs = isLocal ? 2000 : 12000;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+          const formData = new FormData();
+          const blob = new Blob([fileBuffer], { type: 'image/jpeg' });
+          formData.append('file', blob, fileName);
+          formData.append('reading_type', readingType);
+          if (previousValue !== null) {
+            formData.append('previous_value', previousValue.toString());
+          }
+
+          const response = await fetch(`${targetUrl}/api/v1/analyze-meter`, {
+            method: 'POST',
+            body: formData,
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            isAiServiceAvailable = true;
+            const json = await response.json();
+            const rawResult = json.data;
+
+            // Apply Red Digit Exclusion Rule for Electricity
+            return formatAnalysisResult(rawResult, readingType, previousValue, startTime);
+          }
+        } catch (httpErr) {
+          // Continue to next candidate URL
         }
-
-        const response = await fetch(`${AI_SERVICE_URL}/api/v1/analyze-meter`, {
-          method: 'POST',
-          body: formData,
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          isAiServiceAvailable = true;
-          const json = await response.json();
-          const rawResult = json.data;
-
-          // Apply Red Digit Exclusion Rule for Electricity
-          return formatAnalysisResult(rawResult, readingType, previousValue, startTime);
-        }
-      } catch (httpErr) {
-        // External service unavailable, mark circuit breaker closed
-        isAiServiceAvailable = false;
       }
+      isAiServiceAvailable = false;
     }
 
     // 2. High-speed In-Process Computer Vision, Environment & OCR Analyzer (<25ms)
