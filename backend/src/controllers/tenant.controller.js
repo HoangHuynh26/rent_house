@@ -4,6 +4,7 @@ import * as contractRepo from '../repositories/contract.repo.js';
 import * as billRepo from '../repositories/bill.repo.js';
 import { successResponse, errorResponse } from '../utils/response.util.js';
 import * as auditService from '../services/audit.service.js';
+import { isPostgresActive, query, memoryStore } from '../config/db.js';
 
 export const getTenants = async (req, res) => {
   try {
@@ -91,11 +92,32 @@ export const updateTenant = async (req, res) => {
     const updated = await userRepo.update(id, req.body);
 
     // If room changed, handle room occupancy
-    if (req.body.room_id && req.body.room_id !== oldTenant.room_id) {
+    if (req.body.room_id !== undefined && req.body.room_id !== oldTenant.room_id) {
       if (oldTenant.room_id) {
-        await roomRepo.update(oldTenant.room_id, { status: 'available' });
+        const oldRemain = isPostgresActive()
+          ? (await query('SELECT id FROM users WHERE room_id = $1 AND id != $2 AND status = $3 AND deleted_at IS NULL', [oldTenant.room_id, id, 'active'])).rows
+          : memoryStore.users.filter(u => u.room_id === oldTenant.room_id && u.id !== id && u.status === 'active' && !u.deleted_at);
+        if (oldRemain.length === 0) {
+          await roomRepo.update(oldTenant.room_id, { status: 'available' });
+        }
       }
-      await roomRepo.update(req.body.room_id, { status: 'occupied' });
+      if (req.body.room_id && (req.body.status || updated.status) === 'active') {
+        await roomRepo.update(req.body.room_id, { status: 'occupied' });
+      }
+    }
+
+    // If status changed to 'inactive' (Hết thuê) and tenant was assigned to a room
+    if (req.body.status === 'inactive' && (oldTenant.room_id || updated?.room_id)) {
+      const roomId = updated?.room_id || oldTenant.room_id;
+      const remainActive = isPostgresActive()
+        ? (await query('SELECT id FROM users WHERE room_id = $1 AND id != $2 AND status = $3 AND deleted_at IS NULL', [roomId, id, 'active'])).rows
+        : memoryStore.users.filter(u => u.room_id === roomId && u.id !== id && u.status === 'active' && !u.deleted_at);
+      if (remainActive.length === 0) {
+        await roomRepo.update(roomId, { status: 'available' });
+      }
+    } else if (req.body.status === 'active' && (updated?.room_id || oldTenant.room_id)) {
+      const roomId = updated?.room_id || oldTenant.room_id;
+      await roomRepo.update(roomId, { status: 'occupied' });
     }
 
     await auditService.logAction({
@@ -114,5 +136,42 @@ export const updateTenant = async (req, res) => {
   } catch (err) {
     console.error('[Update Tenant Error]:', err);
     return errorResponse(res, 'Không thể cập nhật người thuê.', 'SERVER_ERROR', 500);
+  }
+};
+
+export const deleteTenant = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const tenant = await userRepo.findById(id);
+    if (!tenant) {
+      return errorResponse(res, 'Không tìm thấy người thuê để xóa.', 'NOT_FOUND', 404);
+    }
+
+    await userRepo.softDelete(id);
+
+    if (tenant.room_id) {
+      const remainActive = isPostgresActive()
+        ? (await query('SELECT id FROM users WHERE room_id = $1 AND id != $2 AND status = $3 AND deleted_at IS NULL', [tenant.room_id, id, 'active'])).rows
+        : memoryStore.users.filter(u => u.room_id === tenant.room_id && u.id !== id && u.status === 'active' && !u.deleted_at);
+      if (remainActive.length === 0) {
+        await roomRepo.update(tenant.room_id, { status: 'available' });
+      }
+    }
+
+    await auditService.logAction({
+      actorId: req.admin?.id,
+      actorType: 'admin',
+      action: 'DELETE_TENANT',
+      entityType: 'user',
+      entityId: id,
+      oldData: tenant,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+
+    return successResponse(res, null, 'Đã xóa người thuê thành công.');
+  } catch (err) {
+    console.error('[Delete Tenant Error]:', err);
+    return errorResponse(res, 'Không thể xóa người thuê.', 'SERVER_ERROR', 500);
   }
 };

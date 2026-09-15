@@ -10,5 +10,6 @@ router.get('/', tenantController.getTenants);
 router.get('/:id', tenantController.getTenantById);
 router.post('/', tenantController.createTenant);
 router.patch('/:id', tenantController.updateTenant);
+router.delete('/:id', tenantController.deleteTenant);
 
 export default router;
