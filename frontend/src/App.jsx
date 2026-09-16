@@ -25,6 +25,7 @@ import AdminMeters from './pages/admin/AdminMeters';
 import AdminBills from './pages/admin/AdminBills';
 import AdminContracts from './pages/admin/AdminContracts';
 import AdminAudit from './pages/admin/AdminAudit';
+import AdminNotifications from './pages/admin/AdminNotifications';
 
 // Landing Page
 import LandingPage from './pages/LandingPage';
@@ -91,6 +92,7 @@ export default function App() {
             <Route path="meters" element={<AdminMeters />} />
             <Route path="bills" element={<AdminBills />} />
             <Route path="contracts" element={<AdminContracts />} />
+            <Route path="notifications" element={<AdminNotifications />} />
             <Route path="audit" element={<AdminAudit />} />
           </Route>
 

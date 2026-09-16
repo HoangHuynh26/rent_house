@@ -24,8 +24,9 @@ export default function TenantContract() {
     try {
       setLoading(true);
       setError('');
-      const url = activeRoomId
-        ? `/tenant-portal/contract?roomId=${activeRoomId}`
+      const cleanRoomId = activeRoomId && activeRoomId !== 'undefined' && activeRoomId !== 'null' ? activeRoomId : '';
+      const url = cleanRoomId
+        ? `/tenant-portal/contract?roomId=${cleanRoomId}`
         : '/tenant-portal/contract';
       const res = await api.get(url);
       setContract(res.data);

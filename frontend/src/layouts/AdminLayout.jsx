@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, DoorOpen, Users, Cpu, Receipt, FileSignature, ShieldAlert, LogOut, Home, Menu, X } from 'lucide-react';
+import { LayoutDashboard, DoorOpen, Users, Cpu, Receipt, FileSignature, ShieldAlert, LogOut, Home, Menu, X, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import AiChatbotWidget from '../components/chat/AiChatbotWidget';
 
@@ -22,6 +22,7 @@ export default function AdminLayout() {
     { to: '/admin/meters', label: 'Đo điện nước & AI OCR', icon: Cpu },
     { to: '/admin/bills', label: 'Hóa đơn & Thanh toán', icon: Receipt },
     { to: '/admin/contracts', label: 'Hợp đồng thuê phòng', icon: FileSignature },
+    { to: '/admin/notifications', label: 'Thông báo & Pop-up', icon: Bell },
     { to: '/admin/audit', label: 'Nhật ký kiểm toán', icon: ShieldAlert },
   ];
 

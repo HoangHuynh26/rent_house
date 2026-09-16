@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Home, Zap, Droplet, History, FileText, LogOut, User, DoorOpen } from 'lucide-react';
+import { Home, Zap, Droplet, History, FileText, LogOut, User, DoorOpen, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenantRoom } from '../contexts/TenantRoomContext';
 import AiChatbotWidget from '../components/chat/AiChatbotWidget';
+import TenantNotificationPopup from '../components/notification/TenantNotificationPopup';
 
 export default function TenantLayout() {
   const { tenant, logoutTenant } = useAuth();
   const { activeRoomId, activeRoom, rentedRooms, switchRoom, hasMultipleRooms } = useTenantRoom();
+  const [activeNotifCount, setActiveNotifCount] = useState(0);
+  const [openBellModal, setOpenBellModal] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -158,6 +161,49 @@ export default function TenantLayout() {
 
           {/* User action & Logout */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Bell notification button */}
+            <button
+              onClick={() => setOpenBellModal(true)}
+              title="Thông báo từ ban quản lý"
+              style={{
+                position: 'relative',
+                background: activeNotifCount > 0 ? 'rgba(239, 68, 68, 0.28)' : 'rgba(255,255,255,0.15)',
+                color: '#ffffff',
+                padding: '8px 12px',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '14px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                border: activeNotifCount > 0 ? '1px solid rgba(239, 68, 68, 0.5)' : 'none'
+              }}
+            >
+              <Bell size={17} />
+              {activeNotifCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-5px',
+                  right: '-5px',
+                  background: '#ef4444',
+                  color: '#ffffff',
+                  fontSize: '10px',
+                  fontWeight: '900',
+                  minWidth: '18px',
+                  height: '18px',
+                  borderRadius: '9px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 4px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.35)'
+                }}>
+                  {activeNotifCount}
+                </span>
+              )}
+            </button>
+
             <button
               onClick={handleLogout}
               title="Đăng xuất"
@@ -211,6 +257,14 @@ export default function TenantLayout() {
           );
         })}
       </nav>
+
+      {/* Pop-up & Bell Notification system for Tenants */}
+      <TenantNotificationPopup
+        activeRoomId={activeRoomId}
+        onUnreadCountChange={setActiveNotifCount}
+        bellTrigger={openBellModal}
+        onBellClose={() => setOpenBellModal(false)}
+      />
 
       {/* Global AI Chatbot Assistant */}
       <AiChatbotWidget roomId={activeRoomId} />

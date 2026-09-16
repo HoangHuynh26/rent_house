@@ -51,8 +51,9 @@ export default function TenantWater() {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const url = activeRoomId
-        ? `/tenant-portal/water/history?months=36&roomId=${activeRoomId}`
+      const cleanRoomId = activeRoomId && activeRoomId !== 'undefined' && activeRoomId !== 'null' ? activeRoomId : '';
+      const url = cleanRoomId
+        ? `/tenant-portal/water/history?months=36&roomId=${cleanRoomId}`
         : '/tenant-portal/water/history?months=36';
       const resHistory = await api.get(url);
       const historyList = resHistory.data || [];
@@ -97,7 +98,8 @@ export default function TenantWater() {
     // Try fetching from server in case not in history
     try {
       setFetchingPeriod(true);
-      const url = `/tenant-portal/water/current?month=${m}&year=${y}` + (activeRoomId ? `&roomId=${activeRoomId}` : '');
+      const cleanRoomId = activeRoomId && activeRoomId !== 'undefined' && activeRoomId !== 'null' ? activeRoomId : '';
+      const url = `/tenant-portal/water/current?month=${m}&year=${y}` + (cleanRoomId ? `&roomId=${cleanRoomId}` : '');
       const res = await api.get(url);
       setReading(res.data || null);
     } catch (err) {

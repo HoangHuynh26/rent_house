@@ -99,4 +99,7 @@ test('Chatbot Service: End-to-End NLP Intent Routing & Response Formatting', asy
   assert.strictEqual(res6.intent, 'FAQ_PRICES');
   assert.ok(res6.reply.includes('3.000'), 'Must state electricity tariff (3,000 VND)');
   assert.ok(res6.reply.includes('12.000'), 'Must state water tariff (12,000 VND)');
+  assert.strictEqual(res6.reply.includes('Internet'), false, 'Must not mention internet fee');
+  assert.strictEqual(res6.reply.includes('Rác'), false, 'Must not mention garbage fee');
+  assert.strictEqual(res6.reply.includes('Quy định chốt số'), false, 'Must not mention cut-off schedule');
 });

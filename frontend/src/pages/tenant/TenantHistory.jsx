@@ -44,8 +44,9 @@ export default function TenantHistory() {
   const fetchHistoryData = async () => {
     try {
       setLoading(true);
-      const roomParam = activeRoomId ? `&roomId=${activeRoomId}` : '';
-      const billParam = activeRoomId ? `?roomId=${activeRoomId}` : '';
+      const cleanRoomId = activeRoomId && activeRoomId !== 'undefined' && activeRoomId !== 'null' ? activeRoomId : '';
+      const roomParam = cleanRoomId ? `&roomId=${cleanRoomId}` : '';
+      const billParam = cleanRoomId ? `?roomId=${cleanRoomId}` : '';
       const [resElec, resWater, resBills] = await Promise.all([
         api.get(`/tenant-portal/electricity/history?months=36${roomParam}`),
         api.get(`/tenant-portal/water/history?months=36${roomParam}`),

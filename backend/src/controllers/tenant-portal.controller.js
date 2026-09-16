@@ -165,9 +165,30 @@ export const getTenantContract = async (req, res) => {
 
 export const getTenantNotifications = async (req, res) => {
   try {
-    const tenantId = req.tenant.id;
-    const notifications = await notificationRepo.findByRecipient('tenant', tenantId);
-    return successResponse(res, notifications, 'Thông báo.');
+    const tenantId = req.scopedTenantId || req.tenant.id;
+    const roomId = req.scopedRoomId || req.tenant?.room_id || null;
+
+    // Fetch active broadcasts & popup notifications within active time window
+    const activeBroadcasts = await notificationRepo.findActiveForTenant({ roomId, tenantId });
+
+    // Fetch individual/personal notifications
+    const personalNotifications = await notificationRepo.findByRecipient('tenant', tenantId);
+
+    // Combine distinct list
+    const seenIds = new Set();
+    const items = [];
+    for (const notif of [...activeBroadcasts, ...personalNotifications]) {
+      if (!seenIds.has(notif.id)) {
+        seenIds.add(notif.id);
+        items.push(notif);
+      }
+    }
+
+    return successResponse(res, {
+      activeBroadcasts,
+      personalNotifications,
+      items
+    }, 'Lấy thông báo thành công.');
   } catch (err) {
     console.error('[Get Tenant Notifications Error]:', err);
     return errorResponse(res, 'Không thể tải thông báo.', 'SERVER_ERROR', 500);

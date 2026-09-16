@@ -447,10 +447,7 @@ export async function processUserMessage({ message, roomId = null, role = 'tenan
   if (intent === 'FAQ_PRICES') {
     let reply = `### 💡 Bảng Giá Dịch Vụ Nhà Trọ Thanh Tâm\n\n`;
     reply += `- ⚡ **Điện sinh hoạt**: **${fmtVnd(faq.tariffs.electricity_price)} / kWh** (số)\n`;
-    reply += `- 💧 **Nước sinh hoạt**: **${fmtVnd(faq.tariffs.water_price)} / m³** (khối)\n`;
-    reply += `- 🌐 **Internet cáp quang**: ${fmtVnd(faq.tariffs.internet_fee)} / phòng / tháng\n`;
-    reply += `- 🗑️ **Rác & vệ sinh chung**: ${fmtVnd(faq.tariffs.garbage_fee)} / phòng / tháng\n\n`;
-    reply += `*Quy định chốt số*: Ngày cuối tháng sẽ chốt chỉ số công tơ điện nước và xuất hóa đơn trước ngày mùng 2 hàng tháng. Thanh toán hạn chót ngày mùng 5.`;
+    reply += `- 💧 **Nước sinh hoạt**: **${fmtVnd(faq.tariffs.water_price)} / m³** (khối)`;
 
     return {
       reply,

@@ -18,11 +18,13 @@ export const TenantHome = () => {
     fetchDashboard();
   }, [activeRoomId]);
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = async (isRetry = false) => {
     try {
       setLoading(true);
-      const url = activeRoomId
-        ? `/tenant-portal/dashboard?roomId=${activeRoomId}`
+      setError('');
+      const cleanRoomId = !isRetry && activeRoomId && activeRoomId !== 'undefined' && activeRoomId !== 'null' ? activeRoomId : '';
+      const url = cleanRoomId
+        ? `/tenant-portal/dashboard?roomId=${cleanRoomId}`
         : '/tenant-portal/dashboard';
       const res = await api.get(url);
       setData(res.data);
@@ -30,6 +32,13 @@ export const TenantHome = () => {
         setRentedRooms(res.data.rented_rooms);
       }
     } catch (err) {
+      // If 403 occurs due to stale/invalid room ID in localStorage, auto-recover without roomId
+      if (!isRetry && (err.status === 403 || err.code === 'FORBIDDEN')) {
+        try {
+          localStorage.removeItem('tenant_active_room_id');
+        } catch (e) {}
+        return fetchDashboard(true);
+      }
       setError(err.message || 'Không thể tải thông tin phòng.');
     } finally {
       setLoading(false);
@@ -47,8 +56,8 @@ export const TenantHome = () => {
         <div style={{ fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>Không thể tải thông tin</div>
         <div style={{ fontSize: '15px' }}>{error}</div>
         <button
-          onClick={fetchDashboard}
-          style={{ marginTop: '16px', padding: '10px 20px', background: '#991b1b', color: '#fff' }}
+          onClick={() => fetchDashboard(true)}
+          style={{ marginTop: '16px', padding: '10px 20px', background: '#991b1b', color: '#fff', borderRadius: '10px', cursor: 'pointer' }}
         >
           Thử lại
         </button>

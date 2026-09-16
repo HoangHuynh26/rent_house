@@ -343,17 +343,23 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at);
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    recipient_type VARCHAR(20) NOT NULL, -- 'tenant' or 'admin'
+    recipient_type VARCHAR(20) NOT NULL, -- 'tenant' or 'admin' or 'broadcast'
     recipient_id UUID, -- User ID or Admin ID (NULL for broadcast)
+    target_room_id UUID REFERENCES rooms(id) ON DELETE CASCADE, -- Optional: specific room filter
     title VARCHAR(150) NOT NULL,
     message TEXT NOT NULL,
-    type VARCHAR(50) NOT NULL, -- 'bill', 'contract', 'meter', 'warning', 'general'
+    type VARCHAR(50) NOT NULL, -- 'price_update', 'maintenance', 'reminder', 'urgent', 'bill', 'contract', 'meter', 'general'
+    is_popup BOOLEAN NOT NULL DEFAULT TRUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    start_at TIMESTAMPTZ, -- Start of display window
+    end_at TIMESTAMPTZ,   -- End of display window (auto disappear)
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
     metadata JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_type, recipient_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_schedule ON notifications(is_active, start_at, end_at, target_room_id);
 
 -- -----------------------------------------------------------------------------
 -- AUTOMATED UPDATED_AT TRIGGERS
@@ -441,3 +447,12 @@ ALTER TABLE bills ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50);
 -- No service fees whatsoever: completely eliminated
 ALTER TABLE contracts DROP COLUMN IF EXISTS other_fee;
 ALTER TABLE bills DROP COLUMN IF EXISTS other_amount;
+
+-- Notifications upgrades (Time-scheduled popups)
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS start_at TIMESTAMPTZ;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS end_at TIMESTAMPTZ;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS is_popup BOOLEAN DEFAULT TRUE;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS target_room_id UUID REFERENCES rooms(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_notifications_schedule ON notifications(is_active, start_at, end_at, target_room_id);
+

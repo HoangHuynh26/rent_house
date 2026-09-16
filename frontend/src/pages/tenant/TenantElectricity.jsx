@@ -52,8 +52,9 @@ export default function TenantElectricity() {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const url = activeRoomId
-        ? `/tenant-portal/electricity/history?months=36&roomId=${activeRoomId}`
+      const cleanRoomId = activeRoomId && activeRoomId !== 'undefined' && activeRoomId !== 'null' ? activeRoomId : '';
+      const url = cleanRoomId
+        ? `/tenant-portal/electricity/history?months=36&roomId=${cleanRoomId}`
         : '/tenant-portal/electricity/history?months=36';
       const resHistory = await api.get(url);
       const historyList = resHistory.data || [];
@@ -98,7 +99,8 @@ export default function TenantElectricity() {
     // Try fetching from server in case not in history
     try {
       setFetchingPeriod(true);
-      const url = `/tenant-portal/electricity/current?month=${m}&year=${y}` + (activeRoomId ? `&roomId=${activeRoomId}` : '');
+      const cleanRoomId = activeRoomId && activeRoomId !== 'undefined' && activeRoomId !== 'null' ? activeRoomId : '';
+      const url = `/tenant-portal/electricity/current?month=${m}&year=${y}` + (cleanRoomId ? `&roomId=${cleanRoomId}` : '');
       const res = await api.get(url);
       setReading(res.data || null);
     } catch (err) {

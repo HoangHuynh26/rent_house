@@ -8,7 +8,8 @@ export const TenantRoomProvider = ({ children }) => {
   const { tenant } = useAuth();
   const [rentedRooms, setRentedRooms] = useState([]);
   const [activeRoomId, setActiveRoomId] = useState(() => {
-    return localStorage.getItem('tenant_active_room_id') || '';
+    const saved = localStorage.getItem('tenant_active_room_id');
+    return saved && saved !== 'undefined' && saved !== 'null' ? saved : '';
   });
 
   // Sync rented rooms from tenant or fetch from dashboard API
@@ -21,7 +22,7 @@ export const TenantRoomProvider = ({ children }) => {
     if (Array.isArray(tenant.rented_rooms) && tenant.rented_rooms.length > 0) {
       setRentedRooms(tenant.rented_rooms);
       const saved = localStorage.getItem('tenant_active_room_id');
-      const isSavedValid = saved && tenant.rented_rooms.some((r) => r.id === saved);
+      const isSavedValid = saved && saved !== 'undefined' && saved !== 'null' && tenant.rented_rooms.some((r) => r.id === saved);
       if (isSavedValid) {
         setActiveRoomId(saved);
       } else {
@@ -31,13 +32,13 @@ export const TenantRoomProvider = ({ children }) => {
       }
     } else {
       // Fetch dashboard to get latest rented_rooms
-      api.get('/tenant/dashboard')
+      api.get('/tenant-portal/dashboard')
         .then((res) => {
           const rooms = res.data?.rented_rooms || (res.data?.room ? [res.data.room] : []);
           if (rooms.length > 0) {
             setRentedRooms(rooms);
             const saved = localStorage.getItem('tenant_active_room_id');
-            const isSavedValid = saved && rooms.some((r) => r.id === saved);
+            const isSavedValid = saved && saved !== 'undefined' && saved !== 'null' && rooms.some((r) => r.id === saved);
             const chosenId = isSavedValid ? saved : rooms[0].id;
             setActiveRoomId(chosenId);
             localStorage.setItem('tenant_active_room_id', chosenId);
@@ -50,7 +51,7 @@ export const TenantRoomProvider = ({ children }) => {
   }, [tenant]);
 
   const switchRoom = (roomId) => {
-    if (!roomId || roomId === activeRoomId) return;
+    if (!roomId || roomId === activeRoomId || roomId === 'undefined' || roomId === 'null') return;
     setActiveRoomId(roomId);
     localStorage.setItem('tenant_active_room_id', roomId);
   };

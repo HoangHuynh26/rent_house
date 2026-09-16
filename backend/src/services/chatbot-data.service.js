@@ -84,11 +84,7 @@ export const getBasicFaqData = () => {
       electricity_price: 3000,
       electricity_unit: 'VND/kWh',
       water_price: 12000,
-      water_unit: 'VND/m³',
-      internet_fee: 100000,
-      internet_unit: 'VND/phòng/tháng',
-      garbage_fee: 30000,
-      garbage_unit: 'VND/phòng/tháng'
+      water_unit: 'VND/m³'
     },
     schedules: {
       meter_reading_date: 'Ngày cuối cùng hàng tháng (hoặc ngày 1 đầu tháng)',
