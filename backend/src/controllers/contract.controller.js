@@ -137,7 +137,19 @@ export const createContract = async (req, res) => {
 
     // Automatically set room to occupied and assign tenant to room
     await roomRepo.update(room_id, { status: 'occupied' });
-    await userRepo.update(tenant_id, { room_id });
+    if (isPostgresActive()) {
+      await query(
+        `INSERT INTO tenant_rooms (id, tenant_id, room_id)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (tenant_id, room_id) DO NOTHING`,
+        [crypto.randomUUID(), tenant_id, room_id]
+      );
+      await query(`UPDATE users SET room_id = COALESCE(room_id, $1) WHERE id = $2`, [room_id, tenant_id]);
+    } else {
+      if (!tenant.room_id) {
+        await userRepo.update(tenant_id, { room_id });
+      }
+    }
 
     // Notify tenant that contract is ready to sign
     await notificationRepo.create({

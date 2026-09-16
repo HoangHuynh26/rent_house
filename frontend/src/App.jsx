@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
+import { TenantRoomProvider } from './contexts/TenantRoomContext';
+
 // Layouts
 import TenantLayout from './layouts/TenantLayout';
 import AdminLayout from './layouts/AdminLayout';
@@ -58,7 +60,9 @@ export default function App() {
             path="/tenant"
             element={
               <TenantProtectedRoute>
-                <TenantLayout />
+                <TenantRoomProvider>
+                  <TenantLayout />
+                </TenantRoomProvider>
               </TenantProtectedRoute>
             }
           >

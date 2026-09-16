@@ -116,7 +116,10 @@ export const tenantLogin = async (req, res) => {
       full_name: tenant.full_name,
       phone: tenant.phone,
       room_id: tenant.room_id,
-      room_number: tenant.room_number
+      room_number: tenant.room_number,
+      rented_rooms: tenant.rented_rooms || [],
+      room_ids: tenant.room_ids || [],
+      room_numbers_str: tenant.room_numbers_str || tenant.room_number
     }, 'Đăng nhập người thuê thành công.');
   } catch (err) {
     console.error('[Tenant Login Error]:', err);
@@ -215,7 +218,10 @@ export const tenantVerifyConfirm = async (req, res) => {
       full_name: tenant.full_name,
       phone: tenant.phone,
       room_id: tenant.room_id,
-      room_number: tenant.room_number
+      room_number: tenant.room_number,
+      rented_rooms: tenant.rented_rooms || [],
+      room_ids: tenant.room_ids || [],
+      room_numbers_str: tenant.room_numbers_str || tenant.room_number
     }, 'Xác thực người thuê thành công.');
   } catch (err) {
     console.error('[Tenant Verify Confirm Error]:', err);

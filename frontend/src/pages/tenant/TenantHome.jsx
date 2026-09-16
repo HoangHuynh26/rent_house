@@ -4,6 +4,7 @@ import { Zap, Droplet, History, FileText, PhoneCall, CheckCircle2, AlertCircle, 
 import api from '../../services/api';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { TenantHomeSkeleton } from '../../components/loading/LoadingComponents';
+import { useTenantRoom } from '../../contexts/TenantRoomContext';
 
 export const TenantHome = () => {
   const [data, setData] = useState(null);
@@ -11,16 +12,23 @@ export const TenantHome = () => {
   const [error, setError] = useState('');
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const navigate = useNavigate();
+  const { activeRoomId, setRentedRooms } = useTenantRoom();
 
   useEffect(() => {
     fetchDashboard();
-  }, []);
+  }, [activeRoomId]);
 
   const fetchDashboard = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/tenant-portal/dashboard');
+      const url = activeRoomId
+        ? `/tenant-portal/dashboard?roomId=${activeRoomId}`
+        : '/tenant-portal/dashboard';
+      const res = await api.get(url);
       setData(res.data);
+      if (Array.isArray(res.data?.rented_rooms) && res.data.rented_rooms.length > 0) {
+        setRentedRooms(res.data.rented_rooms);
+      }
     } catch (err) {
       setError(err.message || 'Không thể tải thông tin phòng.');
     } finally {

@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { formatCurrency, formatNumber, formatDate, formatDateTime } from '../../utils/formatters';
 import { HistorySkeleton } from '../../components/loading/LoadingComponents';
+import { useTenantRoom } from '../../contexts/TenantRoomContext';
 
 export default function TenantHistory() {
   const [elecHistory, setElecHistory] = useState([]);
@@ -34,18 +35,21 @@ export default function TenantHistory() {
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
+  const { activeRoomId } = useTenantRoom();
 
   useEffect(() => {
     fetchHistoryData();
-  }, []);
+  }, [activeRoomId]);
 
   const fetchHistoryData = async () => {
     try {
       setLoading(true);
+      const roomParam = activeRoomId ? `&roomId=${activeRoomId}` : '';
+      const billParam = activeRoomId ? `?roomId=${activeRoomId}` : '';
       const [resElec, resWater, resBills] = await Promise.all([
-        api.get(`/tenant-portal/electricity/history?months=36`),
-        api.get(`/tenant-portal/water/history?months=36`),
-        api.get('/tenant-portal/bills')
+        api.get(`/tenant-portal/electricity/history?months=36${roomParam}`),
+        api.get(`/tenant-portal/water/history?months=36${roomParam}`),
+        api.get(`/tenant-portal/bills${billParam}`)
       ]);
 
       const fetchedBills = resBills.data || [];

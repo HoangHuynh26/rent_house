@@ -155,19 +155,29 @@ function MarkdownRenderer({ content }) {
   return <div>{elements}</div>;
 }
 
-export default function AiChatbotWidget() {
+export default function AiChatbotWidget({ roomId: propRoomId }) {
   const { admin, tenant } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+
+  let activeRoomIdFromCtx = null;
+  let activeRoomNumberFromCtx = null;
+  try {
+    const { useTenantRoom } = require('../../contexts/TenantRoomContext');
+    // or imported hook
+  } catch (e) {}
+
+  const effectiveRoomId = propRoomId || (tenant?.room_id || null);
 
   // Generates contextual greeting based on logged-in user room
   const createInitialMessage = () => {
     if (tenant) {
+      const roomNum = tenant.room_number || '';
       return {
         id: `init-tenant-${Date.now()}`,
         sender: 'ai',
-        text: `Xin chào ${tenant.full_name || 'bạn'}! Tôi là **Trợ Lý AI Phòng ${tenant.room_number || ''}** 🤖.\n\nTôi đã **tự động nhận diện phòng của bạn (Phòng ${tenant.room_number || ''})**. Bạn có thể hỏi tôi về hóa đơn tháng này, số điện nước hoặc **dự đoán tháng tới tăng hay giảm** nhé!`,
+        text: `Xin chào ${tenant.full_name || 'bạn'}! Tôi là **Trợ Lý AI Phòng ${roomNum}** 🤖.\n\nTôi đã **tự động nhận diện phòng của bạn (Phòng ${roomNum})**. Bạn có thể hỏi tôi về hóa đơn tháng này, số điện nước hoặc **dự đoán tháng tới tăng hay giảm** nhé!`,
         badges: [
-          { label: `Phòng ${tenant.room_number || ''}`, color: '#16a34a' },
+          { label: `Phòng ${roomNum}`, color: '#16a34a' },
           { label: 'Đã nhận diện phòng', color: '#2563eb' }
         ],
         suggestions: [
@@ -223,10 +233,10 @@ export default function AiChatbotWidget() {
     }
   }, [messages, isOpen]);
 
-  // Update initial message whenever user logs in or switches account
+  // Update initial message whenever user logs in or switches account or room
   useEffect(() => {
     setMessages([createInitialMessage()]);
-  }, [tenant?.id, tenant?.room_id, admin?.id]);
+  }, [tenant?.id, effectiveRoomId, admin?.id]);
 
   const handleSendMessage = async (textToSend = null) => {
     const queryText = (textToSend || inputVal).trim();
@@ -245,7 +255,7 @@ export default function AiChatbotWidget() {
     try {
       const payload = {
         message: queryText,
-        roomId: tenant ? tenant.room_id : undefined
+        roomId: effectiveRoomId || (tenant ? tenant.room_id : undefined)
       };
 
       const res = await api.post('/chatbot/message', payload);

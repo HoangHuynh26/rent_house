@@ -702,8 +702,16 @@ export const attachWaterReadingImage = async (id, { meter_image_id, image_url, i
 
 export const deleteElectricityReading = async (id) => {
   if (isPostgresActive()) {
+    await query('UPDATE bills SET electricity_reading_id = NULL WHERE electricity_reading_id = $1', [id]);
     const res = await query('DELETE FROM electricity_readings WHERE id = $1 RETURNING *', [id]);
     return res.rows[0] || null;
+  }
+  if (memoryStore.bills) {
+    memoryStore.bills.forEach(b => {
+      if (b.electricity_reading_id === id) {
+        b.electricity_reading_id = null;
+      }
+    });
   }
   const idx = memoryStore.electricity_readings.findIndex(r => r.id === id);
   if (idx === -1) return null;
@@ -713,12 +721,21 @@ export const deleteElectricityReading = async (id) => {
 
 export const deleteWaterReading = async (id) => {
   if (isPostgresActive()) {
+    await query('UPDATE bills SET water_reading_id = NULL WHERE water_reading_id = $1', [id]);
     const res = await query('DELETE FROM water_readings WHERE id = $1 RETURNING *', [id]);
     return res.rows[0] || null;
+  }
+  if (memoryStore.bills) {
+    memoryStore.bills.forEach(b => {
+      if (b.water_reading_id === id) {
+        b.water_reading_id = null;
+      }
+    });
   }
   const idx = memoryStore.water_readings.findIndex(r => r.id === id);
   if (idx === -1) return null;
   const deleted = memoryStore.water_readings.splice(idx, 1)[0];
   return deleted;
 };
+
 

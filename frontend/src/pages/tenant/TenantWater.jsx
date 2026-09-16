@@ -16,10 +16,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { formatCurrency, formatNumber, formatDateTime } from '../../utils/formatters';
 import { MeterDetailSkeleton } from '../../components/loading/LoadingComponents';
+import { useTenantRoom } from '../../contexts/TenantRoomContext';
 
 export default function TenantWater() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { activeRoomId } = useTenantRoom();
 
   const now = new Date();
   const paramMonth = searchParams.get('month') ? Number(searchParams.get('month')) : null;
@@ -38,7 +40,7 @@ export default function TenantWater() {
   // Initial load: fetch history to have all recorded periods available
   useEffect(() => {
     fetchInitialData();
-  }, []);
+  }, [activeRoomId]);
 
   // When selectedMonth or selectedYear changes, resolve the reading
   useEffect(() => {
@@ -49,7 +51,10 @@ export default function TenantWater() {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const resHistory = await api.get('/tenant-portal/water/history?months=36');
+      const url = activeRoomId
+        ? `/tenant-portal/water/history?months=36&roomId=${activeRoomId}`
+        : '/tenant-portal/water/history?months=36';
+      const resHistory = await api.get(url);
       const historyList = resHistory.data || [];
       setAllReadings(historyList);
 
@@ -92,7 +97,8 @@ export default function TenantWater() {
     // Try fetching from server in case not in history
     try {
       setFetchingPeriod(true);
-      const res = await api.get(`/tenant-portal/water/current?month=${m}&year=${y}`);
+      const url = `/tenant-portal/water/current?month=${m}&year=${y}` + (activeRoomId ? `&roomId=${activeRoomId}` : '');
+      const res = await api.get(url);
       setReading(res.data || null);
     } catch (err) {
       setReading(null);

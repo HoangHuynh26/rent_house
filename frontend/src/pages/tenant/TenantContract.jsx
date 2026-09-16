@@ -5,6 +5,7 @@ import api from '../../services/api';
 import SignaturePad from '../../components/signature/SignaturePad';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { ContractSkeleton, ActionLoadingOverlay } from '../../components/loading/LoadingComponents';
+import { useTenantRoom } from '../../contexts/TenantRoomContext';
 
 export default function TenantContract() {
   const [contract, setContract] = useState(null);
@@ -13,18 +14,24 @@ export default function TenantContract() {
   const [signingMode, setSigningMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { activeRoomId } = useTenantRoom();
 
   useEffect(() => {
     fetchContract();
-  }, []);
+  }, [activeRoomId]);
 
   const fetchContract = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/tenant-portal/contract');
+      setError('');
+      const url = activeRoomId
+        ? `/tenant-portal/contract?roomId=${activeRoomId}`
+        : '/tenant-portal/contract';
+      const res = await api.get(url);
       setContract(res.data);
     } catch (err) {
-      setError(err.message || 'Chưa có hợp đồng thuê phòng nào.');
+      setContract(null);
+      setError(err.message || 'Chưa có hợp đồng thuê cho phòng này.');
     } finally {
       setLoading(false);
     }

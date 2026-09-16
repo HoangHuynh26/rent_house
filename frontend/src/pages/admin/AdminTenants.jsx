@@ -18,6 +18,7 @@ export default function AdminTenants() {
     full_name: '',
     phone: '',
     email: '',
+    room_ids: [],
     room_id: '',
     status: 'active'
   });
@@ -48,6 +49,7 @@ export default function AdminTenants() {
       full_name: '',
       phone: '',
       email: '',
+      room_ids: [],
       room_id: '',
       status: 'active'
     });
@@ -56,11 +58,16 @@ export default function AdminTenants() {
 
   const handleOpenEdit = (tenant) => {
     setEditingTenant(tenant);
+    const resolvedRoomIds = Array.isArray(tenant.room_ids) && tenant.room_ids.length > 0
+      ? tenant.room_ids
+      : (tenant.room_id ? [tenant.room_id] : []);
+
     setFormData({
       full_name: tenant.full_name,
       phone: tenant.phone,
       email: tenant.email || '',
-      room_id: tenant.room_id || '',
+      room_ids: resolvedRoomIds,
+      room_id: resolvedRoomIds[0] || '',
       status: tenant.status || 'active'
     });
     setShowModal(true);
@@ -70,10 +77,15 @@ export default function AdminTenants() {
     e.preventDefault();
     try {
       setSaving(true);
+      const payload = {
+        ...formData,
+        room_ids: formData.room_ids,
+        room_id: formData.room_ids[0] || null
+      };
       if (editingTenant) {
-        await api.patch(`/tenants/${editingTenant.id}`, formData);
+        await api.patch(`/tenants/${editingTenant.id}`, payload);
       } else {
-        await api.post('/tenants', formData);
+        await api.post('/tenants', payload);
       }
       setShowModal(false);
       await fetchData();
@@ -134,7 +146,9 @@ export default function AdminTenants() {
         const q = searchQuery.toLowerCase().trim();
         const matchName = (t.full_name || '').toLowerCase().includes(q);
         const matchPhone = (t.phone || '').toLowerCase().includes(q);
-        const matchRoom = (t.room_number || '').toLowerCase().includes(q);
+        const matchRoom = (t.room_number || '').toLowerCase().includes(q) ||
+          (t.room_numbers_str || '').toLowerCase().includes(q) ||
+          (Array.isArray(t.rented_rooms) && t.rented_rooms.some(r => (r.room_number || '').toLowerCase().includes(q)));
         const matchEmail = (t.email || '').toLowerCase().includes(q);
         return matchName || matchPhone || matchRoom || matchEmail;
       }
@@ -292,6 +306,7 @@ export default function AdminTenants() {
                   <th style={{ padding: '16px 20px' }}>Số Điện Thoại</th>
                   <th style={{ padding: '16px 20px' }}>Email</th>
                   <th style={{ padding: '16px 20px' }}>Phòng Ở</th>
+                  <th style={{ padding: '16px 20px' }}>Ngày tạo</th>
                   <th style={{ padding: '16px 20px', textAlign: 'center' }}>Trạng Thái Thuê</th>
                   <th style={{ padding: '16px 20px', textAlign: 'right' }}>Thao tác</th>
                 </tr>
@@ -341,7 +356,27 @@ export default function AdminTenants() {
                           {t.email || 'Chưa cập nhật'}
                         </td>
                         <td style={{ padding: '16px 20px' }}>
-                          {t.room_number ? (
+                          {Array.isArray(t.rented_rooms) && t.rented_rooms.length > 0 ? (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              {t.rented_rooms.map((r) => (
+                                <span key={r.id} style={{
+                                  fontWeight: '700',
+                                  fontSize: '12px',
+                                  color: isActive ? '#059669' : '#64748b',
+                                  background: isActive ? '#ecfdf5' : '#f1f5f9',
+                                  padding: '4px 10px',
+                                  borderRadius: '8px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  border: isActive ? '1px solid #a7f3d0' : '1px solid #e2e8f0'
+                                }}>
+                                  <DoorOpen size={13} />
+                                  Phòng {r.room_number}
+                                </span>
+                              ))}
+                            </div>
+                          ) : t.room_number ? (
                             <span style={{
                               fontWeight: '700',
                               color: isActive ? '#059669' : '#64748b',
@@ -358,6 +393,9 @@ export default function AdminTenants() {
                           ) : (
                             <span style={{ color: '#94a3b8', fontSize: '13px', fontStyle: 'italic' }}>Chưa gán phòng</span>
                           )}
+                        </td>
+                        <td style={{ padding: '16px 20px', color: '#64748b' }}>
+                          {new Date(t.created_at).toLocaleDateString('vi-VN') || 'Chưa cập nhật'}
                         </td>
                         
                         {/* Trạng Thái Thuê */}
@@ -492,7 +530,27 @@ export default function AdminTenants() {
                           <div style={{ fontWeight: '800', fontSize: '15px', color: '#0f172a' }}>
                             {t.full_name}
                           </div>
-                          {t.room_number ? (
+                          {Array.isArray(t.rented_rooms) && t.rented_rooms.length > 0 ? (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                              {t.rented_rooms.map((r) => (
+                                <span key={r.id} style={{
+                                  fontWeight: '700',
+                                  fontSize: '12px',
+                                  color: isActive ? '#059669' : '#64748b',
+                                  background: isActive ? '#ecfdf5' : '#f1f5f9',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  border: isActive ? '1px solid #a7f3d0' : '1px solid #e2e8f0'
+                                }}>
+                                  <DoorOpen size={12} />
+                                  Phòng {r.room_number}
+                                </span>
+                              ))}
+                            </div>
+                          ) : t.room_number ? (
                             <span style={{
                               fontWeight: '700',
                               fontSize: '12px',
@@ -665,48 +723,101 @@ export default function AdminTenants() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px' }}>
-                    Gán vào phòng:
+              {/* Phòng thuê - Hỗ trợ chọn 1 hoặc nhiều phòng (2 phòng trở lên) */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>
+                    Phòng thuê (chọn 1 hoặc nhiều phòng nếu thuê 2 phòng trở lên):
                   </label>
-                  <select
-                    value={formData.room_id}
-                    onChange={(e) => setFormData({ ...formData, room_id: e.target.value })}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff' }}
-                  >
-                    <option value="">-- Chưa gán phòng --</option>
-                    {rooms.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        Phòng {r.room_number} ({r.status === 'available' ? 'Còn trống' : 'Đang thuê'})
-                      </option>
-                    ))}
-                  </select>
+                  <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: '700' }}>
+                    Đã chọn: {formData.room_ids.length} phòng
+                  </span>
                 </div>
 
-                {/* Trạng thái thuê phòng */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '4px', color: '#1e3a8a' }}>
-                    Trạng thái thuê:
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      border: formData.status === 'active' ? '1px solid #16a34a' : '1px solid #dc2626',
-                      background: formData.status === 'active' ? '#f0fdf4' : '#fef2f2',
-                      color: formData.status === 'active' ? '#15803d' : '#b91c1c',
-                      fontWeight: '700',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="active">🟢 Đang thuê</option>
-                    <option value="inactive">🔴 Hết thuê</option>
-                  </select>
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  padding: '10px 12px',
+                  background: '#f8fafc',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  maxHeight: '150px',
+                  overflowY: 'auto'
+                }}>
+                  {rooms.length === 0 ? (
+                    <span style={{ color: '#94a3b8', fontSize: '12px', fontStyle: 'italic' }}>Chưa có danh sách phòng</span>
+                  ) : (
+                    rooms.map((r) => {
+                      const isSelected = formData.room_ids.includes(r.id);
+                      return (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => {
+                            const next = isSelected
+                              ? formData.room_ids.filter((id) => id !== r.id)
+                              : [...formData.room_ids, r.id];
+                            setFormData({
+                              ...formData,
+                              room_ids: next,
+                              room_id: next[0] || ''
+                            });
+                          }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: isSelected ? '700' : '500',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            border: isSelected ? '1.5px solid #16a34a' : '1px solid #cbd5e1',
+                            background: isSelected ? '#dcfce7' : '#ffffff',
+                            color: isSelected ? '#15803d' : '#334155',
+                            boxShadow: isSelected ? '0 1px 3px rgba(22, 163, 74, 0.2)' : 'none'
+                          }}
+                        >
+                          <DoorOpen size={14} color={isSelected ? '#15803d' : '#64748b'} />
+                          <span>Phòng {r.room_number}</span>
+                          {isSelected ? (
+                            <CheckCircle2 size={14} color="#16a34a" />
+                          ) : (
+                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                              ({r.status === 'available' ? 'Trống' : 'Đang thuê'})
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
+              </div>
+
+              {/* Trạng thái thuê phòng */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '4px', color: '#1e3a8a' }}>
+                  Trạng thái thuê:
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: formData.status === 'active' ? '1px solid #16a34a' : '1px solid #dc2626',
+                    background: formData.status === 'active' ? '#f0fdf4' : '#fef2f2',
+                    color: formData.status === 'active' ? '#15803d' : '#b91c1c',
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="active">🟢 Đang thuê</option>
+                  <option value="inactive">🔴 Hết thuê</option>
+                </select>
               </div>
 
               {formData.status === 'inactive' && (

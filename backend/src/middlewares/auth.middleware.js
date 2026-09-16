@@ -1,5 +1,6 @@
 import { memoryStore, isPostgresActive, query } from '../config/db.js';
 import { errorResponse } from '../utils/response.util.js';
+import * as userRepo from '../repositories/user.repo.js';
 
 /**
  * Extract session token supporting both HTTP-Only Cookies and custom headers / Bearer token
@@ -65,38 +66,14 @@ export const requireTenant = async (req, res, next) => {
       return errorResponse(res, 'Vui lòng xác thực số điện thoại người thuê.', 'UNAUTHORIZED', 401);
     }
 
-    if (isPostgresActive()) {
-      const result = await query(
-        `SELECT u.id, u.room_id, u.full_name, u.phone, u.email, u.status, r.room_number
-         FROM users u
-         LEFT JOIN rooms r ON u.room_id = r.id
-         WHERE u.id = $1 AND u.status = 'active'`,
-        [tenantSessionId]
-      );
-      if (result.rows.length === 0) {
-        return errorResponse(res, 'Phiên xác thực người thuê không hợp lệ.', 'UNAUTHORIZED', 401);
-      }
-      req.tenant = result.rows[0];
-      req.userType = 'tenant';
-      return next();
-    } else {
-      const tenant = memoryStore.users.find(u => u.id === tenantSessionId && u.status === 'active');
-      if (!tenant) {
-        return errorResponse(res, 'Phiên xác thực người thuê không hợp lệ.', 'UNAUTHORIZED', 401);
-      }
-      const room = memoryStore.rooms.find(r => r.id === tenant.room_id);
-      req.tenant = {
-        id: tenant.id,
-        room_id: tenant.room_id,
-        room_number: room ? room.room_number : null,
-        full_name: tenant.full_name,
-        phone: tenant.phone,
-        email: tenant.email,
-        status: tenant.status
-      };
-      req.userType = 'tenant';
-      return next();
+    const tenant = await userRepo.findById(tenantSessionId);
+    if (!tenant || tenant.status !== 'active') {
+      return errorResponse(res, 'Phiên xác thực người thuê không hợp lệ hoặc đã hết hạn.', 'UNAUTHORIZED', 401);
     }
+
+    req.tenant = tenant;
+    req.userType = 'tenant';
+    return next();
   } catch (err) {
     console.error('[Auth Tenant Error]:', err);
     return errorResponse(res, 'Lỗi xác thực người thuê.', 'AUTH_ERROR', 500);
@@ -126,33 +103,10 @@ export const optionalAuth = async (req, res, next) => {
         }
       }
     } else if (tenantSessionId) {
-      if (isPostgresActive()) {
-        const result = await query(
-          `SELECT u.id, u.room_id, u.full_name, u.phone, u.email, u.status, r.room_number
-           FROM users u
-           LEFT JOIN rooms r ON u.room_id = r.id
-           WHERE u.id = $1 AND u.status = 'active'`,
-          [tenantSessionId]
-        );
-        if (result.rows.length > 0) {
-          req.tenant = result.rows[0];
-          req.userType = 'tenant';
-        }
-      } else {
-        const tenant = memoryStore.users.find(u => u.id === tenantSessionId && u.status === 'active');
-        if (tenant) {
-          const room = memoryStore.rooms.find(r => r.id === tenant.room_id);
-          req.tenant = {
-            id: tenant.id,
-            room_id: tenant.room_id,
-            room_number: room ? room.room_number : null,
-            full_name: tenant.full_name,
-            phone: tenant.phone,
-            email: tenant.email,
-            status: tenant.status
-          };
-          req.userType = 'tenant';
-        }
+      const tenant = await userRepo.findById(tenantSessionId);
+      if (tenant && tenant.status === 'active') {
+        req.tenant = tenant;
+        req.userType = 'tenant';
       }
     }
   } catch (err) {

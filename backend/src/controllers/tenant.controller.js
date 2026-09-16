@@ -38,9 +38,39 @@ export const getTenantById = async (req, res) => {
   }
 };
 
+async function checkAndFreeRoom(roomId, excludeTenantId) {
+  if (!roomId) return;
+  if (isPostgresActive()) {
+    const remainActive = await query(`
+      SELECT u.id FROM users u
+      WHERE u.id != $1 AND u.status = 'active' AND u.deleted_at IS NULL
+        AND (
+          u.room_id = $2
+          OR u.id IN (SELECT tenant_id FROM tenant_rooms WHERE room_id = $2)
+          OR u.id IN (SELECT tenant_id FROM contracts WHERE room_id = $2 AND status IN ('signed', 'pending_signature', 'draft'))
+        )
+    `, [excludeTenantId, roomId]);
+    if (remainActive.rows.length === 0) {
+      await roomRepo.update(roomId, { status: 'available' });
+    }
+  } else {
+    const activeTenants = (memoryStore.users || []).filter(u => u.id !== excludeTenantId && u.status === 'active' && !u.deleted_at);
+    const isOccupied = activeTenants.some(u => {
+      if (u.room_id === roomId) return true;
+      const tr = (memoryStore.tenant_rooms || []).some(t => t.tenant_id === u.id && t.room_id === roomId);
+      if (tr) return true;
+      const ct = (memoryStore.contracts || []).some(c => c.tenant_id === u.id && c.room_id === roomId && ['signed', 'pending_signature', 'draft'].includes(c.status));
+      return ct;
+    });
+    if (!isOccupied) {
+      await roomRepo.update(roomId, { status: 'available' });
+    }
+  }
+}
+
 export const createTenant = async (req, res) => {
   try {
-    const { room_id, full_name, phone, email, status = 'active' } = req.body;
+    const { room_id, room_ids, full_name, phone, email, status = 'active' } = req.body;
     if (!full_name || !phone) {
       return errorResponse(res, 'Vui lòng cung cấp họ tên và số điện thoại.', 'BAD_REQUEST', 400);
     }
@@ -51,17 +81,24 @@ export const createTenant = async (req, res) => {
       return errorResponse(res, 'Số điện thoại này đã được đăng ký trong hệ thống.', 'DUPLICATE_PHONE', 409);
     }
 
+    const resolvedRoomIds = Array.isArray(room_ids) && room_ids.length > 0
+      ? room_ids
+      : (room_id ? [room_id] : []);
+
     const tenant = await userRepo.create({
-      room_id: room_id || null,
+      room_id: resolvedRoomIds[0] || null,
+      room_ids: resolvedRoomIds,
       full_name,
       phone: phone.trim(),
       email: email ? email.trim() : null,
       status: status || 'active'
     });
 
-    // If assigned to room AND status is active, update room status to occupied
-    if (room_id && (status === 'active' || !status)) {
-      await roomRepo.update(room_id, { status: 'occupied' });
+    // If assigned to room(s) AND status is active, update room statuses to occupied
+    if (status === 'active' || !status) {
+      for (const rid of resolvedRoomIds) {
+        await roomRepo.update(rid, { status: 'occupied' });
+      }
     }
 
     await auditService.logAction({
@@ -90,35 +127,39 @@ export const updateTenant = async (req, res) => {
       return errorResponse(res, 'Không tìm thấy người thuê cần sửa.', 'NOT_FOUND', 404);
     }
 
+    const oldRoomIds = Array.isArray(oldTenant.room_ids) && oldTenant.room_ids.length > 0
+      ? oldTenant.room_ids
+      : (oldTenant.room_id ? [oldTenant.room_id] : []);
+
+    let newRoomIds = null;
+    if (req.body.room_ids !== undefined && Array.isArray(req.body.room_ids)) {
+      newRoomIds = req.body.room_ids;
+    } else if (req.body.room_id !== undefined) {
+      newRoomIds = req.body.room_id ? [req.body.room_id] : [];
+    }
+
     const updated = await userRepo.update(id, req.body);
 
-    // If room changed, handle room occupancy
-    if (req.body.room_id !== undefined && req.body.room_id !== oldTenant.room_id) {
-      if (oldTenant.room_id) {
-        const oldRemain = isPostgresActive()
-          ? (await query('SELECT id FROM users WHERE room_id = $1 AND id != $2 AND status = $3 AND deleted_at IS NULL', [oldTenant.room_id, id, 'active'])).rows
-          : memoryStore.users.filter(u => u.room_id === oldTenant.room_id && u.id !== id && u.status === 'active' && !u.deleted_at);
-        if (oldRemain.length === 0) {
-          await roomRepo.update(oldTenant.room_id, { status: 'available' });
-        }
-      }
-      if (req.body.room_id && (req.body.status || updated.status) === 'active') {
-        await roomRepo.update(req.body.room_id, { status: 'occupied' });
+    const effectiveStatus = req.body.status !== undefined ? req.body.status : oldTenant.status;
+    const currentRoomIds = newRoomIds !== null ? newRoomIds : oldRoomIds;
+
+    // Handle rooms that were unassigned
+    if (newRoomIds !== null) {
+      const removedRooms = oldRoomIds.filter(rid => !newRoomIds.includes(rid));
+      for (const rid of removedRooms) {
+        await checkAndFreeRoom(rid, id);
       }
     }
 
-    // If status changed to 'inactive' (Hết thuê) and tenant was assigned to a room
-    if (req.body.status === 'inactive' && (oldTenant.room_id || updated?.room_id)) {
-      const roomId = updated?.room_id || oldTenant.room_id;
-      const remainActive = isPostgresActive()
-        ? (await query('SELECT id FROM users WHERE room_id = $1 AND id != $2 AND status = $3 AND deleted_at IS NULL', [roomId, id, 'active'])).rows
-        : memoryStore.users.filter(u => u.room_id === roomId && u.id !== id && u.status === 'active' && !u.deleted_at);
-      if (remainActive.length === 0) {
-        await roomRepo.update(roomId, { status: 'available' });
+    // Handle status change
+    if (effectiveStatus === 'inactive') {
+      for (const rid of currentRoomIds) {
+        await checkAndFreeRoom(rid, id);
       }
-    } else if (req.body.status === 'active' && (updated?.room_id || oldTenant.room_id)) {
-      const roomId = updated?.room_id || oldTenant.room_id;
-      await roomRepo.update(roomId, { status: 'occupied' });
+    } else if (effectiveStatus === 'active') {
+      for (const rid of currentRoomIds) {
+        await roomRepo.update(rid, { status: 'occupied' });
+      }
     }
 
     await auditService.logAction({
@@ -150,13 +191,12 @@ export const deleteTenant = async (req, res) => {
 
     await userRepo.softDelete(id);
 
-    if (tenant.room_id) {
-      const remainActive = isPostgresActive()
-        ? (await query('SELECT id FROM users WHERE room_id = $1 AND id != $2 AND status = $3 AND deleted_at IS NULL', [tenant.room_id, id, 'active'])).rows
-        : memoryStore.users.filter(u => u.room_id === tenant.room_id && u.id !== id && u.status === 'active' && !u.deleted_at);
-      if (remainActive.length === 0) {
-        await roomRepo.update(tenant.room_id, { status: 'available' });
-      }
+    const allRoomIds = Array.isArray(tenant.room_ids) && tenant.room_ids.length > 0
+      ? tenant.room_ids
+      : (tenant.room_id ? [tenant.room_id] : []);
+
+    for (const rid of allRoomIds) {
+      await checkAndFreeRoom(rid, id);
     }
 
     await auditService.logAction({

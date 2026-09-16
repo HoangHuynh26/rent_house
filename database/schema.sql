@@ -113,6 +113,20 @@ CREATE INDEX IF NOT EXISTS idx_users_room_id ON users(room_id);
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 
 -- -----------------------------------------------------------------------------
+-- 3b. TENANT ROOMS JUNCTION TABLE (Support 1 tenant renting 2+ rooms)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tenant_rooms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tenant_id, room_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tenant_rooms_tenant_id ON tenant_rooms(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_tenant_rooms_room_id ON tenant_rooms(room_id);
+
+-- -----------------------------------------------------------------------------
 -- 4. CONTRACTS TABLE (Immutable upon signature)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS contracts (
@@ -244,8 +258,8 @@ CREATE TABLE IF NOT EXISTS bills (
     room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE RESTRICT,
     tenant_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     contract_id UUID REFERENCES contracts(id) ON DELETE SET NULL,
-    electricity_reading_id UUID REFERENCES electricity_readings(id) ON DELETE RESTRICT,
-    water_reading_id UUID REFERENCES water_readings(id) ON DELETE RESTRICT,
+    electricity_reading_id UUID REFERENCES electricity_readings(id) ON DELETE SET NULL,
+    water_reading_id UUID REFERENCES water_readings(id) ON DELETE SET NULL,
     billing_month INT NOT NULL CHECK (billing_month BETWEEN 1 AND 12),
     billing_year INT NOT NULL CHECK (billing_year >= 2000),
     electricity_amount NUMERIC(14, 2) NOT NULL DEFAULT 0 CHECK (electricity_amount >= 0),

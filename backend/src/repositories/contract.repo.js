@@ -70,24 +70,32 @@ export const findById = async (id) => {
   };
 };
 
-export const findActiveByTenant = async (tenantId) => {
+export const findActiveByTenant = async (tenantId, roomId = null) => {
   if (isPostgresActive()) {
-    const res = await query(
-      `SELECT c.*, r.room_number, u.full_name as tenant_name, u.phone as tenant_phone
-       FROM contracts c
-       JOIN rooms r ON c.room_id = r.id
-       JOIN users u ON c.tenant_id = u.id
-       WHERE c.tenant_id = $1 AND c.status IN ('signed', 'pending_signature', 'draft')
-       ORDER BY c.created_at DESC LIMIT 1`,
-      [tenantId]
-    );
+    let sql = `
+      SELECT c.*, r.room_number, u.full_name as tenant_name, u.phone as tenant_phone
+      FROM contracts c
+      JOIN rooms r ON c.room_id = r.id
+      JOIN users u ON c.tenant_id = u.id
+      WHERE c.tenant_id = $1 AND c.status IN ('signed', 'pending_signature', 'draft')
+    `;
+    const params = [tenantId];
+    if (roomId) {
+      params.push(roomId);
+      sql += ` AND c.room_id = $2`;
+    }
+    sql += ` ORDER BY c.created_at DESC LIMIT 1`;
+    const res = await query(sql, params);
     return res.rows[0] || null;
   }
 
-  const c = memoryStore.contracts.find(item => 
-    item.tenant_id === tenantId && (item.status === 'signed' || item.status === 'pending_signature' || item.status === 'draft')
+  const matches = memoryStore.contracts.filter(item => 
+    item.tenant_id === tenantId && 
+    ['signed', 'pending_signature', 'draft'].includes(item.status) &&
+    (!roomId || item.room_id === roomId)
   );
-  if (!c) return null;
+  if (matches.length === 0) return null;
+  const c = matches.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
   const r = memoryStore.rooms.find(rm => rm.id === c.room_id);
   const u = memoryStore.users.find(usr => usr.id === c.tenant_id);
   return {
@@ -96,6 +104,36 @@ export const findActiveByTenant = async (tenantId) => {
     tenant_name: u ? u.full_name : null,
     tenant_phone: u ? u.phone : null
   };
+};
+
+export const findAllActiveByTenant = async (tenantId) => {
+  if (isPostgresActive()) {
+    const res = await query(
+      `SELECT c.*, r.room_number, u.full_name as tenant_name, u.phone as tenant_phone
+       FROM contracts c
+       JOIN rooms r ON c.room_id = r.id
+       JOIN users u ON c.tenant_id = u.id
+       WHERE c.tenant_id = $1 AND c.status IN ('signed', 'pending_signature', 'draft')
+       ORDER BY r.room_number ASC, c.created_at DESC`,
+      [tenantId]
+    );
+    return res.rows;
+  }
+
+  const matches = memoryStore.contracts.filter(item => 
+    item.tenant_id === tenantId && 
+    ['signed', 'pending_signature', 'draft'].includes(item.status)
+  );
+  return matches.map(c => {
+    const r = memoryStore.rooms.find(rm => rm.id === c.room_id);
+    const u = memoryStore.users.find(usr => usr.id === c.tenant_id);
+    return {
+      ...c,
+      room_number: r ? r.room_number : null,
+      tenant_name: u ? u.full_name : null,
+      tenant_phone: u ? u.phone : null
+    };
+  });
 };
 
 export const findActiveByRoom = async (roomId) => {

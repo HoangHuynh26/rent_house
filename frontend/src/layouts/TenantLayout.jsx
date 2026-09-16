@@ -1,12 +1,13 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Home, Zap, Droplet, History, FileText, LogOut, User } from 'lucide-react';
+import { Home, Zap, Droplet, History, FileText, LogOut, User, DoorOpen } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTenantRoom } from '../contexts/TenantRoomContext';
 import AiChatbotWidget from '../components/chat/AiChatbotWidget';
-
 
 export default function TenantLayout() {
   const { tenant, logoutTenant } = useAuth();
+  const { activeRoomId, activeRoom, rentedRooms, switchRoom, hasMultipleRooms } = useTenantRoom();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -46,7 +47,8 @@ export default function TenantLayout() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '16px'
+          gap: '12px',
+          flexWrap: 'wrap'
         }}>
           {/* Brand & Room info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -65,7 +67,7 @@ export default function TenantLayout() {
                 Nhà Trọ Thanh Tâm
               </div>
               <div style={{ fontSize: '18px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>Phòng {tenant?.room_number || '---'}</span>
+                <span>Phòng {activeRoom?.room_number || tenant?.room_number || '---'}</span>
                 {tenant?.full_name && (
                   <span style={{ fontSize: '13px', fontWeight: '500', color: '#cbd5e1' }} className="desktop-header-nav">
                     ({tenant.full_name})
@@ -73,6 +75,50 @@ export default function TenantLayout() {
                 )}
               </div>
             </div>
+
+            {/* Room Switcher for Tenants renting 2+ rooms */}
+            {hasMultipleRooms && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                background: 'rgba(0, 0, 0, 0.28)',
+                padding: '3px 4px',
+                borderRadius: '10px',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                gap: '4px',
+                marginLeft: '6px'
+              }}>
+                {rentedRooms.map((rm) => {
+                  const isCur = rm.id === activeRoomId;
+                  return (
+                    <button
+                      key={rm.id}
+                      type="button"
+                      onClick={() => switchRoom(rm.id)}
+                      title={`Xem dữ liệu Phòng ${rm.room_number}`}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '7px',
+                        fontSize: '12px',
+                        fontWeight: '800',
+                        cursor: 'pointer',
+                        border: isCur ? '1px solid #60a5fa' : '1px solid transparent',
+                        background: isCur ? '#2563eb' : 'transparent',
+                        color: isCur ? '#ffffff' : '#cbd5e1',
+                        transition: 'all 0.15s ease',
+                        boxShadow: isCur ? '0 2px 6px rgba(37, 99, 235, 0.4)' : 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <DoorOpen size={13} />
+                      <span>P.{rm.room_number}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Desktop & Tablet Top Navigation (Visible on screens >= 768px) */}
@@ -167,7 +213,7 @@ export default function TenantLayout() {
       </nav>
 
       {/* Global AI Chatbot Assistant */}
-      <AiChatbotWidget />
+      <AiChatbotWidget roomId={activeRoomId} />
     </div>
   );
 }

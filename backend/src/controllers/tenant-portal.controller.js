@@ -3,17 +3,22 @@ import * as billRepo from '../repositories/bill.repo.js';
 import * as readingRepo from '../repositories/reading.repo.js';
 import * as contractRepo from '../repositories/contract.repo.js';
 import * as notificationRepo from '../repositories/notification.repo.js';
+import * as userRepo from '../repositories/user.repo.js';
 import { successResponse, errorResponse } from '../utils/response.util.js';
 
 export const getTenantDashboard = async (req, res) => {
   try {
     const tenantId = req.tenant.id;
-    const roomId = req.tenant.room_id;
+    const rentedRooms = Array.isArray(req.tenant.rented_rooms) && req.tenant.rented_rooms.length > 0
+      ? req.tenant.rented_rooms
+      : await userRepo.getRentedRoomsByTenant(tenantId);
+
+    const roomId = req.scopedRoomId || req.query.roomId || rentedRooms[0]?.id || req.tenant.room_id;
 
     const room = await roomRepo.findById(roomId);
-    const contract = await contractRepo.findActiveByTenant(tenantId);
+    const contract = await contractRepo.findActiveByTenant(tenantId, roomId);
     
-    // Get latest bill
+    // Get latest bill for this room
     const bills = await billRepo.findAll({ roomId, tenantId });
     const currentBill = bills.length > 0 ? bills[0] : null;
 
@@ -25,8 +30,11 @@ export const getTenantDashboard = async (req, res) => {
       tenant: {
         id: req.tenant.id,
         full_name: req.tenant.full_name,
-        phone: req.tenant.phone
+        phone: req.tenant.phone,
+        rented_rooms: rentedRooms
       },
+      rented_rooms: rentedRooms,
+      active_room_id: roomId,
       room: {
         id: room?.id,
         room_number: room?.room_number,
@@ -60,7 +68,7 @@ export const getTenantDashboard = async (req, res) => {
 
 export const getCurrentElectricity = async (req, res) => {
   try {
-    const roomId = req.tenant.room_id;
+    const roomId = req.scopedRoomId || req.query.roomId || req.tenant.room_id;
     const { month, year } = req.query;
     let reading = null;
 
@@ -80,7 +88,7 @@ export const getCurrentElectricity = async (req, res) => {
 
 export const getElectricityHistory = async (req, res) => {
   try {
-    const roomId = req.tenant.room_id;
+    const roomId = req.scopedRoomId || req.query.roomId || req.tenant.room_id;
     const months = req.query.months ? Number(req.query.months) : 36;
     const history = await readingRepo.getElectricityHistory(roomId, months);
     return successResponse(res, history, 'Lịch sử sử dụng điện.');
@@ -92,7 +100,7 @@ export const getElectricityHistory = async (req, res) => {
 
 export const getCurrentWater = async (req, res) => {
   try {
-    const roomId = req.tenant.room_id;
+    const roomId = req.scopedRoomId || req.query.roomId || req.tenant.room_id;
     const { month, year } = req.query;
     let reading = null;
 
@@ -112,7 +120,7 @@ export const getCurrentWater = async (req, res) => {
 
 export const getWaterHistory = async (req, res) => {
   try {
-    const roomId = req.tenant.room_id;
+    const roomId = req.scopedRoomId || req.query.roomId || req.tenant.room_id;
     const months = req.query.months ? Number(req.query.months) : 36;
     const history = await readingRepo.getWaterHistory(roomId, months);
     return successResponse(res, history, 'Lịch sử sử dụng nước.');
@@ -125,8 +133,10 @@ export const getWaterHistory = async (req, res) => {
 export const getTenantBills = async (req, res) => {
   try {
     const tenantId = req.tenant.id;
-    const roomId = req.tenant.room_id;
-    const bills = await billRepo.findAll({ roomId, tenantId });
+    const roomId = req.scopedRoomId || req.query.roomId || req.tenant.room_id;
+    const filter = { tenantId };
+    if (roomId) filter.roomId = roomId;
+    const bills = await billRepo.findAll(filter);
     return successResponse(res, bills, 'Lịch sử hóa đơn.');
   } catch (err) {
     console.error('[Get Tenant Bills Error]:', err);
@@ -137,9 +147,10 @@ export const getTenantBills = async (req, res) => {
 export const getTenantContract = async (req, res) => {
   try {
     const tenantId = req.tenant.id;
-    const contract = await contractRepo.findActiveByTenant(tenantId);
+    const roomId = req.scopedRoomId || req.query.roomId || req.tenant.room_id;
+    const contract = await contractRepo.findActiveByTenant(tenantId, roomId);
     if (!contract) {
-      return errorResponse(res, 'Bạn chưa có hợp đồng thuê nào.', 'NOT_FOUND', 404);
+      return errorResponse(res, 'Bạn chưa có hợp đồng thuê nào cho phòng này.', 'NOT_FOUND', 404);
     }
     const isSigned = contract.status === 'signed';
     return successResponse(res, {
