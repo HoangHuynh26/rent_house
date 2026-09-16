@@ -112,16 +112,9 @@ function classifyIntent(text) {
     return 'FAQ_PRICES';
   }
 
-  // 6. House Rules FAQ
+  // 6. House Rules FAQ (Direct to contract)
   if (
-    norm.includes('noi quy') ||
-    norm.includes('gio giac') ||
-    norm.includes('khoa cua') ||
-    norm.includes('gui xe') ||
-    norm.includes('tien coc') ||
-    norm.includes('tra coc') ||
-    norm.includes('khach den') ||
-    norm.includes('qua dem')
+    norm.includes('noi quy')
   ) {
     return 'FAQ_RULES';
   }
@@ -462,21 +455,16 @@ export async function processUserMessage({ message, roomId = null, role = 'tenan
     return {
       reply,
       intent,
-      suggestions: ['Tháng này bao nhiêu tiền?', 'Dự đoán tháng tới tăng hay giảm?', 'Nội quy nhà trọ']
+      suggestions: ['Tháng này bao nhiêu tiền?', 'Dự đoán tháng tới tăng hay giảm?', 'Bảng giá điện nước']
     };
   }
 
-  // 7. FAQ: HOUSE RULES
+  // 7. FAQ: HOUSE RULES (Direct to signed contract)
   if (intent === 'FAQ_RULES') {
-    let reply = `### 📋 Nội Quy & Quy Định Nhà Trọ Thanh Tâm\n\n`;
-    faq.rules.forEach((r, idx) => {
-      reply += `${idx + 1}. ${r}\n`;
-    });
-
     return {
-      reply,
+      reply: `Dạ các điều khoản và quy định chi tiết của nhà trọ được quy định cụ thể trong **Hợp đồng thuê phòng** của bạn. Bạn vui lòng vào mục **Hợp đồng** trên menu để tra cứu hợp đồng điện tử đã ký kết nhé!`,
       intent,
-      suggestions: ['Giá điện nước là bao nhiêu?', 'Tháng này bao nhiêu tiền?', 'Khi nào đóng tiền phòng?']
+      suggestions: ['Giá điện nước là bao nhiêu?', 'Tháng này bao nhiêu tiền?', 'Dự đoán tháng tới']
     };
   }
 
@@ -506,10 +494,9 @@ Ngữ cảnh nhà trọ:
 - Tên: Nhà Trọ Thanh Tâm
 - Địa chỉ: Trục 16, Phường Tân Triệu, TP. Đồng Nai, Việt Nam
 - Số điện thoại chủ nhà: 0909256680
-- Giá điện: 3,500 đ/kWh (lấy số trắng, bỏ số đỏ).
-- Giá nước: 20,000 đ/m³.
-- Hạn nộp tiền: 1-5 hàng tháng.
-- Cổng đóng lúc 23:00.
+- Giá điện: 3,000 đ/kWh (lấy số trắng, bỏ số đỏ).
+- Giá nước: 12,000 đ/m³.
+- Hạn nộp tiền: Theo ngày chốt số công tơ hàng tháng.
 Câu hỏi của người dùng: "${message}"
 Hãy trả lời ngắn gọn, chuẩn xác, định dạng markdown đẹp và thân thiện bằng tiếng Việt.`;
 
@@ -539,7 +526,7 @@ Hãy trả lời ngắn gọn, chuẩn xác, định dạng markdown đẹp và 
       `- 📅 **Xem theo tháng & Tổng hợp**: *"Xem tháng 8/2026"*, *"Tổng kết năm 2026"*\n` +
       `- 📊 **Phân tích số liệu**: *"So sánh với tháng trước"*\n` +
       `- 🔮 **Dự báo tương lai**: *"Dự đoán tháng tới tăng hay giảm và số liệu bao nhiêu?"*\n` +
-      `- 💡 **Quy định & Bảng giá**: *"Giá điện nước"*, *"Nội quy nhà trọ"*`,
+      `- 💡 **Quy định & Bảng giá**: *"Giá điện nước"*`,
     intent: 'GREETING',
     suggestions: [
       'Tháng này bao nhiêu tiền?',

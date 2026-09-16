@@ -106,7 +106,7 @@ You MUST reply ONLY with valid JSON in this exact structure without markdown for
   };
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
+  const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout for mobile uploads
 
   try {
     const res = await fetch(url, {

@@ -56,6 +56,34 @@ test('Reading Repo: Attach image to electricity reading later', async () => {
   assert.strictEqual(attached.meter_image_id, 'test-meter-img-id-1234');
 });
 
+test('Reading Repo: Delete electricity and water readings', async () => {
+  const elec = await readingRepo.createElectricityReading({
+    room_id: 'test-del-room-id',
+    reading_month: 11,
+    reading_year: 2026,
+    previous_value: 100,
+    current_value: 150,
+    unit_price: 3000
+  });
+  assert.ok(elec.id);
+
+  const deletedElec = await readingRepo.deleteElectricityReading(elec.id);
+  assert.strictEqual(deletedElec.id, elec.id);
+
+  const water = await readingRepo.createWaterReading({
+    room_id: 'test-del-room-id',
+    reading_month: 11,
+    reading_year: 2026,
+    previous_value: 20,
+    current_value: 25,
+    unit_price: 12000
+  });
+  assert.ok(water.id);
+
+  const deletedWater = await readingRepo.deleteWaterReading(water.id);
+  assert.strictEqual(deletedWater.id, water.id);
+});
+
 test('AI Meter Analysis: EMIC CV140 Photo reads 99985 (white boxes) and excludes 3 (red box)', async () => {
   const imagePath = path.resolve(process.cwd(), 'uploads/meters/1789311199949_i206jsd.jpg');
   if (fs.existsSync(imagePath)) {

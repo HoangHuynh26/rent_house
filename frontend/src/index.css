@@ -1010,3 +1010,44 @@ button:disabled {
   border: 2px solid #ef4444;
   position: relative;
 }
+
+/* Auto-hide Netlify badge & collaborative drawer without clicking hide */
+netlify-drawer,
+#netlify-drawer,
+[data-netlify-drawer],
+[id^="netlify-drawer"],
+.netlify-badge,
+#netlify-feedback,
+div:has(> iframe[src*="netlify"]),
+iframe[src*="netlify.com"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  z-index: -99999 !important;
+}
+
+/* Responsive Tenant Management (Desktop Table vs Mobile Cards) */
+.admin-tenants-desktop-view {
+  display: block;
+}
+
+.admin-tenants-mobile-view {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .admin-tenants-desktop-view {
+    display: none !important;
+  }
+  .admin-tenants-mobile-view {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+

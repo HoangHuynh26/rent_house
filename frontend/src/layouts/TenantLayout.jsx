@@ -157,7 +157,6 @@ export default function TenantLayout() {
                 <>
                   <div className="liquid-nav-icon-wrap">
                     <Icon size={21} strokeWidth={isActive ? 2.4 : 1.9} />
-                    {isActive && <span className="liquid-droplet-dot" />}
                   </div>
                   <span className="liquid-nav-label">{item.label}</span>
                 </>

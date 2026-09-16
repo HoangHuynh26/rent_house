@@ -187,9 +187,7 @@ export default function TenantElectricity() {
               )}
             </div>
             <div style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>
-              {reading && (reading.photo_captured_at || reading.created_at)
-                ? `⏱️ Thời điểm ghi nhận minh bạch: ${formatDateTime(reading.photo_captured_at || reading.created_at)}`
-                : 'Tra cứu chỉ số tiêu thụ điện và ảnh chụp đồng hồ theo từng tháng'}
+              Tra cứu chỉ số tiêu thụ điện và ảnh chụp đồng hồ theo từng tháng
             </div>
           </div>
         </div>

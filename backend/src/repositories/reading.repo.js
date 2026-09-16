@@ -699,3 +699,26 @@ export const attachWaterReadingImage = async (id, { meter_image_id, image_url, i
   });
   return currentReading;
 };
+
+export const deleteElectricityReading = async (id) => {
+  if (isPostgresActive()) {
+    const res = await query('DELETE FROM electricity_readings WHERE id = $1 RETURNING *', [id]);
+    return res.rows[0] || null;
+  }
+  const idx = memoryStore.electricity_readings.findIndex(r => r.id === id);
+  if (idx === -1) return null;
+  const deleted = memoryStore.electricity_readings.splice(idx, 1)[0];
+  return deleted;
+};
+
+export const deleteWaterReading = async (id) => {
+  if (isPostgresActive()) {
+    const res = await query('DELETE FROM water_readings WHERE id = $1 RETURNING *', [id]);
+    return res.rows[0] || null;
+  }
+  const idx = memoryStore.water_readings.findIndex(r => r.id === id);
+  if (idx === -1) return null;
+  const deleted = memoryStore.water_readings.splice(idx, 1)[0];
+  return deleted;
+};
+

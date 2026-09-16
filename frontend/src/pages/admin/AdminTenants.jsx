@@ -258,7 +258,7 @@ export default function AdminTenants() {
         </div>
 
         {/* Search Box */}
-        <div style={{ position: 'relative', minWidth: '260px', flex: '1 1 260px', maxWidth: '380px' }}>
+        <div style={{ position: 'relative', minWidth: '220px', flex: '1 1 220px', maxWidth: '100%' }}>
           <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
           <input
             type="text"
@@ -278,177 +278,347 @@ export default function AdminTenants() {
         </div>
       </div>
 
-      {/* Tenants Table */}
+      {/* Tenants Table & Mobile Cards */}
       {loading && tenants.length === 0 ? (
         <TableSkeleton rows={5} columns={6} />
       ) : (
-        <div className="table-responsive" style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-          <table className="admin-table">
-            <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: '700' }}>
-                <th style={{ padding: '16px 20px' }}>Họ Và Tên</th>
-                <th style={{ padding: '16px 20px' }}>Số Điện Thoại</th>
-                <th style={{ padding: '16px 20px' }}>Email</th>
-                <th style={{ padding: '16px 20px' }}>Phòng Ở</th>
-                <th style={{ padding: '16px 20px', textAlign: 'center' }}>Trạng Thái Thuê</th>
-                <th style={{ padding: '16px 20px', textAlign: 'right' }}>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTenants.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
-                    {searchQuery || statusFilter !== 'all'
-                      ? 'Không tìm thấy người thuê nào phù hợp với bộ lọc.'
-                      : 'Chưa có người thuê nào trong hệ thống.'}
-                  </td>
+        <>
+          {/* Desktop Table View (>=769px) */}
+          <div className="admin-tenants-desktop-view" style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table className="admin-table">
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: '700' }}>
+                  <th style={{ padding: '16px 20px' }}>Họ Và Tên</th>
+                  <th style={{ padding: '16px 20px' }}>Số Điện Thoại</th>
+                  <th style={{ padding: '16px 20px' }}>Email</th>
+                  <th style={{ padding: '16px 20px' }}>Phòng Ở</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'center' }}>Trạng Thái Thuê</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'right' }}>Thao tác</th>
                 </tr>
-              ) : (
-                filteredTenants.map((t) => {
-                  const isActive = t.status === 'active';
-                  return (
-                    <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '16px 20px', fontWeight: '700', color: '#0f172a' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '50%',
-                            background: isActive ? '#eff6ff' : '#f1f5f9',
-                            color: isActive ? '#2563eb' : '#64748b',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: '800',
-                            fontSize: '13px'
-                          }}>
-                            {t.full_name ? t.full_name.charAt(0).toUpperCase() : 'U'}
+              </thead>
+              <tbody>
+                {filteredTenants.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
+                      {searchQuery || statusFilter !== 'all'
+                        ? 'Không tìm thấy người thuê nào phù hợp với bộ lọc.'
+                        : 'Chưa có người thuê nào trong hệ thống.'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTenants.map((t) => {
+                    const isActive = t.status === 'active';
+                    return (
+                      <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '16px 20px', fontWeight: '700', color: '#0f172a' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              background: isActive ? '#eff6ff' : '#f1f5f9',
+                              color: isActive ? '#2563eb' : '#64748b',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: '800',
+                              fontSize: '13px'
+                            }}>
+                              {t.full_name ? t.full_name.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                            <div>
+                              <div>{t.full_name}</div>
+                              {t.deleted_at && (
+                                <span style={{ fontSize: '11px', color: '#94a3b8' }}>(Đã lưu trữ)</span>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <div>{t.full_name}</div>
-                            {t.deleted_at && (
-                              <span style={{ fontSize: '11px', color: '#94a3b8' }}>(Đã lưu trữ)</span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ padding: '16px 20px', color: '#1e3a8a', fontWeight: '600' }}>
-                        {t.phone}
-                      </td>
-                      <td style={{ padding: '16px 20px', color: '#64748b' }}>
-                        {t.email || 'Chưa cập nhật'}
-                      </td>
-                      <td style={{ padding: '16px 20px' }}>
-                        {t.room_number ? (
-                          <span style={{
-                            fontWeight: '700',
-                            color: isActive ? '#059669' : '#64748b',
-                            background: isActive ? '#ecfdf5' : '#f1f5f9',
-                            padding: '4px 10px',
-                            borderRadius: '8px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}>
-                            <DoorOpen size={14} />
-                            Phòng {t.room_number}
-                          </span>
-                        ) : (
-                          <span style={{ color: '#94a3b8', fontSize: '13px', fontStyle: 'italic' }}>Chưa gán phòng</span>
-                        )}
-                      </td>
-                      
-                      {/* Trạng Thái Thuê (Lựa chọn Đang thuê / Hết thuê trực tiếp) */}
-                      <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                        <select
-                          value={t.status || 'active'}
-                          onChange={(e) => handleStatusChange(t, e.target.value)}
-                          title="Lựa chọn trạng thái: Đang thuê hoặc Hết thuê"
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '20px',
-                            fontSize: '12px',
-                            fontWeight: '700',
-                            cursor: 'pointer',
-                            border: isActive ? '1.5px solid #86efac' : '1.5px solid #fca5a5',
-                            background: isActive ? '#dcfce7' : '#fee2e2',
-                            color: isActive ? '#15803d' : '#b91c1c',
-                            outline: 'none',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                            transition: 'all 0.15s ease'
-                          }}
-                        >
-                          <option value="active" style={{ background: '#ffffff', color: '#15803d', fontWeight: '700' }}>
-                            🟢 Đang thuê
-                          </option>
-                          <option value="inactive" style={{ background: '#ffffff', color: '#b91c1c', fontWeight: '700' }}>
-                            🔴 Hết thuê
-                          </option>
-                        </select>
-                      </td>
-
-                      {/* Thao tác */}
-                      <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEdit(t)}
-                            title="Chỉnh sửa thông tin người thuê"
-                            style={{
-                              padding: '8px 12px',
-                              background: '#f1f5f9',
-                              color: '#334155',
+                        </td>
+                        <td style={{ padding: '16px 20px', color: '#1e3a8a', fontWeight: '600' }}>
+                          {t.phone}
+                        </td>
+                        <td style={{ padding: '16px 20px', color: '#64748b' }}>
+                          {t.email || 'Chưa cập nhật'}
+                        </td>
+                        <td style={{ padding: '16px 20px' }}>
+                          {t.room_number ? (
+                            <span style={{
+                              fontWeight: '700',
+                              color: isActive ? '#059669' : '#64748b',
+                              background: isActive ? '#ecfdf5' : '#f1f5f9',
+                              padding: '4px 10px',
                               borderRadius: '8px',
-                              border: '1px solid #cbd5e1',
-                              cursor: 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '4px',
-                              fontSize: '12px',
-                              fontWeight: '600'
-                            }}
-                          >
-                            <Edit2 size={14} />
-                            Sửa
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteTenant(t)}
-                            title="Xóa người thuê này khỏi hệ thống"
+                              gap: '4px'
+                            }}>
+                              <DoorOpen size={14} />
+                              Phòng {t.room_number}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#94a3b8', fontSize: '13px', fontStyle: 'italic' }}>Chưa gán phòng</span>
+                          )}
+                        </td>
+                        
+                        {/* Trạng Thái Thuê */}
+                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                          <select
+                            value={t.status || 'active'}
+                            onChange={(e) => handleStatusChange(t, e.target.value)}
+                            title="Lựa chọn trạng thái: Đang thuê hoặc Hết thuê"
                             style={{
-                              padding: '8px 12px',
-                              background: '#fee2e2',
-                              color: '#dc2626',
-                              borderRadius: '8px',
-                              border: '1px solid #fca5a5',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
+                              padding: '6px 12px',
+                              borderRadius: '20px',
                               fontSize: '12px',
                               fontWeight: '700',
+                              cursor: 'pointer',
+                              border: isActive ? '1.5px solid #86efac' : '1.5px solid #fca5a5',
+                              background: isActive ? '#dcfce7' : '#fee2e2',
+                              color: isActive ? '#15803d' : '#b91c1c',
+                              outline: 'none',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                               transition: 'all 0.15s ease'
                             }}
                           >
-                            <Trash2 size={14} />
-                            Xóa
-                          </button>
+                            <option value="active" style={{ background: '#ffffff', color: '#15803d', fontWeight: '700' }}>
+                              🟢 Đang thuê
+                            </option>
+                            <option value="inactive" style={{ background: '#ffffff', color: '#b91c1c', fontWeight: '700' }}>
+                              🔴 Hết thuê
+                            </option>
+                          </select>
+                        </td>
+
+                        {/* Thao tác */}
+                        <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                          <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEdit(t)}
+                              title="Chỉnh sửa thông tin người thuê"
+                              style={{
+                                padding: '8px 12px',
+                                background: '#f1f5f9',
+                                color: '#334155',
+                                borderRadius: '8px',
+                                border: '1px solid #cbd5e1',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '12px',
+                                fontWeight: '600'
+                              }}
+                            >
+                              <Edit2 size={14} />
+                              Sửa
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTenant(t)}
+                              title="Xóa người thuê này khỏi hệ thống"
+                              style={{
+                                padding: '8px 12px',
+                                background: '#fee2e2',
+                                color: '#dc2626',
+                                borderRadius: '8px',
+                                border: '1px solid #fca5a5',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '12px',
+                                fontWeight: '700',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              <Trash2 size={14} />
+                              Xóa
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards View (<768px) */}
+          <div className="admin-tenants-mobile-view">
+            {filteredTenants.length === 0 ? (
+              <div style={{ background: '#ffffff', padding: '30px 16px', textAlign: 'center', color: '#94a3b8', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                {searchQuery || statusFilter !== 'all'
+                  ? 'Không tìm thấy người thuê nào phù hợp.'
+                  : 'Chưa có người thuê nào.'}
+              </div>
+            ) : (
+              filteredTenants.map((t) => {
+                const isActive = t.status === 'active';
+                return (
+                  <div
+                    key={`mobile-${t.id}`}
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '14px',
+                      border: '1px solid #e2e8f0',
+                      padding: '16px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px'
+                    }}
+                  >
+                    {/* Top Header: Name & Status */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '50%',
+                          background: isActive ? '#eff6ff' : '#f1f5f9',
+                          color: isActive ? '#2563eb' : '#64748b',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: '800',
+                          fontSize: '15px'
+                        }}>
+                          {t.full_name ? t.full_name.charAt(0).toUpperCase() : 'U'}
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                        <div>
+                          <div style={{ fontWeight: '800', fontSize: '15px', color: '#0f172a' }}>
+                            {t.full_name}
+                          </div>
+                          {t.room_number ? (
+                            <span style={{
+                              fontWeight: '700',
+                              fontSize: '12px',
+                              color: isActive ? '#059669' : '#64748b',
+                              background: isActive ? '#ecfdf5' : '#f1f5f9',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              marginTop: '2px'
+                            }}>
+                              <DoorOpen size={13} />
+                              Phòng {t.room_number}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#94a3b8', fontSize: '12px', fontStyle: 'italic' }}>Chưa gán phòng</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Quick Status Select */}
+                      <select
+                        value={t.status || 'active'}
+                        onChange={(e) => handleStatusChange(t, e.target.value)}
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: '20px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          border: isActive ? '1.5px solid #86efac' : '1.5px solid #fca5a5',
+                          background: isActive ? '#dcfce7' : '#fee2e2',
+                          color: isActive ? '#15803d' : '#b91c1c',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="active">🟢 Đang thuê</option>
+                        <option value="inactive">🔴 Hết thuê</option>
+                      </select>
+                    </div>
+
+                    {/* Contact Info */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      background: '#f8fafc',
+                      padding: '10px 12px',
+                      borderRadius: '10px',
+                      fontSize: '13px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1e3a8a', fontWeight: '600' }}>
+                        <Phone size={14} color="#2563eb" />
+                        <a href={`tel:${t.phone}`} style={{ color: '#2563eb', textDecoration: 'none' }}>
+                          {t.phone}
+                        </a>
+                      </div>
+                      {t.email && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
+                          <Mail size={14} color="#94a3b8" />
+                          <span>{t.email}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Mobile Action Buttons */}
+                    <div style={{ display: 'flex', gap: '8px', paddingTop: '4px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(t)}
+                        style={{
+                          flex: 1,
+                          padding: '9px',
+                          background: '#f1f5f9',
+                          color: '#334155',
+                          borderRadius: '10px',
+                          border: '1px solid #cbd5e1',
+                          fontWeight: '700',
+                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Edit2 size={14} />
+                        Sửa
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTenant(t)}
+                        style={{
+                          flex: 1,
+                          padding: '9px',
+                          background: '#fee2e2',
+                          color: '#dc2626',
+                          borderRadius: '10px',
+                          border: '1px solid #fca5a5',
+                          fontWeight: '700',
+                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Trash2 size={14} />
+                        Xóa
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </>
       )}
 
       {/* Modal Add / Edit */}
       {showModal && (
         <div className="modal-backdrop" onClick={() => setShowModal(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px', width: '92vw' }}>
             <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '18px' }}>
               {editingTenant ? 'Sửa thông tin người thuê' : 'Đăng ký người thuê mới'}
             </h3>
@@ -495,7 +665,7 @@ export default function AdminTenants() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px' }}>
                     Gán vào phòng:

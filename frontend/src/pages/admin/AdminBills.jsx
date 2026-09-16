@@ -460,7 +460,7 @@ export default function AdminBills() {
               <th style={{ padding: '16px 20px' }}>Tiền phòng</th>
               <th style={{ padding: '16px 20px' }}>Điện + Nước</th>
               <th style={{ padding: '16px 20px' }}>Tổng tiền</th>
-              <th style={{ padding: '16px 20px' }}>Hạn đóng</th>
+              <th style={{ padding: '16px 20px' }}>Hạn đóng / Ngày nộp</th>
               <th style={{ padding: '16px 20px' }}>Trạng thái & Hình thức</th>
               <th style={{ padding: '16px 20px', textAlign: 'center' }}>Thao tác</th>
             </tr>
@@ -510,12 +510,25 @@ export default function AdminBills() {
                     {formatCurrency(b.total_amount)}
                   </td>
                   <td style={{ padding: '16px 20px' }}>
-                    <div style={{ fontWeight: '700', color: '#0f172a' }}>
-                      {formatDate(b.due_date)}
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#059669', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
-                      <Camera size={12} /> Ngày chụp ảnh
-                    </div>
+                    {b.status === 'paid' ? (
+                      <div>
+                        <div style={{ fontWeight: '700', color: '#15803d' }}>
+                          {formatDate(b.paid_at || b.updated_at || new Date().toISOString())}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px', fontWeight: '600' }}>
+                          <CheckCircle size={12} /> Ngày nộp tiền
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ fontWeight: '700', color: '#0f172a' }}>
+                          {formatDate(b.due_date)}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#059669', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
+                          <Camera size={12} /> Hạn đóng (chụp số)
+                        </div>
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '16px 20px' }}>
                     {b.status === 'paid' ? (

@@ -3,7 +3,7 @@ import {
   Camera, Zap, ZapOff, Upload, Cpu, CheckCircle2, AlertTriangle, 
   Droplet, Eye, Check, X, ShieldAlert, RefreshCw, Image, FileText, 
   Sparkles, ChevronDown, ChevronUp, AlertCircle, BrainCircuit, Cloud, 
-  Settings, Database, Sliders, Calendar, Filter, RotateCcw, ChevronLeft, ChevronRight
+  Settings, Database, Sliders, Calendar, Filter, RotateCcw, ChevronLeft, ChevronRight, Trash2
 } from 'lucide-react';
 import api, { getFullApiUrl } from '../../services/api';
 import { formatCurrency, formatNumber, parseNumber, formatDateTime } from '../../utils/formatters';
@@ -239,6 +239,25 @@ export default function AdminMeters() {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleDeleteReading = async (reading) => {
+    const typeLabel = readingType === 'electricity' ? 'Điện' : 'Nước';
+    const unitLabel = readingType === 'electricity' ? 'kWh' : 'm³';
+    const confirmMsg = `Bạn có chắc chắn muốn XÓA chỉ số ${typeLabel} Tháng ${reading.reading_month}/${reading.reading_year} của phòng này không?\n\n- Chỉ số cũ: ${formatNumber(reading.previous_value)}\n- Chỉ số mới: ${formatNumber(reading.current_value)} (${formatNumber(reading.consumption)} ${unitLabel})\n- Số tiền: ${formatCurrency(reading.amount)}\n\nSau khi xóa, bạn có thể chụp ảnh hoặc nhập lại chỉ số mới cho tháng này.`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const endpoint = readingType === 'electricity'
+        ? `/readings/electricity/${reading.id}`
+        : `/readings/water/${reading.id}`;
+      await api.delete(endpoint);
+      setSuccessMsg(`Đã xóa chỉ số ${typeLabel} Tháng ${reading.reading_month}/${reading.reading_year} thành công!`);
+      await fetchHistory();
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || `Lỗi khi xóa chỉ số ${typeLabel}.`);
     }
   };
 
@@ -2038,29 +2057,54 @@ export default function AdminMeters() {
                       )}
                     </td>
                     <td style={{ padding: '12px' }}>
-                      {!hasImage ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        {!hasImage ? (
+                          <button
+                            type="button"
+                            onClick={() => openAttachModal(r)}
+                            style={{
+                              padding: '6px 12px',
+                              background: '#2563eb',
+                              color: '#ffffff',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                              fontWeight: '700',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              border: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <Camera size={14} /> Bổ sung ảnh
+                          </button>
+                        ) : (
+                          <span style={{ color: '#059669', fontSize: '12px', fontWeight: '700' }}>
+                            ✓ Đầy đủ chứng từ
+                          </span>
+                        )}
+
                         <button
                           type="button"
-                          onClick={() => openAttachModal(r)}
+                          onClick={() => handleDeleteReading(r)}
+                          title={`Xóa chỉ số ${readingType === 'electricity' ? 'Điện' : 'Nước'} Tháng ${r.reading_month}/${r.reading_year}`}
                           style={{
-                            padding: '6px 12px',
-                            background: '#2563eb',
-                            color: '#ffffff',
+                            padding: '6px 10px',
+                            background: '#fff1f2',
+                            color: '#e11d48',
+                            border: '1px solid #fecdd3',
                             borderRadius: '8px',
                             fontSize: '12px',
                             fontWeight: '700',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '4px'
+                            gap: '4px',
+                            cursor: 'pointer'
                           }}
                         >
-                          <Camera size={14} /> Bổ sung ảnh
+                          <Trash2 size={13} /> Xóa
                         </button>
-                      ) : (
-                        <span style={{ color: '#059669', fontSize: '12px', fontWeight: '700' }}>
-                          ✓ Đầy đủ chứng từ
-                        </span>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 );

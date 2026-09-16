@@ -3,13 +3,12 @@ import assert from 'node:assert';
 import chatbotDataService from '../src/services/chatbot-data.service.js';
 import chatbotService from '../src/services/chatbot.service.js';
 
-test('Chatbot Data Service: FAQ and Rules retrieval', () => {
+test('Chatbot Data Service: FAQ and Tariffs retrieval', () => {
   const faq = chatbotDataService.getBasicFaqData();
   assert.ok(faq.tariffs, 'Must contain tariffs');
-  assert.strictEqual(faq.tariffs.electricity_price, 3500, 'Electricity tariff must be 3,500 VND');
-  assert.strictEqual(faq.tariffs.water_price, 20000, 'Water tariff must be 20,000 VND');
-  assert.ok(Array.isArray(faq.rules), 'Rules must be an array');
-  assert.ok(faq.rules.length >= 4, 'Must have at least 4 rules');
+  assert.strictEqual(faq.tariffs.electricity_price, 3000, 'Electricity tariff must be 3,000 VND');
+  assert.strictEqual(faq.tariffs.water_price, 12000, 'Water tariff must be 12,000 VND');
+  assert.ok(Array.isArray(faq.meter_reading_guide), 'Must contain meter reading guide');
 });
 
 test('Chatbot Data Service: Current Month query returns valid bill & readings', async () => {
@@ -98,5 +97,6 @@ test('Chatbot Service: End-to-End NLP Intent Routing & Response Formatting', asy
   // 6. Tariffs FAQ
   const res6 = await chatbotService.processUserMessage({ message: 'giá điện nước nhà trọ là bao nhiêu 1 số?', roomId });
   assert.strictEqual(res6.intent, 'FAQ_PRICES');
-  assert.ok(res6.reply.includes('3.500'), 'Must state electricity tariff');
+  assert.ok(res6.reply.includes('3.000'), 'Must state electricity tariff (3,000 VND)');
+  assert.ok(res6.reply.includes('12.000'), 'Must state water tariff (12,000 VND)');
 });

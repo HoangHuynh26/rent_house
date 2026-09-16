@@ -81,9 +81,9 @@ export const getActiveContractInfo = async ({ roomId = null, tenantId = null }) 
 export const getBasicFaqData = () => {
   return {
     tariffs: {
-      electricity_price: 3500,
+      electricity_price: 3000,
       electricity_unit: 'VND/kWh',
-      water_price: 20000,
+      water_price: 12000,
       water_unit: 'VND/m³',
       internet_fee: 100000,
       internet_unit: 'VND/phòng/tháng',
@@ -96,14 +96,6 @@ export const getBasicFaqData = () => {
       payment_window: 'Từ ngày 1 đến ngày 5 hàng tháng',
       overdue_notice_date: 'Sau ngày 5 hàng tháng'
     },
-    rules: [
-      'Giờ mở cửa cổng: 05:00 - 23:00 (có chìa khóa riêng cho người về muộn).',
-      'Để xe đúng vị trí quy định trong nhà xe, khóa cổ cẩn thận.',
-      'Giữ gìn vệ sinh chung, bỏ rác đúng nơi quy định trước 19:00 hàng ngày.',
-      'Khách đến chơi qua đêm phải báo trước với Quản lý nhà trọ và xuất trình CCCD.',
-      'Nghiêm cấm gây ồn ào sau 22:00 để đảm bảo không gian yên tĩnh cho mọi người.',
-      'Tiền cọc phòng được hoàn trả $100\%$ khi kết thúc hợp đồng nếu báo trước 30 ngày và phòng ốc nguyên vẹn.'
-    ],
     meter_reading_guide: [
       'Công tơ điện cơ học (như EMIC CV140): Hộp số có 6 ô, chỉ lấy 5 ô màu trắng để tính tiền (kWh nguyên). Ô viền đỏ ở cuối cùng là 0.1 kWh thập phân được loại trừ.',
       'Công tơ nước: Đọc toàn bộ các chữ số màu đen hiển thị trên mặt đồng hồ (m³ nguyên).'
@@ -152,6 +144,9 @@ export const getCurrentMonthData = async ({ roomId = null, role = 'tenant', tena
     const discount = bill ? Number(bill.discount_amount || 0) : 0;
     const totalAmount = bill ? Number(bill.total_amount) : (rentAmount + elecAmount + waterAmount - discount);
 
+    const defaultElecPrice = contractInfo?.contract?.electricity_price ? Number(contractInfo.contract.electricity_price) : 3000;
+    const defaultWaterPrice = contractInfo?.contract?.water_price ? Number(contractInfo.contract.water_price) : 12000;
+
     return {
       scope: 'single_room',
       room_id: roomId,
@@ -167,14 +162,14 @@ export const getCurrentMonthData = async ({ roomId = null, role = 'tenant', tena
       electricity: {
         consumption: elecReading ? Number(elecReading.consumption) : (bill ? Number(bill.elec_kwh || 0) : 0),
         amount: elecAmount,
-        unit_price: elecReading ? Number(elecReading.unit_price) : 3500,
+        unit_price: elecReading ? Number(elecReading.unit_price) : defaultElecPrice,
         current_reading: elecReading ? Number(elecReading.current_value) : (bill ? Number(bill.elec_current || 0) : null),
         previous_reading: elecReading ? Number(elecReading.previous_value) : (bill ? Number(bill.elec_previous || 0) : null)
       },
       water: {
         consumption: waterReading ? Number(waterReading.consumption) : (bill ? Number(bill.water_m3 || 0) : 0),
         amount: waterAmount,
-        unit_price: waterReading ? Number(waterReading.unit_price) : 20000,
+        unit_price: waterReading ? Number(waterReading.unit_price) : defaultWaterPrice,
         current_reading: waterReading ? Number(waterReading.current_value) : (bill ? Number(bill.water_current || 0) : null),
         previous_reading: waterReading ? Number(waterReading.previous_value) : (bill ? Number(bill.water_previous || 0) : null)
       },
@@ -276,6 +271,9 @@ export const getMonthDetailsData = async ({ month, year, roomId = null, tenantId
       };
     }
 
+    const defaultElecPrice = contractInfo?.contract?.electricity_price ? Number(contractInfo.contract.electricity_price) : 3000;
+    const defaultWaterPrice = contractInfo?.contract?.water_price ? Number(contractInfo.contract.water_price) : 12000;
+
     return {
       found: true,
       room_id: roomId,
@@ -290,12 +288,12 @@ export const getMonthDetailsData = async ({ month, year, roomId = null, tenantId
       electricity: {
         consumption: elecReading ? Number(elecReading.consumption) : (bill ? Number(bill.elec_kwh || 0) : 0),
         amount: bill ? Number(bill.electricity_amount) : (elecReading ? Number(elecReading.amount) : 0),
-        unit_price: elecReading ? Number(elecReading.unit_price) : 3500
+        unit_price: elecReading ? Number(elecReading.unit_price) : defaultElecPrice
       },
       water: {
         consumption: waterReading ? Number(waterReading.consumption) : (bill ? Number(bill.water_m3 || 0) : 0),
         amount: bill ? Number(bill.water_amount) : (waterReading ? Number(waterReading.amount) : 0),
-        unit_price: waterReading ? Number(waterReading.unit_price) : 20000
+        unit_price: waterReading ? Number(waterReading.unit_price) : defaultWaterPrice
       },
       total_amount: bill ? Number(bill.total_amount) : 0,
       status: bill ? bill.status : 'unpaid',
@@ -634,12 +632,17 @@ export const predictNextMonthForecast = async ({ roomId = null, tenantId = null 
     const r = await roomRepo.findById(roomId);
     if (r) roomRent = Number(r.monthly_rent);
   }
-  const elecCost = elecForecast.predicted * 3500;
-  const waterCost = waterForecast.predicted * 20000;
+
+  const activeContract = contractInfo?.contract;
+  const elecUnitPrice = activeContract?.electricity_price ? Number(activeContract.electricity_price) : 3000;
+  const waterUnitPrice = activeContract?.water_price ? Number(activeContract.water_price) : 12000;
+
+  const elecCost = elecForecast.predicted * elecUnitPrice;
+  const waterCost = waterForecast.predicted * waterUnitPrice;
   const predictedTotalBill = roomRent + elecCost + waterCost;
 
   // Overall bill delta
-  const lastTotal = roomRent + (elecForecast.current * 3500) + (waterForecast.current * 20000);
+  const lastTotal = roomRent + (elecForecast.current * elecUnitPrice) + (waterForecast.current * waterUnitPrice);
   const billDiff = predictedTotalBill - lastTotal;
   const billPct = lastTotal > 0 ? Number(((billDiff / lastTotal) * 100).toFixed(1)) : 0;
 
@@ -669,7 +672,7 @@ export const predictNextMonthForecast = async ({ roomId = null, tenantId = null 
       pct_change: elecForecast.pct,
       expected_range_kwh: `${elecForecast.range[0]} - ${elecForecast.range[1]} kWh`,
       estimated_amount: elecCost,
-      unit_price: 3500
+      unit_price: elecUnitPrice
     },
     water: {
       predicted_m3: waterForecast.predicted,
@@ -678,7 +681,7 @@ export const predictNextMonthForecast = async ({ roomId = null, tenantId = null 
       pct_change: waterForecast.pct,
       expected_range_m3: `${waterForecast.range[0]} - ${waterForecast.range[1]} m³`,
       estimated_amount: waterCost,
-      unit_price: 20000
+      unit_price: waterUnitPrice
     },
     confidence_level: elecSeries.length >= 3 ? 'Cao (Dựa trên chuỗi 3 kỳ gần nhất)' : (elecSeries.length === 1 ? 'Khởi tạo (Tháng đầu hợp đồng)' : 'Trung bình')
   };

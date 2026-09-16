@@ -9,6 +9,38 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Auto-hide & remove Netlify Badge & Feedback Drawer without clicking Hide -->
+    <style>
+      netlify-drawer,
+      #netlify-drawer,
+      [data-netlify-drawer],
+      [id^="netlify-drawer"],
+      .netlify-badge,
+      #netlify-feedback,
+      div:has(> iframe[src*="netlify"]),
+      iframe[src*="netlify.com"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        position: absolute !important;
+        z-index: -99999 !important;
+      }
+    </style>
+    <script>
+      (function() {
+        const removeNetlifyBadge = () => {
+          const targets = document.querySelectorAll('netlify-drawer, #netlify-drawer, [data-netlify-drawer], [id^="netlify-drawer"], .netlify-badge, #netlify-feedback, iframe[src*="netlify"]');
+          targets.forEach(el => el.remove());
+        };
+        const observer = new MutationObserver(removeNetlifyBadge);
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+        window.addEventListener('DOMContentLoaded', removeNetlifyBadge);
+        window.addEventListener('load', removeNetlifyBadge);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

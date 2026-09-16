@@ -492,3 +492,56 @@ export const attachWaterImage = async (req, res) => {
     return errorResponse(res, 'Không thể bổ sung ảnh vào bản ghi chỉ số nước.', 'SERVER_ERROR', 500);
   }
 };
+
+export const deleteElectricityReading = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await readingRepo.deleteElectricityReading(id);
+    if (!deleted) {
+      return errorResponse(res, 'Không tìm thấy bản ghi chỉ số điện.', 'NOT_FOUND', 404);
+    }
+
+    await auditService.logAction({
+      actorId: req.admin?.id,
+      actorType: 'admin',
+      action: 'DELETE_ELECTRICITY_READING',
+      entityType: 'electricity_reading',
+      entityId: id,
+      oldData: deleted,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+
+    return successResponse(res, deleted, 'Xóa chỉ số điện thành công.');
+  } catch (err) {
+    console.error('[Delete Electricity Reading Error]:', err);
+    return errorResponse(res, 'Không thể xóa chỉ số điện.', 'SERVER_ERROR', 500);
+  }
+};
+
+export const deleteWaterReading = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await readingRepo.deleteWaterReading(id);
+    if (!deleted) {
+      return errorResponse(res, 'Không tìm thấy bản ghi chỉ số nước.', 'NOT_FOUND', 404);
+    }
+
+    await auditService.logAction({
+      actorId: req.admin?.id,
+      actorType: 'admin',
+      action: 'DELETE_WATER_READING',
+      entityType: 'water_reading',
+      entityId: id,
+      oldData: deleted,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+
+    return successResponse(res, deleted, 'Xóa chỉ số nước thành công.');
+  } catch (err) {
+    console.error('[Delete Water Reading Error]:', err);
+    return errorResponse(res, 'Không thể xóa chỉ số nước.', 'SERVER_ERROR', 500);
+  }
+};
+

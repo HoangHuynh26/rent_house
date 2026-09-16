@@ -196,11 +196,11 @@ export default function AiChatbotWidget() {
     return {
       id: `init-public-${Date.now()}`,
       sender: 'ai',
-      text: `Xin chào! Tôi là **Trợ Lý AI Nhà Trọ Thanh Tâm** 🤖.\n\nSau khi bạn đăng nhập theo phòng, tôi sẽ **tự động nhận diện phòng** để hỗ trợ tra cứu hóa đơn chi tiết. Bạn có thắc mắc gì về quy định, giá điện nước hay nội quy không?`,
+      text: `Xin chào! Tôi là **Trợ Lý AI Nhà Trọ Thanh Tâm** 🤖.\n\nSau khi bạn đăng nhập theo phòng, tôi sẽ **tự động nhận diện phòng** để hỗ trợ tra cứu hóa đơn chi tiết. Bạn có thắc mắc gì về hóa đơn, tiền phòng hay giá điện nước không?`,
       badges: [{ label: 'Hỗ trợ chung', color: '#2563eb' }],
       suggestions: [
         '💡 Bảng giá điện nước',
-        '⏰ Giờ giấc đóng mở cổng',
+        '🔮 Dự đoán tháng tới tăng hay giảm?',
         '📖 Hướng dẫn đọc công tơ điện'
       ]
     };

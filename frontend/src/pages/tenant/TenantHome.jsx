@@ -193,8 +193,9 @@ export const TenantHome = () => {
               </div>
             )}
             {isPaid && (
-              <div style={{ fontSize: '13px', color: '#86efac', marginTop: '8px', fontWeight: '600' }}>
-                Hình thức đã thanh toán: {bill?.payment_method === 'cash' ? '💵 Tiền mặt' : '💳 Chuyển khoản'}
+              <div style={{ fontSize: '13px', color: '#86efac', marginTop: '8px', fontWeight: '600', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                <div>Hình thức đã thanh toán: {bill?.payment_method === 'cash' ? '💵 Tiền mặt' : '💳 Chuyển khoản'}</div>
+                {bill?.paid_at && <div style={{ fontSize: '12px', color: '#bbf7d0' }}>Ngày nộp tiền: {formatDate(bill.paid_at)}</div>}
               </div>
             )}
           </div>
