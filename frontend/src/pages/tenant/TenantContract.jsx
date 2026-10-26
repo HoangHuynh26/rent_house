@@ -6,8 +6,14 @@ import SignaturePad from '../../components/signature/SignaturePad';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { ContractSkeleton, ActionLoadingOverlay } from '../../components/loading/LoadingComponents';
 import { useTenantRoom } from '../../contexts/TenantRoomContext';
+import usePageSEO from '../../utils/usePageSEO';
 
 export default function TenantContract() {
+  usePageSEO({
+    title: 'Hợp Đồng Thuê Phòng Điện Tử',
+    description: 'Xem hợp đồng thuê phòng trọ điện tử có chữ ký số xác thực hai chiều, thông tin tiền cọc và điều khoản thuê nhà.'
+  });
+
   const [contract, setContract] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

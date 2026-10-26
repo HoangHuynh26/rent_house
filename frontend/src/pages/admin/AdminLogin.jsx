@@ -2,8 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, User, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import usePageSEO from '../../utils/usePageSEO';
 
 export default function AdminLogin() {
+  usePageSEO({
+    title: 'Đăng Nhập Quản Trị Viên',
+    description: 'Cổng đăng nhập quản trị hệ thống quản lý phòng trọ Nhà Trọ Thanh Tâm.'
+  });
+
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('Admin@123456');
   const [showPassword, setShowPassword] = useState(false);

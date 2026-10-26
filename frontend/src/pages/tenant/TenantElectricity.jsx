@@ -19,8 +19,14 @@ import { formatCurrency, formatNumber, formatDateTime } from '../../utils/format
 import { MeterDetailSkeleton } from '../../components/loading/LoadingComponents';
 import { useTenantRoom } from '../../contexts/TenantRoomContext';
 import MeterImageModal from '../../components/common/MeterImageModal';
+import usePageSEO from '../../utils/usePageSEO';
 
 export default function TenantElectricity() {
+  usePageSEO({
+    title: 'Theo Dõi Tiền Điện & Ảnh Công Tơ Thực Tế',
+    description: 'Tra cứu chỉ số công tơ điện, số kWh tiêu thụ, hình ảnh chụp công tơ thực tế và thành tiền điện theo từng tháng minh bạch.'
+  });
+
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { activeRoomId } = useTenantRoom();

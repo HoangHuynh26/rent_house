@@ -23,6 +23,7 @@ import {
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../utils/formatters';
+import usePageSEO from '../utils/usePageSEO';
 
 const roomImageMap = {
   '1': 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&auto=format&fit=crop&q=80',
@@ -89,6 +90,12 @@ export default function LandingPage() {
 
   const { tenant, loginTenant } = useAuth();
   const navigate = useNavigate();
+
+  usePageSEO({
+    title: 'Cho Thuê Phòng Trọ Tiện Nghi, Giá Tốt & Minh Bạch',
+    description: 'Hệ thống phòng trọ Nhà Trọ Thanh Tâm: Cho thuê phòng trọ cao cấp, gác lửng, máy lạnh, camera an ninh 24/7, tra cứu chỉ số điện nước minh bạch bằng hình ảnh công tơ thực tế.',
+    keywords: 'nhà trọ thanh tâm, thuê phòng trọ, phòng trọ giá rẻ, phòng trọ có gác lửng, phòng trọ máy lạnh, tra cứu tiền trọ, hóa đơn điện nước phòng trọ'
+  });
 
   useEffect(() => {
     fetchRooms();
@@ -269,7 +276,43 @@ export default function LandingPage() {
 
       {/* 3. ROOMS CATALOG SECTION (#rooms) */}
       <section id="rooms" style={{ padding: '80px 24px', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(37, 99, 235, 0.08)',
+            color: '#2563eb',
+            padding: '6px 14px',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: '700',
+            marginBottom: '14px'
+          }}>
+            <Sparkles size={16} />
+            <span>KHÔNG GIAN SỐNG HIỆN ĐẠI & MINH BẠCH</span>
+          </div>
+
+          <h1 style={{
+            fontSize: 'clamp(28px, 4vw, 42px)',
+            fontWeight: '900',
+            color: '#0f172a',
+            letterSpacing: '-0.5px',
+            lineHeight: 1.25,
+            marginBottom: '12px'
+          }}>
+            Hệ Thống Phòng Trọ <span style={{ color: '#2563eb' }}>Nhà Trọ Thanh Tâm</span>
+          </h1>
+
+          <p style={{
+            fontSize: 'clamp(15px, 2vw, 17px)',
+            color: '#64748b',
+            maxWidth: '680px',
+            margin: '0 auto 16px',
+            lineHeight: 1.6
+          }}>
+            Phòng trọ cao cấp, sạch sẽ, an ninh 24/7 với công nghệ tra cứu tiền điện nước minh bạch bằng hình ảnh chụp công tơ thực tế hàng tháng.
+          </p>
 
           {/* Filter Pills */}
           <div style={{

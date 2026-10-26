@@ -24,8 +24,14 @@ import { formatCurrency, formatNumber, formatDate, formatDateTime } from '../../
 import { HistorySkeleton } from '../../components/loading/LoadingComponents';
 import { useTenantRoom } from '../../contexts/TenantRoomContext';
 import MeterImageModal from '../../components/common/MeterImageModal';
+import usePageSEO from '../../utils/usePageSEO';
 
 export default function TenantHistory() {
+  usePageSEO({
+    title: 'Lịch Sử Hóa Đơn & Biên Lai Thu Tiền',
+    description: 'Tra cứu toàn bộ lịch sử hóa đơn tiền phòng, chỉ số điện nước các tháng và biên lai thu tiền chi tiết.'
+  });
+
   const [elecHistory, setElecHistory] = useState([]);
   const [waterHistory, setWaterHistory] = useState([]);
   const [bills, setBills] = useState([]);

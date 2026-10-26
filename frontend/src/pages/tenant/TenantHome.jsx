@@ -5,8 +5,14 @@ import api from '../../services/api';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { TenantHomeSkeleton } from '../../components/loading/LoadingComponents';
 import { useTenantRoom } from '../../contexts/TenantRoomContext';
+import usePageSEO from '../../utils/usePageSEO';
 
 export const TenantHome = () => {
+  usePageSEO({
+    title: 'Tổng Quan Phòng Trọ - Cổng Cư Dân',
+    description: 'Bảng điều khiển cư dân Nhà Trọ Thanh Tâm: Tra cứu số điện, số nước, hóa đơn tiền phòng và trạng thái thanh toán.'
+  });
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

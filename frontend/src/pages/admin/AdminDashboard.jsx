@@ -12,6 +12,7 @@ import {
 import api from '../../services/api';
 import { formatCurrency } from '../../utils/formatters';
 import { DashboardSkeleton } from '../../components/loading/LoadingComponents';
+import usePageSEO from '../../utils/usePageSEO';
 
 /* ─────────── Custom Tooltip (Stock-chart style) ─────────── */
 const StockTooltip = ({ active, payload, label }) => {
@@ -102,6 +103,11 @@ const KpiTicker = ({ icon: Icon, label, value, subtitle, iconBg, iconColor, valu
 
 /* ─────────── Main Dashboard Component ─────────── */
 export default function AdminDashboard() {
+  usePageSEO({
+    title: 'Bảng Điều Khiển Quản Trị Hệ Thống',
+    description: 'Báo cáo doanh thu, tình trạng lấp đầy phòng, chỉ số điện nước toàn bộ nhà trọ Thanh Tâm.'
+  });
+
   const [stats, setStats] = useState(null);
   const [yearlyData, setYearlyData] = useState(null);
   const [loading, setLoading] = useState(true);
