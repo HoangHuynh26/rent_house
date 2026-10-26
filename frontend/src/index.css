@@ -386,12 +386,47 @@ button:disabled {
   z-index: 9999 !important;
 }
 
+/* Header Responsive Controls for Tenant Layout */
+.tenant-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.desktop-only-switcher {
+  display: none !important;
+}
+
+.desktop-only-actions {
+  display: none !important;
+}
+
+.mobile-header-subrow {
+  display: flex !important;
+}
+
 @media (min-width: 768px) {
+  .tenant-header-inner {
+    padding: 12px 20px;
+    gap: 0;
+  }
   .liquid-glass-dock {
     display: none !important;
   }
   .desktop-header-nav {
     display: flex !important;
+  }
+  .desktop-only-switcher {
+    display: inline-flex !important;
+  }
+  .desktop-only-actions {
+    display: flex !important;
+  }
+  .mobile-header-subrow {
+    display: none !important;
   }
   .ai-chatbot-launcher-btn {
     bottom: 24px !important;
