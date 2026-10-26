@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Home, Zap, Droplet, History, FileText, LogOut, User, DoorOpen, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenantRoom } from '../contexts/TenantRoomContext';
@@ -12,6 +12,7 @@ export default function TenantLayout() {
   const [activeNotifCount, setActiveNotifCount] = useState(0);
   const [openBellModal, setOpenBellModal] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     if (window.confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
@@ -27,6 +28,212 @@ export default function TenantLayout() {
     { to: '/tenant/history', label: 'Lịch sử', icon: History },
     { to: '/tenant/contract', label: 'Hợp đồng', icon: FileText },
   ];
+
+  // Active tab index based on route
+  const activeIndex = navItems.findIndex((item) => {
+    if (item.to === '/tenant/home') {
+      return location.pathname === '/tenant/home' || location.pathname === '/tenant';
+    }
+    return location.pathname.startsWith(item.to);
+  });
+  const currentActiveIndex = activeIndex >= 0 ? activeIndex : 0;
+
+  // Liquid glass swipe & drag gesture state
+  const dockRef = useRef(null);
+  const tabRefs = useRef([]);
+  const [pillStyle, setPillStyle] = useState({ left: 8, width: 72, opacity: 0, smooth: false });
+  const [isPressing, setIsPressing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState(currentActiveIndex);
+  const [dragStretch, setDragStretch] = useState(1);
+  const [dragAngle, setDragAngle] = useState(0);
+
+  const isPointerDownRef = useRef(false);
+  const hasDraggedRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragInitialLeftRef = useRef(0);
+  const lastClientXRef = useRef(0);
+  const currentHoveredIndexRef = useRef(currentActiveIndex);
+
+  useEffect(() => {
+    currentHoveredIndexRef.current = hoveredIndex;
+  }, [hoveredIndex]);
+
+  // Position liquid pill over a specific tab
+  const updatePillToTab = useCallback((index, smooth = true) => {
+    const dock = dockRef.current;
+    const tab = tabRefs.current[index];
+    if (!dock || !tab) return;
+
+    const dockRect = dock.getBoundingClientRect();
+    const tabRect = tab.getBoundingClientRect();
+    const left = tabRect.left - dockRect.left;
+    const width = tabRect.width;
+
+    setPillStyle({
+      left,
+      width,
+      opacity: 1,
+      smooth,
+    });
+    setHoveredIndex(index);
+  }, []);
+
+  // Update pill position when route changes
+  useEffect(() => {
+    if (!isDragging) {
+      updatePillToTab(currentActiveIndex, true);
+    }
+  }, [currentActiveIndex, isDragging, updatePillToTab]);
+
+  // Handle window resizing or initial layout render
+  useEffect(() => {
+    const handleResize = () => {
+      if (!isDragging) {
+        updatePillToTab(currentActiveIndex, false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    const t = setTimeout(() => updatePillToTab(currentActiveIndex, false), 60);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(t);
+    };
+  }, [currentActiveIndex, isDragging, updatePillToTab]);
+
+  // Press & swipe gesture handlers
+  const handlePointerDown = (e) => {
+    if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
+
+    isPointerDownRef.current = true;
+    hasDraggedRef.current = false;
+    dragStartXRef.current = e.clientX;
+    lastClientXRef.current = e.clientX;
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+
+    const dock = dockRef.current;
+    const tab = tabRefs.current[currentActiveIndex];
+    if (dock && tab) {
+      const dockRect = dock.getBoundingClientRect();
+      const tabRect = tab.getBoundingClientRect();
+      dragInitialLeftRef.current = tabRect.left - dockRect.left;
+    }
+
+    setIsPressing(true);
+    setHoveredIndex(currentActiveIndex);
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isPointerDownRef.current) return;
+
+    const deltaX = e.clientX - dragStartXRef.current;
+    const vx = e.clientX - lastClientXRef.current;
+    lastClientXRef.current = e.clientX;
+
+    if (!isDragging && Math.abs(deltaX) > 6) {
+      setIsDragging(true);
+      hasDraggedRef.current = true;
+    }
+
+    if (isDragging || Math.abs(deltaX) > 6) {
+      const dock = dockRef.current;
+      if (!dock) return;
+      const dockRect = dock.getBoundingClientRect();
+
+      const minLeft = 4;
+      const pillWidth = pillStyle.width || 70;
+      const maxLeft = dockRect.width - pillWidth - 4;
+      const newLeft = Math.max(minLeft, Math.min(maxLeft, dragInitialLeftRef.current + deltaX));
+
+      // Apple liquid mercury stretch physics
+      const stretch = 1 + Math.min(0.24, Math.abs(vx) * 0.035);
+      const angle = Math.max(-10, Math.min(10, vx * 1.2));
+      setDragStretch(stretch);
+      setDragAngle(angle);
+
+      setPillStyle((prev) => ({
+        ...prev,
+        left: newLeft,
+        smooth: false,
+      }));
+
+      // Find closest tab to current pointer position
+      let closestIdx = currentActiveIndex;
+      let minDistance = Infinity;
+
+      tabRefs.current.forEach((tabEl, idx) => {
+        if (!tabEl) return;
+        const r = tabEl.getBoundingClientRect();
+        const tabCenter = r.left + r.width / 2;
+        const dist = Math.abs(e.clientX - tabCenter);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestIdx = idx;
+        }
+      });
+
+      if (closestIdx !== currentHoveredIndexRef.current) {
+        setHoveredIndex(closestIdx);
+        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+          try {
+            navigator.vibrate(8);
+          } catch {}
+        }
+      }
+    }
+  };
+
+  const handlePointerUp = (e) => {
+    if (!isPointerDownRef.current) return;
+    isPointerDownRef.current = false;
+    setIsPressing(false);
+    setDragStretch(1);
+    setDragAngle(0);
+
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+
+    if (isDragging || hasDraggedRef.current) {
+      setIsDragging(false);
+      const targetIdx = currentHoveredIndexRef.current;
+      const targetTab = navItems[targetIdx];
+      if (targetTab) {
+        updatePillToTab(targetIdx, true);
+        if (location.pathname !== targetTab.to) {
+          navigate(targetTab.to);
+        }
+      }
+      setTimeout(() => {
+        hasDraggedRef.current = false;
+      }, 120);
+    }
+  };
+
+  const handlePointerCancel = () => {
+    isPointerDownRef.current = false;
+    setIsPressing(false);
+    setIsDragging(false);
+    setDragStretch(1);
+    setDragAngle(0);
+    hasDraggedRef.current = false;
+    updatePillToTab(currentActiveIndex, true);
+  };
+
+  const handleTabClick = (e, index, to) => {
+    if (hasDraggedRef.current) {
+      e.preventDefault();
+      return;
+    }
+    updatePillToTab(index, true);
+  };
 
   return (
     <div className="tenant-layout-wrapper">
@@ -232,27 +439,53 @@ export default function TenantLayout() {
         <Outlet />
       </main>
 
-      {/* Liquid Glass Bottom Navigation Dock (Apple iOS Style - Visible on Mobile < 768px) */}
+      {/* Liquid Glass Bottom Navigation Dock (Apple iOS Style - Fluid Swipe & Drag) */}
       <nav
-        className="mobile-bottom-nav liquid-glass-dock"
+        ref={dockRef}
+        className={`mobile-bottom-nav liquid-glass-dock ${isPressing ? 'is-pressing' : ''} ${isDragging ? 'is-dragging' : ''}`}
         aria-label="Thanh điều hướng di động"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
       >
-        {navItems.map((item) => {
+        {/* Apple Fluid Liquid Glass Indicator Capsule */}
+        <div
+          className={`liquid-indicator-pill ${pillStyle.smooth ? 'is-smooth' : ''} ${isDragging ? 'is-dragging' : ''} ${isPressing ? 'is-pressing' : ''}`}
+          style={{
+            transform: `translateX(${pillStyle.left}px) scaleX(${dragStretch}) rotate(${dragAngle * 0.25}deg)`,
+            width: `${pillStyle.width || 72}px`,
+            opacity: pillStyle.opacity,
+          }}
+        >
+          {/* Upper specular glint (liquid surface tension line) */}
+          <div className="liquid-pill-rim-sheen" />
+          {/* Internal caustics refraction */}
+          <div className="liquid-pill-caustic" />
+          {/* Dynamic center droplet core */}
+          <div className="liquid-pill-core-glow" />
+          {/* Floating droplet bead */}
+          <div className="liquid-pill-bead" />
+        </div>
+
+        {navItems.map((item, index) => {
           const Icon = item.icon;
+          const isCurrent = currentActiveIndex === index;
+          const isTarget = isDragging && hoveredIndex === index;
+          const isVisualActive = isDragging ? isTarget : isCurrent;
+
           return (
             <NavLink
               key={item.to}
               to={item.to}
-              className={({ isActive }) => `liquid-nav-item ${isActive ? 'active' : ''}`}
+              ref={(el) => (tabRefs.current[index] = el)}
+              onClick={(e) => handleTabClick(e, index, item.to)}
+              className={`liquid-nav-item ${isVisualActive ? 'active' : ''} ${isTarget ? 'is-drag-target' : ''}`}
             >
-              {({ isActive }) => (
-                <>
-                  <div className="liquid-nav-icon-wrap">
-                    <Icon size={21} strokeWidth={isActive ? 2.4 : 1.9} />
-                  </div>
-                  <span className="liquid-nav-label">{item.label}</span>
-                </>
-              )}
+              <div className="liquid-nav-icon-wrap">
+                <Icon size={21} strokeWidth={isVisualActive ? 2.5 : 1.8} />
+              </div>
+              <span className="liquid-nav-label">{item.label}</span>
             </NavLink>
           );
         })}

@@ -153,15 +153,15 @@ export default function TenantLogin() {
             <div style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', marginBottom: '10px' }}>
               Chọn nhanh số điện thoại mẫu đã cấu hình:
             </div>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
                 type="button"
                 onClick={() => {
-                  setPhone('0912345678');
-                  handleLogin(null, '0912345678');
+                  setPhone('0353026343');
+                  handleLogin(null, '0353026343');
                 }}
                 style={{
-                  padding: '10px 14px',
+                  padding: '9px 12px',
                   background: '#eff6ff',
                   border: '1px solid #bfdbfe',
                   color: '#1e3a8a',
@@ -171,16 +171,16 @@ export default function TenantLogin() {
                   cursor: 'pointer'
                 }}
               >
-                Phòng 1 (0912345678)
+                P.101 (0353026343)
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  setPhone('0987654321');
-                  handleLogin(null, '0987654321');
+                  setPhone('0933655297');
+                  handleLogin(null, '0933655297');
                 }}
                 style={{
-                  padding: '10px 14px',
+                  padding: '9px 12px',
                   background: '#eff6ff',
                   border: '1px solid #bfdbfe',
                   color: '#1e3a8a',
@@ -190,7 +190,26 @@ export default function TenantLogin() {
                   cursor: 'pointer'
                 }}
               >
-                Phòng 2 (0987654321)
+                P.103 (0933655297)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPhone('0988776655');
+                  handleLogin(null, '0988776655');
+                }}
+                style={{
+                  padding: '9px 12px',
+                  background: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  color: '#1e3a8a',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  borderRadius: '10px',
+                  cursor: 'pointer'
+                }}
+              >
+                Demo (0988776655)
               </button>
             </div>
           </div>
