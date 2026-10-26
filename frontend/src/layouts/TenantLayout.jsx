@@ -506,10 +506,6 @@ export default function TenantLayout() {
           <div className="liquid-pill-rim-sheen" />
           {/* Internal caustics refraction */}
           <div className="liquid-pill-caustic" />
-          {/* Dynamic center droplet core */}
-          <div className="liquid-pill-core-glow" />
-          {/* Floating droplet bead */}
-          <div className="liquid-pill-bead" />
         </div>
 
         {navItems.map((item, index) => {
