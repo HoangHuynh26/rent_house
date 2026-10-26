@@ -428,6 +428,9 @@ button:disabled {
   .mobile-header-subrow {
     display: none !important;
   }
+  .hide-on-desktop {
+    display: none !important;
+  }
   .ai-chatbot-launcher-btn {
     bottom: 24px !important;
     right: 24px !important;

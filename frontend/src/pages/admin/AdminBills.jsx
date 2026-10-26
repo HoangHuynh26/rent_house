@@ -48,17 +48,6 @@ export default function AdminBills() {
   const [paymentStep, setPaymentStep] = useState(1); // 1 = choose method, 2 = confirm
   const [submittingPayment, setSubmittingPayment] = useState(false);
 
-  // Notification delivery options
-  const [sendEmailNotify, setSendEmailNotify] = useState(true);
-  const [sendSmsNotify, setSendSmsNotify] = useState(true);
-
-  // Single bill notification modal
-  const [notifyTargetBill, setNotifyTargetBill] = useState(null);
-  const [sendingNotify, setSendingNotify] = useState(false);
-  const [notifyResult, setNotifyResult] = useState(null);
-  const [singleSendEmail, setSingleSendEmail] = useState(true);
-  const [singleSendSms, setSingleSendSms] = useState(true);
-
   useEffect(() => {
     fetchBills();
   }, [month, year]);
@@ -111,8 +100,8 @@ export default function AdminBills() {
         month,
         year,
         recalculate: recalculateExisting,
-        send_email: sendEmailNotify,
-        send_sms: sendSmsNotify
+        send_email: true,
+        send_sms: true
       });
       setGenerateResult(res.data);
       fetchBills();
@@ -120,24 +109,6 @@ export default function AdminBills() {
       alert(err.message || 'Lỗi khi lập hóa đơn.');
     } finally {
       setGenerating(false);
-    }
-  };
-
-  const handleSendSingleNotification = async () => {
-    if (!notifyTargetBill) return;
-    try {
-      setSendingNotify(true);
-      setNotifyResult(null);
-      const res = await api.post(`/bills/${notifyTargetBill.id}/notify`, {
-        send_email: singleSendEmail,
-        send_sms: singleSendSms
-      });
-      setNotifyResult(res.data);
-      fetchBills();
-    } catch (err) {
-      alert(err.message || 'Lỗi khi gửi thông báo hóa đơn.');
-    } finally {
-      setSendingNotify(false);
     }
   };
 
@@ -270,7 +241,7 @@ export default function AdminBills() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '90px' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
@@ -485,8 +456,8 @@ export default function AdminBills() {
         </span>
       </div>
 
-      {/* Bills Table */}
-      <div className="table-responsive">
+      {/* Desktop Bills Table */}
+      <div className="table-responsive hide-on-mobile">
         <table className="admin-table" style={{ minWidth: '860px' }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: '700' }}>
@@ -694,32 +665,6 @@ export default function AdminBills() {
                         </>
                       )}
 
-                      <button
-                        onClick={() => {
-                          setNotifyTargetBill(b);
-                          setNotifyResult(null);
-                          setSingleSendEmail(true);
-                          setSingleSendSms(true);
-                        }}
-                        title="Gửi email Resend hoặc tin nhắn SMS OTP cho người thuê phòng này"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '6px 10px',
-                          background: '#eff6ff',
-                          color: '#2563eb',
-                          border: '1px solid #bfdbfe',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        <Send size={13} />
-                        Gửi báo
-                      </button>
 
                       <button
                         onClick={() => handleDeleteBill(b)}
@@ -749,6 +694,243 @@ export default function AdminBills() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* ═══════ MOBILE BILLS CARDS LIST (<= 768px) ═══════ */}
+      <div className="hide-on-desktop mobile-bills-card-list" style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
+        {bills.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '36px 16px', background: '#ffffff', borderRadius: '16px', border: '1px dashed #cbd5e1', color: '#64748b' }}>
+            <FileText size={40} color="#94a3b8" style={{ marginBottom: '8px', display: 'inline-block' }} />
+            <p style={{ fontWeight: '700', fontSize: '15px', color: '#334155', margin: '0 0 4px 0' }}>Chưa có hóa đơn nào</p>
+            <p style={{ fontSize: '13px', margin: 0 }}>Bấm nút "Lập hóa đơn tháng {month}/{year}" ở phía trên để tự động tạo hóa đơn cho các phòng.</p>
+          </div>
+        ) : (
+          bills.map((b) => (
+            <div
+              key={b.id}
+              style={{
+                background: '#ffffff',
+                borderRadius: '16px',
+                border: b.status === 'paid' ? '1px solid #bbf7d0' : '1px solid #fecaca',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}
+            >
+              {/* Header: Room & Status */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      fontWeight: '800',
+                      fontSize: '15px',
+                      color: '#0f172a',
+                      background: '#f1f5f9',
+                      padding: '4px 10px',
+                      borderRadius: '8px'
+                    }}>
+                      Phòng {b.room_number}
+                    </span>
+                    <span style={{ fontWeight: '700', fontSize: '14px', color: '#1e293b' }}>
+                      {b.tenant_name}
+                    </span>
+                  </div>
+                  {b.tenant_phone && (
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                      SĐT: <strong style={{ color: '#334155' }}>{b.tenant_phone}</strong>
+                    </div>
+                  )}
+                </div>
+
+                {/* Status badge */}
+                <div>
+                  {b.status === 'paid' ? (
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      background: b.payment_method === 'transfer' ? '#dbeafe' : '#dcfce7',
+                      color: b.payment_method === 'transfer' ? '#1d4ed8' : '#15803d',
+                      padding: '5px 10px',
+                      borderRadius: '20px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {b.payment_method === 'transfer' ? <CreditCard size={12} /> : <Banknote size={12} />}
+                      {b.payment_method === 'transfer' ? 'Chuyển khoản' : 'Tiền mặt'}
+                    </span>
+                  ) : (
+                    <span style={{
+                      background: '#fee2e2',
+                      color: '#b91c1c',
+                      padding: '5px 10px',
+                      borderRadius: '20px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      Chưa thu
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Breakdown Grid */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '8px',
+                background: '#f8fafc',
+                borderRadius: '12px',
+                padding: '10px 12px',
+                fontSize: '12px'
+              }}>
+                <div>
+                  <span style={{ color: '#64748b' }}>Tiền phòng:</span>
+                  <div style={{ fontWeight: '700', color: '#1e293b' }}>{formatCurrency(b.rent_amount)}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b' }}>⚡ Điện ({b.electricity_kwh || 0} kWh):</span>
+                  <div style={{ fontWeight: '700', color: '#d97706' }}>{formatCurrency(b.electricity_amount)}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b' }}>💧 Nước ({b.water_m3 || 0} m³):</span>
+                  <div style={{ fontWeight: '700', color: '#0284c7' }}>{formatCurrency(b.water_amount)}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b' }}>{b.status === 'paid' ? 'Ngày nộp:' : 'Hạn đóng:'}</span>
+                  <div style={{ fontWeight: '700', color: b.status === 'paid' ? '#15803d' : '#e11d48' }}>
+                    {b.status === 'paid' ? formatDate(b.paid_at || b.updated_at) : formatDate(b.due_date)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Total Banner */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '10px 14px',
+                background: b.status === 'paid' ? '#f0fdf4' : '#eff6ff',
+                borderRadius: '10px'
+              }}>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>Tổng cộng:</span>
+                <span style={{ fontSize: '17px', fontWeight: '900', color: b.status === 'paid' ? '#15803d' : '#1e40af' }}>
+                  {formatCurrency(b.total_amount)}
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                {b.status !== 'paid' ? (
+                  <>
+                    <button
+                      onClick={() => openPaymentModal(b)}
+                      style={{
+                        flex: 1,
+                        minWidth: '130px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        padding: '10px 14px',
+                        background: 'linear-gradient(135deg, #16a34a, #059669)',
+                        color: '#ffffff',
+                        borderRadius: '10px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        border: 'none',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)'
+                      }}
+                    >
+                      <ShieldCheck size={16} />
+                      Thu tiền
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBill(b)}
+                      title="Xóa hóa đơn"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                        padding: '10px 14px',
+                        background: '#fef2f2',
+                        color: '#dc2626',
+                        border: '1px solid #fecaca',
+                        borderRadius: '10px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Trash2 size={15} />
+                      Xóa
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handleSwitchPaymentMethod(b.id, b.payment_method)}
+                      style={{
+                        flex: 1,
+                        minWidth: '110px',
+                        padding: '9px 10px',
+                        background: '#f1f5f9',
+                        color: '#334155',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Đổi {b.payment_method === 'cash' ? '💳 CK' : '💵 Tiền mặt'}
+                    </button>
+                    <button
+                      onClick={() => handleRevertUnpaid(b.id)}
+                      style={{
+                        padding: '9px 12px',
+                        background: '#fff1f2',
+                        color: '#e11d48',
+                        border: '1px solid #fecdd3',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Hủy nộp
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBill(b)}
+                      style={{
+                        padding: '9px 12px',
+                        background: '#fef2f2',
+                        color: '#dc2626',
+                        border: '1px solid #fecaca',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <Trash2 size={14} />
+                      Xóa
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* ═══════ 2-STEP PAYMENT CONFIRMATION MODAL ═══════ */}
@@ -992,31 +1174,14 @@ export default function AdminBills() {
               </label>
             </div>
 
-            {/* Notification delivery options */}
-            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '12px 14px', marginBottom: '18px' }}>
-              <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e3a8a', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Send size={15} color="#2563eb" />
-                Gửi thông báo ngay cho người thuê khi lập:
+            {/* Automatic notification delivery banner */}
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '12px 14px', marginBottom: '18px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: '#166534', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <CheckCircle size={15} color="#16a34a" />
+                Tự động gửi thông báo trực tiếp khi lập hóa đơn:
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1e293b', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={sendEmailNotify}
-                    onChange={(e) => setSendEmailNotify(e.target.checked)}
-                    style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
-                  />
-                  <span>📧 <strong>Gửi Email qua Resend</strong> (kèm chi tiết bảng kê, số điện nước và STK chuyển khoản)</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1e293b', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={sendSmsNotify}
-                    onChange={(e) => setSendSmsNotify(e.target.checked)}
-                    style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
-                  />
-                  <span>📱 <strong>Gửi tin nhắn SMS & Mã OTP</strong> tới số điện thoại người thuê</span>
-                </label>
+              <div style={{ fontSize: '13px', color: '#15803d', lineHeight: '1.5' }}>
+                Hệ thống sẽ <strong>tự động gửi ngay đến số điện thoại (tin nhắn SMS/OTP)</strong> và <strong>email (Resend)</strong> của từng người thuê khi hóa đơn được lập, kèm chi tiết điện, nước và hạn nộp tiền.
               </div>
             </div>
 
@@ -1075,120 +1240,6 @@ export default function AdminBills() {
         </div>
       )}
 
-      {/* ═══════ SINGLE BILL NOTIFICATION MODAL ═══════ */}
-      {notifyTargetBill && (
-        <div className="modal-backdrop" onClick={() => { setNotifyTargetBill(null); setNotifyResult(null); }}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Send size={20} color="#2563eb" />
-              Gửi Thông Báo Hóa Đơn Phòng {notifyTargetBill.room_number}
-            </h3>
-            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
-              Kỳ thanh toán: Tháng {notifyTargetBill.billing_month}/{notifyTargetBill.billing_year} • Tổng tiền: <strong style={{ color: '#1d4ed8' }}>{formatCurrency(notifyTargetBill.total_amount)}</strong>
-            </p>
-
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', marginBottom: '16px', fontSize: '13px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ color: '#64748b' }}>Người thuê:</span>
-                <strong style={{ color: '#0f172a' }}>{notifyTargetBill.tenant_name}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ color: '#64748b' }}>Số điện thoại (SMS/OTP):</span>
-                <strong style={{ color: '#0f172a' }}>{notifyTargetBill.tenant_phone || '(Chưa có)'}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b' }}>Email (Resend):</span>
-                <strong style={{ color: notifyTargetBill.tenant_email ? '#0f172a' : '#d97706' }}>
-                  {notifyTargetBill.tenant_email || 'Chưa cập nhật email'}
-                </strong>
-              </div>
-            </div>
-
-            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '14px', marginBottom: '18px' }}>
-              <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e3a8a', marginBottom: '10px' }}>
-                Chọn kênh thông báo muốn gửi:
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1e293b', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={singleSendEmail}
-                    onChange={(e) => setSingleSendEmail(e.target.checked)}
-                    style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
-                  />
-                  <span>
-                    📧 <strong>Gửi Email Resend</strong> {notifyTargetBill.tenant_email ? `tới ${notifyTargetBill.tenant_email}` : '(Khách chưa có email - sẽ bỏ qua)'}
-                  </span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1e293b', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={singleSendSms}
-                    onChange={(e) => setSingleSendSms(e.target.checked)}
-                    style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
-                  />
-                  <span>
-                    📱 <strong>Gửi SMS & Mã tra cứu OTP</strong> tới {notifyTargetBill.tenant_phone}
-                  </span>
-                </label>
-              </div>
-            </div>
-
-            {notifyResult ? (
-              <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', padding: '14px', marginBottom: '18px', fontSize: '13px' }}>
-                <div style={{ fontWeight: '800', color: '#166534', marginBottom: '6px' }}>
-                  ✓ Đã gửi thông báo thành công!
-                </div>
-                {notifyResult.otp && (
-                  <div style={{ color: '#15803d', marginTop: '4px' }}>
-                    • Mã OTP tra cứu đã tạo: <strong style={{ letterSpacing: '1px', background: '#dcfce7', padding: '2px 6px', borderRadius: '4px' }}>{notifyResult.otp}</strong>
-                  </div>
-                )}
-                {notifyResult.email && (
-                  <div style={{ color: '#15803d', marginTop: '4px' }}>
-                    • Email Resend: {notifyResult.email.success ? (notifyResult.email.simulated ? 'Mô phỏng gửi thành công (chưa có RESEND_API_KEY trong .env)' : 'Đã gửi tới hộp thư') : (notifyResult.email.skipped ? notifyResult.email.reason : notifyResult.email.error)}
-                  </div>
-                )}
-                {notifyResult.sms && (
-                  <div style={{ color: '#15803d', marginTop: '4px' }}>
-                    • SMS OTP: {notifyResult.sms.success ? (notifyResult.sms.simulated ? 'Đã tạo và gửi SMS/OTP tới điện thoại người thuê' : 'Đã gửi SMS tới điện thoại') : notifyResult.sms.error}
-                  </div>
-                )}
-              </div>
-            ) : null}
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button
-                type="button"
-                onClick={() => { setNotifyTargetBill(null); setNotifyResult(null); }}
-                style={{ padding: '10px 16px', background: '#e2e8f0', color: '#475569', borderRadius: '10px', border: 'none', fontWeight: '600', cursor: 'pointer' }}
-              >
-                Đóng
-              </button>
-              {!notifyResult && (
-                <button
-                  type="button"
-                  disabled={sendingNotify || (!singleSendEmail && !singleSendSms)}
-                  onClick={handleSendSingleNotification}
-                  style={{
-                    padding: '10px 20px',
-                    background: '#2563eb',
-                    color: '#ffffff',
-                    fontWeight: '700',
-                    borderRadius: '10px',
-                    border: 'none',
-                    cursor: (sendingNotify || (!singleSendEmail && !singleSendSms)) ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', gap: '6px'
-                  }}
-                >
-                  <Send size={15} />
-                  {sendingNotify ? 'Đang gửi thông báo...' : 'Gửi ngay cho người thuê'}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {generating && (
         <ActionLoadingOverlay

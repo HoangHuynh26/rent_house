@@ -130,7 +130,7 @@ export const generateMonthlyBills = async (req, res) => {
           room,
           elecReading,
           waterReading,
-          options: { sendEmail: !!send_email, sendSms: !!send_sms, isManual: false }
+          options: { sendEmail: send_email !== false, sendSms: send_sms !== false, isManual: false }
         });
       } catch (notifErr) {
         console.error(`[Bill Notification Error Room ${room.room_number}]:`, notifErr.message);
