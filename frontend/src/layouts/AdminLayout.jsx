@@ -158,17 +158,28 @@ export default function AdminLayout() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{
-              background: '#dcfce7',
-              color: '#15803d',
-              padding: '4px 12px',
-              borderRadius: '20px',
-              fontSize: '12px',
-              fontWeight: '600',
-              whiteSpace: 'nowrap'
-            }}>
-              ● Hoạt động
-            </span>
+            <button
+              onClick={handleLogout}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                background: '#fee2e2',
+                color: '#dc2626',
+                border: '1px solid #fecaca',
+                borderRadius: '20px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap'
+              }}
+              title="Đăng xuất khỏi tài khoản quản trị"
+            >
+              <LogOut size={15} />
+              Đăng xuất
+            </button>
           </div>
         </header>
 
