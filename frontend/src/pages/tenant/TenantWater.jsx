@@ -366,20 +366,6 @@ export default function TenantWater() {
                     <span style={{ fontSize: '18px', fontWeight: '800', display: 'block' }}>Chi tiết tiêu thụ nước</span>
                   </div>
                 </div>
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  background: '#dcfce7',
-                  color: '#15803d',
-                  padding: '4px 10px',
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                  fontWeight: '700'
-                }}>
-                  <CheckCircle2 size={14} />
-                  Số liệu chính thức
-                </span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '17px' }}>

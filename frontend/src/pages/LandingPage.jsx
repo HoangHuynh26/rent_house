@@ -94,6 +94,18 @@ export default function LandingPage() {
     fetchRooms();
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('preview_modal') === '1' || params.get('step') === '2') {
+      const room = rooms.find(r => r.room_number === '1' || r.room_number === 'Phòng 1') || rooms[0];
+      if (room) {
+        setSelectedRoom(room);
+        setPhone('0912345678');
+        setShowLoginModal(true);
+      }
+    }
+  }, [rooms]);
+
   const fetchRooms = async () => {
     try {
       const res = await api.get('/rooms/public');
@@ -613,7 +625,7 @@ export default function LandingPage() {
             {/* Step Image */}
             <div style={{ position: 'relative', height: '210px', overflow: 'hidden', background: '#f8fafc' }}>
               <img
-                src="/images/guide/step1.jpg"
+                src="/images/guide/step1.png"
                 loading="lazy"
                 decoding="async"
                 alt="Bước 1: Chọn phòng trọ trên danh mục"
@@ -687,7 +699,7 @@ export default function LandingPage() {
             {/* Step Image */}
             <div style={{ position: 'relative', height: '210px', overflow: 'hidden', background: '#f8fafc' }}>
               <img
-                src="/images/guide/step2.jpg"
+                src="/images/guide/step2.png"
                 loading="lazy"
                 decoding="async"
                 alt="Bước 2: Nhập số điện thoại thuê phòng"
@@ -750,7 +762,7 @@ export default function LandingPage() {
             {/* Step Image */}
             <div style={{ position: 'relative', height: '210px', overflow: 'hidden', background: '#f8fafc' }}>
               <img
-                src="/images/guide/step3.jpg"
+                src="/images/guide/step3.png"
                 loading="lazy"
                 decoding="async"
                 alt="Bước 3: Xem minh bạch giá tiền phòng và hóa đơn"

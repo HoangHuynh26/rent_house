@@ -151,24 +151,8 @@ export default function TenantHistory() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Top Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button
-          onClick={() => navigate('/tenant/home')}
-          style={{
-            background: '#f1f5f9',
-            padding: '10px',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: 'none',
-            cursor: 'pointer'
-          }}
-        >
-          <ArrowLeft size={22} color="#1e3a8a" />
-        </button>
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Lịch Sử Tiêu Thụ & Hóa Đơn</h2>
-          <div style={{ fontSize: '13px', color: '#64748b' }}>Theo dõi chỉ số và xem chi tiết hóa đơn theo từng tháng</div>
         </div>
       </div>
 
@@ -316,54 +300,6 @@ export default function TenantHistory() {
             </button>
           </div>
         </div>
-
-        {/* 12-Month Quick Selector Bar */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(64px, 1fr))',
-          gap: '6px',
-          background: '#f1f5f9',
-          padding: '6px',
-          borderRadius: '14px'
-        }}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => {
-            const isCurrent = Number(selectedMonth) === m;
-            const hasBill = bills.some(b => Number(b.billing_month) === m && Number(b.billing_year) === Number(selectedYear));
-            return (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setSelectedMonth(m)}
-                style={{
-                  padding: '8px 4px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: isCurrent ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : (hasBill ? '#ffffff' : 'transparent'),
-                  color: isCurrent ? '#ffffff' : (hasBill ? '#0f172a' : '#94a3b8'),
-                  fontWeight: isCurrent || hasBill ? '800' : '500',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '2px',
-                  boxShadow: isCurrent ? '0 4px 10px rgba(37, 99, 235, 0.3)' : (hasBill ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'),
-                  transition: 'all 0.15s'
-                }}
-              >
-                <span>T.{m}</span>
-                {hasBill && (
-                  <span style={{
-                    width: '5px',
-                    height: '5px',
-                    borderRadius: '50%',
-                    background: isCurrent ? '#93c5fd' : '#10b981'
-                  }} />
-                )}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* 2. THẺ CHI TIẾT HÓA ĐƠN & CHỈ SỐ THÁNG ĐƯỢC CHỌN */}
@@ -404,9 +340,6 @@ export default function TenantHistory() {
                   {selectedMonthBill.status === 'paid' ? '✅ ĐÃ THANH TOÁN' : '⏳ CHƯA THANH TOÁN'}
                 </span>
               </div>
-              <div style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>
-                Phòng {selectedMonthBill.room_number || '---'} • {selectedMonthBill.status === 'paid' ? `Đã nộp: ${formatDate(selectedMonthBill.paid_at)}` : `Hạn nộp: ${formatDate(selectedMonthBill.due_date)}`}
-              </div>
             </div>
 
             <div style={{ textAlign: 'right' }}>
@@ -430,7 +363,6 @@ export default function TenantHistory() {
               <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginTop: '4px' }}>
                 {formatCurrency(selectedMonthBill.rent_amount)}
               </div>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>Theo hợp đồng thuê</div>
             </div>
 
             {/* Elec */}
@@ -567,63 +499,8 @@ export default function TenantHistory() {
           <div style={{ fontSize: '13px', color: '#64748b', maxWidth: '420px' }}>
             Bạn có thể chọn các tháng đã có số liệu bên dưới để xem chi tiết:
           </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '6px' }}>
-            {bills.map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                onClick={() => {
-                  setSelectedMonth(Number(b.billing_month));
-                  setSelectedYear(Number(b.billing_year));
-                }}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: '10px',
-                  border: '1.5px solid #2563eb',
-                  background: '#eff6ff',
-                  color: '#1e3a8a',
-                  fontWeight: '700',
-                  fontSize: '13px',
-                  cursor: 'pointer'
-                }}
-              >
-                Tháng {b.billing_month}/{b.billing_year}
-              </button>
-            ))}
-          </div>
         </div>
       )}
-
-      {/* Average KPI Cards for the Selected Year */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-        <div style={{
-          background: '#fffbeb',
-          border: '2px solid #fef3c7',
-          padding: '16px',
-          borderRadius: '16px',
-          textAlign: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#d97706', marginBottom: '4px' }}>
-            <Zap size={20} />
-            <span style={{ fontSize: '13px', fontWeight: '700' }}>TB Điện năm {selectedYear}</span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: '900', color: '#b45309' }}>{avgElec} <span style={{ fontSize: '14px' }}>kWh</span></div>
-        </div>
-
-        <div style={{
-          background: '#f0f9ff',
-          border: '2px solid #bae6fd',
-          padding: '16px',
-          borderRadius: '16px',
-          textAlign: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#0284c7', marginBottom: '4px' }}>
-            <Droplet size={20} />
-            <span style={{ fontSize: '13px', fontWeight: '700' }}>TB Nước năm {selectedYear}</span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: '900', color: '#0369a1' }}>{avgWater} <span style={{ fontSize: '14px' }}>m³</span></div>
-        </div>
-      </div>
 
       {/* Consumption Trend Bar Chart for the Selected Year */}
       <div style={{
@@ -676,9 +553,6 @@ export default function TenantHistory() {
           <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
             Danh sách hóa đơn năm {selectedYear}
           </h3>
-          <span style={{ fontSize: '13px', color: '#64748b' }}>
-            Bấm "Xem chi tiết" để xem biên lai
-          </span>
         </div>
 
         <div className="grid-responsive-2">

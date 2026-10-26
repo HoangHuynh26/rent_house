@@ -155,22 +155,6 @@ export default function TenantElectricity() {
       {/* Top Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={() => navigate('/tenant/home')}
-            style={{
-              background: '#f1f5f9',
-              padding: '10px',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: 'none',
-              cursor: 'pointer'
-            }}
-            title="Quay lại"
-          >
-            <ArrowLeft size={22} color="#1e3a8a" />
-          </button>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
@@ -193,9 +177,6 @@ export default function TenantElectricity() {
                   Chụp hình vào: {formatDateTime(reading.photo_captured_at || reading.created_at)}
                 </span>
               )}
-            </div>
-            <div style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>
-              Tra cứu chỉ số tiêu thụ điện và ảnh chụp đồng hồ theo từng tháng
             </div>
           </div>
         </div>
@@ -386,20 +367,6 @@ export default function TenantElectricity() {
                     <span style={{ fontSize: '18px', fontWeight: '800', display: 'block' }}>Chi tiết tiêu thụ điện</span>
                   </div>
                 </div>
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  background: '#dcfce7',
-                  color: '#15803d',
-                  padding: '4px 10px',
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                  fontWeight: '700'
-                }}>
-                  <CheckCircle2 size={14} />
-                  Số liệu chính thức
-                </span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '17px' }}>
@@ -513,7 +480,7 @@ export default function TenantElectricity() {
             </div>
 
             <div style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', marginTop: '16px' }}>
-              💡 Ảnh chụp thực tế được AI nhận diện và lưu trữ minh bạch trên hệ thống.
+              💡 Ảnh chụp thực tế.
             </div>
           </div>
         </div>

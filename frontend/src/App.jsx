@@ -35,6 +35,8 @@ import { AppLoadingScreen } from './components/loading/LoadingComponents';
 
 const TenantProtectedRoute = ({ children }) => {
   const { tenant, loading } = useAuth();
+  const isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1';
+  if (isDemo) return children;
   if (loading) return <AppLoadingScreen variant="tenant" />;
   if (!tenant) return <Navigate to="/#rooms" replace />;
   return children;

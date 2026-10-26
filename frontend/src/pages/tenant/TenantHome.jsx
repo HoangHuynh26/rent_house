@@ -19,6 +19,33 @@ export const TenantHome = () => {
   }, [activeRoomId]);
 
   const fetchDashboard = async (isRetry = false) => {
+    const isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1';
+    if (isDemo) {
+      setData({
+        tenant: { id: '1', full_name: 'Nguyễn Văn An', phone: '0912345678' },
+        room: { id: 'd0000000-0000-0000-0000-000000000101', room_number: '1', floor: 1, monthly_rent: 3000000 },
+        is_contract_signed: true,
+        current_bill: {
+          month: 10,
+          year: 2026,
+          room_amount: 3000000,
+          electricity_amount: 540000,
+          water_amount: 180000,
+          total_amount: 3720000,
+          status: 'paid',
+          payment_method: 'transfer',
+          due_date: '2026-10-15',
+          created_at: '2026-10-01'
+        },
+        readings: {
+          electricity: { current_value: 3250, previous_value: 3070, consumption: 180 },
+          water: { current_value: 45, previous_value: 30, consumption: 15 }
+        }
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
@@ -108,7 +135,7 @@ export const TenantHome = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '14px' }}>
           <div>
             <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Kỳ tính tiền: Tháng {bill?.month || new Date().getMonth() + 1}/{bill?.year || new Date().getFullYear()}
+              Tháng {bill?.month || new Date().getMonth() + 1}/{bill?.year || new Date().getFullYear()}
             </div>
             <div style={{ fontSize: '24px', fontWeight: '900', color: '#0f172a' }}>
               Phòng {data?.room?.room_number}
