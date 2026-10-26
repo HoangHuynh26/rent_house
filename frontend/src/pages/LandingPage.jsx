@@ -201,6 +201,9 @@ export default function LandingPage() {
             <a href="#rules" style={{ fontSize: '15px', fontWeight: '600', color: '#475569', textDecoration: 'none' }}>
               Bảng Giá & Quy Định
             </a>
+            <a href="#guide" style={{ fontSize: '15px', fontWeight: '600', color: '#475569', textDecoration: 'none' }}>
+              Hướng Dẫn Tra Cứu
+            </a>
             <a href="#contact" style={{ fontSize: '15px', fontWeight: '600', color: '#475569', textDecoration: 'none' }}>
               Liên Hệ
             </a>
@@ -358,108 +361,6 @@ export default function LandingPage() {
                 ? 'Hiện Tại Nhà Trọ Đang Tạm Hết Phòng Trống'
                 : 'Không Có Phòng Nào Phù Hợp'}
             </h3>
-
-            <p
-              style={{
-                fontSize: '15px',
-                color: '#64748b',
-                lineHeight: '1.6',
-                maxWidth: '520px',
-                margin: '0 auto 24px'
-              }}
-            >
-              {activeFilter === 'available'
-                ? 'Tất cả các phòng tại Nhà Trọ Thanh Tâm hiện đều đang có khách thuê ổn định dài hạn. Bạn có thể xem toàn bộ các phòng để tham khảo tiện nghi, cơ sở vật chất hoặc gọi trực tiếp chủ trọ để được ưu tiên thông báo ngay khi có phòng sắp trả.'
-                : 'Hiện không có phòng nào trong danh mục này. Vui lòng chọn bộ lọc khác để xem danh sách phòng.'}
-            </p>
-
-            {/* Quick Benefits Highlight */}
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-                gap: '12px',
-                marginBottom: '24px'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569', background: '#f8fafc', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                <CheckCircle2 size={15} color="#16a34a" />
-                <span>Camera an ninh 24/7 & Cửa khóa vân tay</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569', background: '#f8fafc', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                <CheckCircle2 size={15} color="#16a34a" />
-                <span>Điện 3.000đ/kWh & Nước 12.000đ/m³ công tơ riêng</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569', background: '#f8fafc', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                <CheckCircle2 size={15} color="#16a34a" />
-                <span>Giờ giấc tự do, không chung chủ 100%</span>
-              </div>
-            </div>
-
-            {/* Contact Hotline Banner */}
-            <div
-              style={{
-                width: '100%',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '16px',
-                padding: '16px 20px',
-                marginBottom: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '12px',
-                textAlign: 'left'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '12px',
-                    background: '#2563eb',
-                    color: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}
-                >
-                  <PhoneCall size={20} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b' }}>
-                    Hotline đặt lịch & đăng ký giữ phòng:
-                  </div>
-                  <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
-                    0909.256.680 (Chủ trọ Thanh Tâm)
-                  </div>
-                </div>
-              </div>
-
-              <a
-                href="tel:0909256680"
-                style={{
-                  padding: '9px 18px',
-                  background: '#16a34a',
-                  color: '#ffffff',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  borderRadius: '10px',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)'
-                }}
-              >
-                <PhoneCall size={14} />
-                Gọi Đặt Chỗ Ngay
-              </a>
-            </div>
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -649,6 +550,282 @@ export default function LandingPage() {
             <span style={{ fontWeight: '600', color: '#334155' }}>💧 Tiền nước sinh hoạt:</span>
             <span style={{ fontWeight: '800', color: '#0284c7' }}>12,000 đ / m³</span>
           </div>
+        </div>
+      </section>
+
+      {/* 5.1 HƯỚNG DẪN TRA CỨU GIÁ PHÒNG & HÓA ĐƠN CHI TIẾT (#guide) */}
+      <section id="guide" style={{ padding: '40px 24px 80px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '44px' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: '#eff6ff',
+            color: '#2563eb',
+            padding: '6px 14px',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: '800',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            marginBottom: '12px'
+          }}>
+            <Sparkles size={16} />
+            HƯỚNG DẪN NGƯỜI DÙNG
+          </div>
+          <h2 style={{ fontSize: '30px', fontWeight: '900', color: '#0f172a', marginBottom: '12px', letterSpacing: '-0.5px' }}>
+            3 Bước Đơn Giản Để Vào Xem Giá Tiền Phòng & Hóa Đơn
+          </h2>
+          <p style={{ fontSize: '15px', color: '#64748b', maxWidth: '640px', margin: '0 auto', lineHeight: '1.6' }}>
+            Khách thuê hoặc người có nhu cầu thuê có thể dễ dàng xem chi tiết giá thuê từng phòng, tiền điện nước hàng tháng và hợp đồng điện tử chỉ với vài thao tác.
+          </p>
+        </div>
+
+        {/* 3 Step Cards Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '28px'
+        }}>
+          {/* STEP 1 CARD */}
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              border: '2px solid #e2e8f0',
+              overflow: 'hidden',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.04)',
+              display: 'flex',
+              flexDirection: 'column',
+              transition: 'all 0.25s ease-in-out'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-6px)';
+              e.currentTarget.style.borderColor = '#2563eb';
+              e.currentTarget.style.boxShadow = '0 16px 32px rgba(37, 99, 235, 0.12)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.borderColor = '#e2e8f0';
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.04)';
+            }}
+          >
+            {/* Step Image */}
+            <div style={{ position: 'relative', height: '210px', overflow: 'hidden', background: '#f8fafc' }}>
+              <img
+                src="/images/guide/step1.jpg"
+                alt="Bước 1: Chọn phòng trọ trên danh mục"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+              <div style={{
+                position: 'absolute',
+                top: '14px',
+                left: '14px',
+                background: '#1e3a8a',
+                color: '#ffffff',
+                padding: '6px 14px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '800',
+                letterSpacing: '0.5px',
+                boxShadow: '0 4px 10px rgba(30, 58, 138, 0.3)'
+              }}>
+                BƯỚC 1
+              </div>
+            </div>
+
+            {/* Step Info */}
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '10px' }}>
+                1. Chọn Số Phòng Cần Xem
+              </h3>
+              <p style={{ fontSize: '14px', color: '#64748b', lineHeight: '1.6', marginBottom: '16px', flex: 1 }}>
+                Tại mục <b>Danh Mục Phòng Trọ</b>, bạn chọn trực tiếp vào phòng bạn đang thuê (hoặc phòng muốn tham khảo giá) như <i>Phòng 1, Phòng 2, Phòng 3</i>.
+              </p>
+              <a
+                href="#rooms"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: '#2563eb',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  textDecoration: 'none'
+                }}
+              >
+                Đến danh mục phòng ngay <ArrowRight size={15} />
+              </a>
+            </div>
+          </div>
+
+          {/* STEP 2 CARD */}
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              border: '2px solid #e2e8f0',
+              overflow: 'hidden',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.04)',
+              display: 'flex',
+              flexDirection: 'column',
+              transition: 'all 0.25s ease-in-out'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-6px)';
+              e.currentTarget.style.borderColor = '#2563eb';
+              e.currentTarget.style.boxShadow = '0 16px 32px rgba(37, 99, 235, 0.12)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.borderColor = '#e2e8f0';
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.04)';
+            }}
+          >
+            {/* Step Image */}
+            <div style={{ position: 'relative', height: '210px', overflow: 'hidden', background: '#f8fafc' }}>
+              <img
+                src="/images/guide/step2.jpg"
+                alt="Bước 2: Nhập số điện thoại thuê phòng"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+              <div style={{
+                position: 'absolute',
+                top: '14px',
+                left: '14px',
+                background: '#2563eb',
+                color: '#ffffff',
+                padding: '6px 14px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '800',
+                letterSpacing: '0.5px',
+                boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)'
+              }}>
+                BƯỚC 2
+              </div>
+            </div>
+
+            {/* Step Info */}
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '10px' }}>
+                2. Nhập Số Điện Thoại Thuê Phòng
+              </h3>
+              <p style={{ fontSize: '14px', color: '#64748b', lineHeight: '1.6', marginBottom: '16px', flex: 1 }}>
+                Cửa sổ xác thực sẽ mở ra. Bạn chỉ cần nhập <b>Số điện thoại</b> đã đăng ký hợp đồng với chủ trọ (hoặc bấm số điện thoại demo có sẵn) để đăng nhập tức thì.
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#059669', fontSize: '13px', fontWeight: '600' }}>
+                <CheckCircle2 size={16} /> Xác thực nhanh, không cần nhớ mật khẩu
+              </div>
+            </div>
+          </div>
+
+          {/* STEP 3 CARD */}
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              border: '2px solid #e2e8f0',
+              overflow: 'hidden',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.04)',
+              display: 'flex',
+              flexDirection: 'column',
+              transition: 'all 0.25s ease-in-out'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-6px)';
+              e.currentTarget.style.borderColor = '#2563eb';
+              e.currentTarget.style.boxShadow = '0 16px 32px rgba(37, 99, 235, 0.12)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.borderColor = '#e2e8f0';
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.04)';
+            }}
+          >
+            {/* Step Image */}
+            <div style={{ position: 'relative', height: '210px', overflow: 'hidden', background: '#f8fafc' }}>
+              <img
+                src="/images/guide/step3.jpg"
+                alt="Bước 3: Xem minh bạch giá tiền phòng và hóa đơn"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+              <div style={{
+                position: 'absolute',
+                top: '14px',
+                left: '14px',
+                background: '#16a34a',
+                color: '#ffffff',
+                padding: '6px 14px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '800',
+                letterSpacing: '0.5px',
+                boxShadow: '0 4px 10px rgba(22, 163, 74, 0.3)'
+              }}>
+                BƯỚC 3
+              </div>
+            </div>
+
+            {/* Step Info */}
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '10px' }}>
+                3. Xem Minh Bạch Giá Phòng & Hóa Đơn
+              </h3>
+              <p style={{ fontSize: '14px', color: '#64748b', lineHeight: '1.6', marginBottom: '16px', flex: 1 }}>
+                Trang Cổng Cư Dân sẽ hiển thị đầy đủ: <b>Giá tiền phòng</b>, số kWh điện, số m³ nước, ảnh chụp công tơ thực tế bằng AI, tổng tiền và hợp đồng thuê số.
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0284c7', fontSize: '13px', fontWeight: '600' }}>
+                <Zap size={16} /> Kiểm tra hóa đơn & thanh toán online tức thì
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick action bar */}
+        <div style={{
+          marginTop: '36px',
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+          borderRadius: '20px',
+          padding: '24px 32px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '16px',
+          color: '#ffffff',
+          boxShadow: '0 10px 25px rgba(37, 99, 235, 0.25)'
+        }}>
+          <div>
+            <div style={{ fontSize: '18px', fontWeight: '800', marginBottom: '4px' }}>
+              Bạn muốn trải nghiệm tra cứu ngay bây giờ?
+            </div>
+            <div style={{ fontSize: '14px', color: '#bfdbfe' }}>
+              Bấm chọn một phòng trên danh mục phòng trọ bên trên để thử nghiệm tra cứu giá tiền và hóa đơn.
+            </div>
+          </div>
+          <a
+            href="#rooms"
+            style={{
+              padding: '12px 24px',
+              background: '#ffffff',
+              color: '#1e3a8a',
+              borderRadius: '12px',
+              fontWeight: '800',
+              fontSize: '14px',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              transition: 'transform 0.15s ease'
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+          >
+            <DoorOpen size={18} color="#2563eb" />
+            Chọn Phòng Tra Cứu Ngay
+          </a>
         </div>
       </section>
 
