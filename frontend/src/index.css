@@ -97,7 +97,7 @@ button:disabled {
   width: 100%;
   max-width: 1100px;
   margin: 0 auto;
-  padding: 16px 16px 110px 16px; /* 110px bottom clearance for liquid glass dock on mobile */
+  padding: 16px 16px calc(140px + env(safe-area-inset-bottom, 0px)) 16px; /* 140px bottom clearance for liquid glass dock + AI launcher on mobile */
   flex: 1;
 }
 

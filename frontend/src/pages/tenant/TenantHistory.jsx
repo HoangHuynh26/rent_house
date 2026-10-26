@@ -23,6 +23,7 @@ import api from '../../services/api';
 import { formatCurrency, formatNumber, formatDate, formatDateTime } from '../../utils/formatters';
 import { HistorySkeleton } from '../../components/loading/LoadingComponents';
 import { useTenantRoom } from '../../contexts/TenantRoomContext';
+import MeterImageModal from '../../components/common/MeterImageModal';
 
 export default function TenantHistory() {
   const [elecHistory, setElecHistory] = useState([]);
@@ -148,7 +149,7 @@ export default function TenantHistory() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '30px' }}>
       {/* Top Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div>
@@ -561,21 +562,34 @@ export default function TenantHistory() {
             return (
               <div
                 key={b.id}
+                onClick={() => {
+                  setSelectedMonth(Number(b.billing_month));
+                  setSelectedYear(Number(b.billing_year));
+                  setIsModalOpen(true);
+                }}
                 style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  padding: '16px',
+                  borderRadius: '16px',
+                  background: isSelected ? '#eff6ff' : '#ffffff',
+                  border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                  boxShadow: isSelected ? '0 4px 14px rgba(37, 99, 235, 0.12)' : '0 2px 6px rgba(0,0,0,0.04)',
+                  transition: 'all 0.2s ease',
+                  gap: '12px',
+                  cursor: 'pointer'
+                }}
+              >
+                {/* Header Row: Month & Status Pill on Left, Price on Right */}
+                <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '16px',
-                  borderRadius: '14px',
-                  background: isSelected ? '#eff6ff' : '#f8fafc',
-                  border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                  transition: 'all 0.2s ease',
-                  gap: '12px'
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>
+                  gap: '8px',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
+                    <span style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', whiteSpace: 'nowrap' }}>
                       Tháng {b.billing_month}/{b.billing_year}
                     </span>
                     <span style={{
@@ -583,6 +597,9 @@ export default function TenantHistory() {
                       fontWeight: '700',
                       padding: '3px 8px',
                       borderRadius: '20px',
+                      whiteSpace: 'nowrap',
+                      display: 'inline-flex',
+                      alignItems: 'center',
                       background: b.status === 'paid'
                         ? (b.payment_method === 'cash' ? '#dcfce7' : '#dbeafe')
                         : '#fee2e2',
@@ -595,28 +612,42 @@ export default function TenantHistory() {
                         : 'Chưa nộp'}
                     </span>
                   </div>
-                  <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
-                    {b.status === 'paid'
-                      ? `Đã thanh toán lúc: ${formatDate(b.paid_at)}`
-                      : `Hạn đóng: ${formatDate(b.due_date)} (Ngày chụp công tơ)`}
-                  </div>
-                  <div style={{ display: 'flex', gap: '16px', marginTop: '6px', fontSize: '13px' }}>
-                    <span style={{ color: '#d97706', fontWeight: '600' }}>
-                      ⚡ Điện: {formatNumber(b.elec_kwh)} kWh ({formatCurrency(b.electricity_amount)})
-                    </span>
-                    <span style={{ color: '#0284c7', fontWeight: '600' }}>
-                      💧 Nước: {formatNumber(b.water_m3)} m³ ({formatCurrency(b.water_amount)})
-                    </span>
+
+                  <div style={{ fontSize: '18px', fontWeight: '900', color: '#1e3a8a', whiteSpace: 'nowrap', letterSpacing: '-0.3px' }}>
+                    {formatCurrency(b.total_amount)}
                   </div>
                 </div>
 
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                  <div style={{ fontSize: '18px', fontWeight: '900', color: '#1e3a8a' }}>
-                    {formatCurrency(b.total_amount)}
+                {/* Subtitle: Payment date or due date */}
+                <div style={{ fontSize: '12.5px', color: '#64748b' }}>
+                  {b.status === 'paid'
+                    ? `Đã thanh toán lúc: ${formatDate(b.paid_at)}`
+                    : `Hạn đóng: ${formatDate(b.due_date)} (Ngày chụp công tơ)`}
+                </div>
+
+                {/* Bottom Row: Electricity & Water info + View Detail Button */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  paddingTop: '8px',
+                  borderTop: '1px dashed #e2e8f0'
+                }}>
+                  <div style={{ display: 'flex', gap: '10px', fontSize: '12.5px', flexWrap: 'wrap' }}>
+                    <span style={{ color: '#d97706', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                      ⚡ Điện: {formatNumber(b.elec_kwh)} kWh ({formatCurrency(b.electricity_amount)})
+                    </span>
+                    <span style={{ color: '#0284c7', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                      💧 Nước: {formatNumber(b.water_m3)} m³ ({formatCurrency(b.water_amount)})
+                    </span>
                   </div>
+
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setSelectedMonth(Number(b.billing_month));
                       setSelectedYear(Number(b.billing_year));
                       setIsModalOpen(true);
@@ -625,20 +656,21 @@ export default function TenantHistory() {
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      padding: '8px 14px',
+                      padding: '7px 14px',
                       background: isSelected ? '#1e3a8a' : '#ffffff',
                       color: isSelected ? '#ffffff' : '#1e3a8a',
-                      border: '1px solid #1e3a8a',
+                      border: '1.5px solid #1e3a8a',
                       borderRadius: '10px',
                       fontSize: '13px',
                       fontWeight: '700',
                       cursor: 'pointer',
-                      minHeight: '38px',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      marginLeft: 'auto'
                     }}
                   >
                     <Eye size={15} />
-                    Xem chi tiết
+                    <span>Xem chi tiết</span>
                   </button>
                 </div>
               </div>
@@ -1014,73 +1046,14 @@ export default function TenantHistory() {
         </div>
       )}
 
-      {/* ZOOMED METER IMAGE MODAL */}
-      {zoomedImage && (
-        <div
-          className="modal-backdrop"
-          onClick={() => setZoomedImage(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.85)',
-            zIndex: 1100,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px'
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              maxWidth: '650px',
-              width: '100%',
-              background: '#ffffff',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              position: 'relative'
-            }}
-          >
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px 20px',
-              borderBottom: '1px solid #e2e8f0'
-            }}>
-              <div style={{ fontWeight: '800', color: '#0f172a', fontSize: '16px' }}>
-                {zoomedImage.title}
-              </div>
-              <button
-                onClick={() => setZoomedImage(null)}
-                style={{
-                  background: '#f1f5f9',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div style={{ padding: '12px', background: '#0f172a', display: 'flex', justifyContent: 'center' }}>
-              <img
-                src={zoomedImage.url}
-                alt={zoomedImage.title}
-                style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: '10px' }}
-              />
-            </div>
-            <div style={{ padding: '12px 20px', fontSize: '13px', color: '#64748b', textAlign: 'center' }}>
-              Ảnh chụp thực tế minh bạch do chủ nhà ghi nhận vào kỳ chốt công tơ.
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ZOOMED METER IMAGE MODAL WITH IN-FRAME DOUBLE-TAP 2-STAGE ZOOM */}
+      <MeterImageModal
+        isOpen={!!zoomedImage}
+        onClose={() => setZoomedImage(null)}
+        imageUrl={zoomedImage?.url}
+        alt={zoomedImage?.title || 'Ảnh công tơ'}
+        title={zoomedImage?.title}
+      />
     </div>
   );
 }
