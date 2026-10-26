@@ -155,20 +155,24 @@ const fmtVnd = (num) => `${Number(num || 0).toLocaleString('vi-VN')} đ`;
 /**
  * Main Chatbot Response Generator
  */
-export async function processUserMessage({ message, roomId = null, role = 'tenant', tenantId = null }) {
+export async function processUserMessage({ message, roomId = null, role = 'tenant', tenantId = null, allowedRoomIds = [] }) {
   const intent = classifyIntent(message);
   const faq = chatbotDataService.getBasicFaqData();
 
   // Automatically detect/bind room:
-  // If tenant is logged in, roomId is strictly bound to their assigned room.
-  // If admin or unauthenticated, check if the question mentions a specific room (e.g. "phòng 1", "p101")
+  // If tenant is logged in, roomId is bound to their currently active room.
+  // If the query mentions a specific room (e.g. "phòng 1", "p2"), check permissions:
+  // - Admin / Public: bind to mentioned room
+  // - Tenant: bind to mentioned room ONLY if tenant actually rents it
   let effectiveRoomId = roomId;
-  if (!effectiveRoomId || role === 'admin') {
-    const norm = normalizeText(message);
-    const roomMatch = norm.match(/(?:phong|p)\s*(\d+)/);
-    if (roomMatch) {
-      const foundRoom = await roomRepo.findByRoomNumber(roomMatch[1]);
-      if (foundRoom) {
+  const norm = normalizeText(message);
+  const roomMatch = norm.match(/(?:phong|p)\s*(\d+)/);
+  if (roomMatch) {
+    const foundRoom = await roomRepo.findByRoomNumber(roomMatch[1]);
+    if (foundRoom) {
+      if (role === 'admin' || !tenantId) {
+        effectiveRoomId = foundRoom.id;
+      } else if (allowedRoomIds.length > 0 && allowedRoomIds.includes(String(foundRoom.id))) {
         effectiveRoomId = foundRoom.id;
       }
     }

@@ -19,11 +19,23 @@ export const handleChatMessage = async (req, res) => {
     let roomId = null;
     let role = 'tenant';
     let tenantId = null;
+    let allowedRoomIds = [];
 
     if (req.tenant) {
-      roomId = req.tenant.room_id;
       tenantId = req.tenant.id;
       role = 'tenant';
+
+      allowedRoomIds = [
+        ...(Array.isArray(req.tenant.room_ids) ? req.tenant.room_ids : []),
+        ...(req.tenant.room_id ? [req.tenant.room_id] : []),
+        ...(Array.isArray(req.tenant.rented_rooms) ? req.tenant.rented_rooms.map(r => r.id) : [])
+      ].filter(Boolean).map(id => String(id));
+
+      if (clientRoomId && allowedRoomIds.includes(String(clientRoomId))) {
+        roomId = String(clientRoomId);
+      } else {
+        roomId = req.tenant.room_id || allowedRoomIds[0] || null;
+      }
     } else if (req.admin) {
       role = 'admin';
       roomId = clientRoomId || null;
@@ -36,7 +48,8 @@ export const handleChatMessage = async (req, res) => {
       message: message.trim(),
       roomId,
       role,
-      tenantId
+      tenantId,
+      allowedRoomIds
     });
 
     return successResponse(res, result, 'Phản hồi từ Trợ lý AI.');

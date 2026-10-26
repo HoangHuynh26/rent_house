@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import * as userRepo from '../src/repositories/user.repo.js';
 import * as contractRepo from '../src/repositories/contract.repo.js';
 import { enforceTenantOwnership } from '../src/middlewares/tenant-guard.middleware.js';
+import { handleChatMessage } from '../src/controllers/chatbot.controller.js';
 
 test('Multi-Room Tenancy: A tenant can rent 2 rooms and access both rooms', async (t) => {
   await t.test('1. Create tenant with 2 rooms', async () => {
@@ -70,7 +71,31 @@ test('Multi-Room Tenancy: A tenant can rent 2 rooms and access both rooms', asyn
     assert.strictEqual(errorCode, 'FORBIDDEN', 'Should return FORBIDDEN error code');
   });
 
-  await t.test('3. Clean up test tenant', async () => {
+  await t.test('3. Chatbot correctly recognizes and answers for Room 2 when tenant switches room', async () => {
+    const room2Id = 'd0000000-0000-0000-0000-000000000102';
+    const tenant = await userRepo.findByPhone('0999888777');
+    assert.ok(tenant);
+
+    let jsonResponse = null;
+    const req = {
+      tenant,
+      body: {
+        message: 'Tháng này bao nhiêu tiền?',
+        roomId: room2Id
+      }
+    };
+    const res = {
+      status(s) { return this; },
+      json(payload) { jsonResponse = payload; return this; }
+    };
+
+    await handleChatMessage(req, res);
+    assert.ok(jsonResponse, 'Should receive chatbot response');
+    assert.strictEqual(jsonResponse.success, true);
+    assert.ok(jsonResponse.data?.reply);
+  });
+
+  await t.test('4. Clean up test tenant', async () => {
     const tenant = await userRepo.findByPhone('0999888777');
     if (tenant) {
       await userRepo.softDelete(tenant.id);

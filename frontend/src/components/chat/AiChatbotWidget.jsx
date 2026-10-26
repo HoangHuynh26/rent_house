@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTenantRoom } from '../../contexts/TenantRoomContext';
 
 /**
  * Lightweight helper to format basic Markdown (headers, bold, tables, lists, quotes)
@@ -157,21 +158,23 @@ function MarkdownRenderer({ content }) {
 
 export default function AiChatbotWidget({ roomId: propRoomId }) {
   const { admin, tenant } = useAuth();
+  const { activeRoomId: ctxRoomId, activeRoom: ctxActiveRoom, rentedRooms } = useTenantRoom();
   const [isOpen, setIsOpen] = useState(false);
 
-  let activeRoomIdFromCtx = null;
-  let activeRoomNumberFromCtx = null;
-  try {
-    const { useTenantRoom } = require('../../contexts/TenantRoomContext');
-    // or imported hook
-  } catch (e) {}
+  // Active room determination:
+  // 1. propRoomId (explicitly passed prop from layout/page)
+  // 2. ctxRoomId (from TenantRoomContext)
+  // 3. tenant?.room_id (fallback to tenant primary room)
+  const effectiveRoomId = propRoomId || ctxRoomId || (tenant?.room_id || null);
 
-  const effectiveRoomId = propRoomId || (tenant?.room_id || null);
+  // Find room number
+  const matchedRoom = ctxActiveRoom || (rentedRooms && rentedRooms.find(r => r.id === effectiveRoomId)) || null;
+  const currentRoomNumber = matchedRoom?.room_number || tenant?.room_number || '';
 
   // Generates contextual greeting based on logged-in user room
   const createInitialMessage = () => {
     if (tenant) {
-      const roomNum = tenant.room_number || '';
+      const roomNum = currentRoomNumber || tenant.room_number || '';
       return {
         id: `init-tenant-${Date.now()}`,
         sender: 'ai',
@@ -236,7 +239,7 @@ export default function AiChatbotWidget({ roomId: propRoomId }) {
   // Update initial message whenever user logs in or switches account or room
   useEffect(() => {
     setMessages([createInitialMessage()]);
-  }, [tenant?.id, effectiveRoomId, admin?.id]);
+  }, [tenant?.id, effectiveRoomId, currentRoomNumber, admin?.id]);
 
   const handleSendMessage = async (textToSend = null) => {
     const queryText = (textToSend || inputVal).trim();
@@ -332,7 +335,7 @@ export default function AiChatbotWidget({ roomId: propRoomId }) {
             e.currentTarget.style.transform = 'scale(1)';
             e.currentTarget.style.boxShadow = '0 10px 25px -4px rgba(37, 99, 235, 0.5), 0 0 16px rgba(124, 58, 237, 0.35)';
           }}
-          title={tenant ? `Trợ lý AI • Phòng ${tenant.room_number}` : 'Trợ lý AI Thanh Tâm'}
+          title={tenant ? `Trợ lý AI • Phòng ${currentRoomNumber || tenant.room_number}` : 'Trợ lý AI Thanh Tâm'}
           aria-label="Mở Trợ lý AI"
         >
           <Bot size={26} color="#ffffff" />
@@ -394,7 +397,7 @@ export default function AiChatbotWidget({ roomId: propRoomId }) {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '15px', fontWeight: '800' }}>
-                    {tenant ? `Trợ Lý AI • Phòng ${tenant.room_number}` : (admin ? 'Trợ Lý AI Quản Trị' : 'Trợ Lý AI Thanh Tâm')}
+                    {tenant ? `Trợ Lý AI • Phòng ${currentRoomNumber || tenant.room_number}` : (admin ? 'Trợ Lý AI Quản Trị' : 'Trợ Lý AI Thanh Tâm')}
                   </span>
                   <span style={{
                     fontSize: '10px',
@@ -408,7 +411,7 @@ export default function AiChatbotWidget({ roomId: propRoomId }) {
                   </span>
                 </div>
                 <div style={{ fontSize: '11px', color: '#93c5fd' }}>
-                  {tenant ? `${tenant.full_name || 'Khách thuê'} • Tự động gắn kết Phòng ${tenant.room_number}` : (admin ? 'Quản trị viên • Nhận diện mọi phòng' : 'Hỗ trợ chung')}
+                  {tenant ? `${tenant.full_name || 'Khách thuê'} • Tự động gắn kết Phòng ${currentRoomNumber || tenant.room_number}` : (admin ? 'Quản trị viên • Nhận diện mọi phòng' : 'Hỗ trợ chung')}
                 </div>
               </div>
             </div>
