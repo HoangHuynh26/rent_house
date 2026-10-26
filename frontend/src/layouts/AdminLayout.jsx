@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, DoorOpen, Users, Cpu, Receipt, FileSignature, ShieldAlert, LogOut, Home, Menu, X, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import AiChatbotWidget from '../components/chat/AiChatbotWidget';
 
 
 export default function AdminLayout() {
@@ -177,9 +176,6 @@ export default function AdminLayout() {
         <main className="admin-body">
           <Outlet />
         </main>
-
-        {/* Global AI Chatbot Assistant */}
-        <AiChatbotWidget />
       </div>
     </div>
   );
