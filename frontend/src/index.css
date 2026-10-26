@@ -1050,4 +1050,22 @@ iframe[src*="netlify.com"] {
   }
 }
 
+/* Staggered entrance animation for room cards */
+@keyframes roomCardSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(45px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.room-card-stagger {
+  animation: roomCardSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+
 

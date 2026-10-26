@@ -154,22 +154,6 @@ export default function TenantWater() {
       {/* Top Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={() => navigate('/tenant/home')}
-            style={{
-              background: '#f1f5f9',
-              padding: '10px',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: 'none',
-              cursor: 'pointer'
-            }}
-            title="Quay lại"
-          >
-            <ArrowLeft size={22} color="#1e3a8a" />
-          </button>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
@@ -192,9 +176,6 @@ export default function TenantWater() {
                   Chụp hình vào: {formatDateTime(reading.photo_captured_at || reading.created_at)}
                 </span>
               )}
-            </div>
-            <div style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>
-              Tra cứu chỉ số tiêu thụ nước và ảnh chụp đồng hồ theo từng tháng
             </div>
           </div>
         </div>
@@ -512,7 +493,7 @@ export default function TenantWater() {
             </div>
 
             <div style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', marginTop: '16px' }}>
-              💡 Ảnh chụp thực tế được AI nhận diện và lưu trữ minh bạch trên hệ thống.
+              Ảnh chụp thực tế.
             </div>
           </div>
         </div>

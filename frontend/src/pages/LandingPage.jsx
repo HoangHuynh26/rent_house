@@ -421,14 +421,27 @@ export default function LandingPage() {
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
-            {filteredRooms.map((room) => {
+            <style>{`
+              @keyframes roomCardSlideUp {
+                0% {
+                  opacity: 0;
+                  transform: translateY(45px);
+                }
+                100% {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+              }
+            `}</style>
+            {filteredRooms.map((room, index) => {
               const isOccupied = room.status === 'occupied';
               const imgUrl = roomImageMap[room.room_number] || defaultRoomImage;
               const formattedRoomName = room.room_number?.startsWith('Phòng') ? room.room_number : `Phòng ${room.room_number}`;
 
               return (
                 <div
-                  key={room.id}
+                  key={`${room.id}-${activeFilter}`}
+                  className="room-card-stagger"
                   onClick={() => handleRoomClick(room)}
                   style={{
                     background: '#ffffff',
@@ -437,14 +450,16 @@ export default function LandingPage() {
                     overflow: 'hidden',
                     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease-in-out',
+                    transition: 'transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease',
                     display: 'flex',
-                    flexDirection: 'column'
+                    flexDirection: 'column',
+                    animation: 'roomCardSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) both',
+                    animationDelay: `${index * 150}ms`
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-6px)';
+                    e.currentTarget.style.transform = 'translateY(-8px)';
                     e.currentTarget.style.borderColor = '#2563eb';
-                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(37, 99, 235, 0.15)';
+                    e.currentTarget.style.boxShadow = '0 16px 32px rgba(37, 99, 235, 0.16)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
@@ -453,11 +468,15 @@ export default function LandingPage() {
                   }}
                 >
                   {/* Room Thumbnail with status badge */}
-                  <div style={{ position: 'relative', height: '190px', overflow: 'hidden' }}>
+                  <div style={{ position: 'relative', height: '190px', overflow: 'hidden', background: '#f1f5f9' }}>
                     <img
                       src={imgUrl}
+                      loading="lazy"
+                      decoding="async"
                       alt={formattedRoomName}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.06)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                     />
 
                     <div style={{
@@ -556,29 +575,10 @@ export default function LandingPage() {
       {/* 5.1 HƯỚNG DẪN TRA CỨU GIÁ PHÒNG & HÓA ĐƠN CHI TIẾT (#guide) */}
       <section id="guide" style={{ padding: '40px 24px 80px', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '44px' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: '#eff6ff',
-            color: '#2563eb',
-            padding: '6px 14px',
-            borderRadius: '20px',
-            fontSize: '13px',
-            fontWeight: '800',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            marginBottom: '12px'
-          }}>
-            <Sparkles size={16} />
-            HƯỚNG DẪN NGƯỜI DÙNG
-          </div>
+                  
           <h2 style={{ fontSize: '30px', fontWeight: '900', color: '#0f172a', marginBottom: '12px', letterSpacing: '-0.5px' }}>
             3 Bước Đơn Giản Để Vào Xem Giá Tiền Phòng & Hóa Đơn
           </h2>
-          <p style={{ fontSize: '15px', color: '#64748b', maxWidth: '640px', margin: '0 auto', lineHeight: '1.6' }}>
-            Khách thuê hoặc người có nhu cầu thuê có thể dễ dàng xem chi tiết giá thuê từng phòng, tiền điện nước hàng tháng và hợp đồng điện tử chỉ với vài thao tác.
-          </p>
         </div>
 
         {/* 3 Step Cards Grid */}
@@ -614,6 +614,8 @@ export default function LandingPage() {
             <div style={{ position: 'relative', height: '210px', overflow: 'hidden', background: '#f8fafc' }}>
               <img
                 src="/images/guide/step1.jpg"
+                loading="lazy"
+                decoding="async"
                 alt="Bước 1: Chọn phòng trọ trên danh mục"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
@@ -686,6 +688,8 @@ export default function LandingPage() {
             <div style={{ position: 'relative', height: '210px', overflow: 'hidden', background: '#f8fafc' }}>
               <img
                 src="/images/guide/step2.jpg"
+                loading="lazy"
+                decoding="async"
                 alt="Bước 2: Nhập số điện thoại thuê phòng"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
@@ -747,6 +751,8 @@ export default function LandingPage() {
             <div style={{ position: 'relative', height: '210px', overflow: 'hidden', background: '#f8fafc' }}>
               <img
                 src="/images/guide/step3.jpg"
+                loading="lazy"
+                decoding="async"
                 alt="Bước 3: Xem minh bạch giá tiền phòng và hóa đơn"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
