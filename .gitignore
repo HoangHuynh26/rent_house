@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+*/node_modules/
+**/node_modules/
+
+# Environment configurations & secrets
+.env
+.env.*
+*.env
+*.env.*
+**/.env
+**/.env.*
+.env.example
+*.env.example
+**/.env.example
+**/*.env.example
+
+# Project data, local databases & uploads
+data/
+*/data/
+**/data/
+backend/data/
+*.sqlite
+*.sqlite3
+*.db
+uploads/
+**/uploads/
+
+# Build artifacts
+dist/
+**/dist/
+build/
+**/build/
+
+# Scratch, cache & logs
+scratch/
+.system_generated/
+*.log
+.DS_Store
+Thumbs.db
+.cache/
+

@@ -1,0 +1,25 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Proxy API sang Render Backend
+[[redirects]]
+  from = "/api/*"
+  to = "https://rent-house-3jm7.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/uploads/*"
+  to = "https://rent-house-3jm7.onrender.com/uploads/:splat"
+  status = 200
+  force = true
+
+# Cấu hình Single Page Application (SPA) cho React Vite
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

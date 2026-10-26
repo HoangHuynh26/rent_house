@@ -1,0 +1,21 @@
+{
+  "short_name": "Thanh Tâm",
+  "name": "Nhà Trọ Thanh Tâm - Cho Thuê Phòng Trọ & Quản Lý Minh Bạch",
+  "icons": [
+    {
+      "src": "/dist/logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/dist/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e3a8a",
+  "display": "standalone",
+  "orientation": "portrait"
+}

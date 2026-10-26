@@ -1,0 +1,6 @@
+.env
+ai-service/
+backend/uploads/
+backend/node_modules/
+frontend/node_modules/
+scratch/

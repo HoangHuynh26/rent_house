@@ -1,0 +1,17 @@
+{
+  "name": "rent-house",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=rent-house-frontend",
+    "dev": "npm run dev --workspace=rent-house-frontend",
+    "test": "npm run test --workspace=rent-house-backend"
+  },
+  "engines": {
+    "node": ">=20 <23"
+  }
+}

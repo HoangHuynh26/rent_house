@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <!-- Homepage & Main Catalog -->
+  <url>
+    <loc>https://nhatrothanhtam.netlify.app/</loc>
+    <lastmod>2026-10-26</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1200</image:loc>
+      <image:title>Hệ thống phòng trọ Nhà Trọ Thanh Tâm</image:title>
+      <image:caption>Phòng trọ cao cấp, sạch sẽ, có gác lửng, máy lạnh và an ninh 24/7</image:caption>
+    </image:image>
+  </url>
+
+  <!-- Rooms Catalog Section -->
+  <url>
+    <loc>https://nhatrothanhtam.netlify.app/#rooms</loc>
+    <lastmod>2026-10-26</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Pricing & Rental Policies -->
+  <url>
+    <loc>https://nhatrothanhtam.netlify.app/#rules</loc>
+    <lastmod>2026-10-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- User Guide & Meter Transparency Tutorial -->
+  <url>
+    <loc>https://nhatrothanhtam.netlify.app/#guide</loc>
+    <lastmod>2026-10-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Contact & Landlord Information -->
+  <url>
+    <loc>https://nhatrothanhtam.netlify.app/#contact</loc>
+    <lastmod>2026-10-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>

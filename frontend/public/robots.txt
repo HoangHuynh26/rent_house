@@ -1,0 +1,16 @@
+# robots.txt for Nha Tro Thanh Tam
+User-agent: *
+Allow: /
+Allow: /#rooms
+Allow: /#rules
+Allow: /#guide
+Allow: /#contact
+Allow: /images/
+
+# Disallow private user-authenticated portal and admin routes
+Disallow: /tenant/
+Disallow: /admin/
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://nhatrothanhtam.netlify.app/sitemap.xml
