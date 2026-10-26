@@ -684,17 +684,6 @@ export default function TenantHistory() {
         <div
           className="modal-backdrop"
           onClick={() => setIsModalOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.65)',
-            backdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '16px'
-          }}
         >
           <div
             className="modal-card"
@@ -704,142 +693,169 @@ export default function TenantHistory() {
               borderRadius: '24px',
               maxWidth: '560px',
               width: '100%',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              padding: '28px',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
               position: 'relative'
             }}
           >
-            {/* Close button */}
-            <button
-              onClick={() => setIsModalOpen(false)}
-              style={{
-                position: 'absolute',
-                top: '18px',
-                right: '18px',
-                background: '#f1f5f9',
-                border: 'none',
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: '#64748b'
-              }}
-            >
-              <X size={20} />
-            </button>
-
-            {/* Modal Header */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: '#eff6ff',
-                color: '#1e3a8a',
-                padding: '4px 12px',
-                borderRadius: '16px',
-                fontSize: '12px',
-                fontWeight: '800',
-                marginBottom: '8px'
-              }}>
-                <Receipt size={14} />
-                <span>Phòng {selectedMonthBill.room_number} • Kỳ hóa đơn</span>
+            {/* Modal Header with Dedicated Close Button X */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              gap: '12px',
+              marginBottom: '14px',
+              borderBottom: '1px solid #f1f5f9',
+              paddingBottom: '12px'
+            }}>
+              <div>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#eff6ff',
+                  color: '#1e3a8a',
+                  padding: '4px 12px',
+                  borderRadius: '16px',
+                  fontSize: '12px',
+                  fontWeight: '800',
+                  marginBottom: '6px'
+                }}>
+                  <Receipt size={14} />
+                  <span>Phòng {selectedMonthBill.room_number} • Kỳ hóa đơn</span>
+                </div>
+                <h3 style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a', margin: 0 }}>
+                  Chi Tiết Tháng {selectedMonthBill.billing_month}/{selectedMonthBill.billing_year}
+                </h3>
               </div>
-              <h3 style={{ fontSize: '22px', fontWeight: '900', color: '#0f172a' }}>
-                Chi Tiết Tháng {selectedMonthBill.billing_month}/{selectedMonthBill.billing_year}
-              </h3>
 
-              {/* Month Navigation Tabs */}
-              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                <button
-                  type="button"
-                  onClick={goToOlderMonth}
-                  disabled={!hasOlder}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '6px 10px',
-                    borderRadius: '8px',
-                    background: hasOlder ? '#f1f5f9' : '#f8fafc',
-                    color: hasOlder ? '#1e3a8a' : '#cbd5e1',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    border: '1px solid #e2e8f0',
-                    cursor: hasOlder ? 'pointer' : 'not-allowed'
-                  }}
-                >
-                  <ChevronLeft size={14} /> Tháng trước
-                </button>
-                <button
-                  type="button"
-                  onClick={goToNewerMonth}
-                  disabled={!hasNewer}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '6px 10px',
-                    borderRadius: '8px',
-                    background: hasNewer ? '#f1f5f9' : '#f8fafc',
-                    color: hasNewer ? '#1e3a8a' : '#cbd5e1',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    border: '1px solid #e2e8f0',
-                    cursor: hasNewer ? 'pointer' : 'not-allowed'
-                  }}
-                >
-                  Tháng sau <ChevronRight size={14} />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                aria-label="Đóng chi tiết"
+                style={{
+                  background: '#f1f5f9',
+                  border: 'none',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#475569',
+                  flexShrink: 0,
+                  transition: 'background 0.15s ease'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#e2e8f0')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#f1f5f9')}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Month Navigation Tabs */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+              <button
+                type="button"
+                onClick={goToOlderMonth}
+                disabled={!hasOlder}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  background: hasOlder ? '#f1f5f9' : '#f8fafc',
+                  color: hasOlder ? '#1e3a8a' : '#cbd5e1',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  border: '1px solid #e2e8f0',
+                  cursor: hasOlder ? 'pointer' : 'not-allowed'
+                }}
+              >
+                <ChevronLeft size={14} /> Tháng trước
+              </button>
+              <button
+                type="button"
+                onClick={goToNewerMonth}
+                disabled={!hasNewer}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  background: hasNewer ? '#f1f5f9' : '#f8fafc',
+                  color: hasNewer ? '#1e3a8a' : '#cbd5e1',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  border: '1px solid #e2e8f0',
+                  cursor: hasNewer ? 'pointer' : 'not-allowed'
+                }}
+              >
+                Tháng sau <ChevronRight size={14} />
+              </button>
             </div>
 
             {/* Payment Status Box */}
             <div style={{
               background: selectedMonthBill.status === 'paid' ? '#f0fdf4' : '#fef2f2',
               border: `1px solid ${selectedMonthBill.status === 'paid' ? '#bbf7d0' : '#fecaca'}`,
-              borderRadius: '14px',
-              padding: '12px 16px',
-              marginBottom: '20px',
+              borderRadius: '16px',
+              padding: '12px 14px',
+              marginBottom: '16px',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
+              flexDirection: 'column',
+              gap: '6px'
             }}>
-              <div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '8px'
+              }}>
                 <div style={{
-                  fontSize: '14px',
+                  fontSize: '13px',
                   fontWeight: '800',
                   color: selectedMonthBill.status === 'paid' ? '#15803d' : '#b91c1c',
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  flexWrap: 'nowrap'
                 }}>
                   {selectedMonthBill.status === 'paid' ? (
                     <>
                       <CheckCircle2 size={16} />
-                      ĐÃ THANH TOÁN ({selectedMonthBill.payment_method === 'cash' ? '💵 Tiền mặt' : '💳 Chuyển khoản'})
+                      <span style={{ whiteSpace: 'nowrap' }}>ĐÃ THANH TOÁN</span>
+                      <span style={{
+                        fontSize: '11px',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        background: selectedMonthBill.payment_method === 'cash' ? '#dcfce7' : '#dbeafe',
+                        color: selectedMonthBill.payment_method === 'cash' ? '#15803d' : '#1d4ed8',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {selectedMonthBill.payment_method === 'cash' ? '💵 Tiền mặt' : '💳 Chuyển khoản'}
+                      </span>
                     </>
                   ) : (
                     <>
                       <AlertCircle size={16} />
-                      CHƯA NỘP TIỀN
+                      <span style={{ whiteSpace: 'nowrap' }}>CHƯA NỘP TIỀN</span>
                     </>
                   )}
                 </div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                  {selectedMonthBill.status === 'paid'
-                    ? `Thời gian nộp tiền: ${formatDate(selectedMonthBill.paid_at)}`
-                    : `Hạn đóng: ${formatDate(selectedMonthBill.due_date)} (Trùng ngày chụp ảnh công tơ)`}
+
+                <div style={{ fontSize: '20px', fontWeight: '900', color: '#1e3a8a', whiteSpace: 'nowrap' }}>
+                  {formatCurrency(selectedMonthBill.total_amount)}
                 </div>
               </div>
 
-              <div style={{ fontSize: '20px', fontWeight: '900', color: '#1e3a8a' }}>
-                {formatCurrency(selectedMonthBill.total_amount)}
+              <div style={{ fontSize: '12px', color: '#64748b' }}>
+                {selectedMonthBill.status === 'paid'
+                  ? `Thời gian nộp tiền: ${formatDate(selectedMonthBill.paid_at)}`
+                  : `Hạn đóng: ${formatDate(selectedMonthBill.due_date)} (Trùng ngày chụp ảnh công tơ)`}
               </div>
             </div>
 
@@ -1023,20 +1039,22 @@ export default function TenantHistory() {
             </div>
 
             {/* Bottom Actions */}
-            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+            <div style={{ marginTop: '20px', textAlign: 'center' }}>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 style={{
                   width: '100%',
                   padding: '14px',
-                  background: '#f1f5f9',
-                  border: '1px solid #cbd5e1',
+                  background: '#1e3a8a',
+                  border: 'none',
                   borderRadius: '12px',
                   fontSize: '15px',
                   fontWeight: '700',
-                  color: '#475569',
-                  cursor: 'pointer'
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(30, 58, 138, 0.25)',
+                  transition: 'background 0.15s ease'
                 }}
               >
                 Đóng chi tiết
