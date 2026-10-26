@@ -84,7 +84,7 @@ export default function TenantContract() {
   const isSigned = contract.status === 'signed' || (contract.admin_signature && contract.tenant_signature);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '90px' }}>
       {/* Top Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button

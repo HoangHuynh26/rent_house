@@ -17,7 +17,9 @@ import {
   AlertTriangle,
   Edit,
   Trash2,
-  Check
+  Check,
+  Users,
+  Phone
 } from 'lucide-react';
 import api from '../../services/api';
 import SignaturePad from '../../components/signature/SignaturePad';
@@ -247,7 +249,7 @@ export default function AdminContracts() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '90px' }}>
       {/* Page Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
         <div>
@@ -262,6 +264,7 @@ export default function AdminContracts() {
           style={{
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '8px',
             padding: '12px 20px',
             background: '#2563eb',
@@ -279,8 +282,60 @@ export default function AdminContracts() {
         </button>
       </div>
 
-      {/* Contracts Table */}
-      <div className="table-responsive">
+      {/* Quick stats chips for Mobile & Desktop */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
+        gap: '12px'
+      }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '14px',
+          padding: '12px 14px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center'
+        }}>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Tổng hợp đồng</span>
+          <span style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>{contracts.length} HĐ</span>
+        </div>
+        <div style={{
+          background: '#f0fdf4',
+          borderRadius: '14px',
+          padding: '12px 14px',
+          border: '1px solid #bbf7d0',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center'
+        }}>
+          <span style={{ fontSize: '12px', color: '#15803d', fontWeight: '600' }}>Đã ký & Khóa</span>
+          <span style={{ fontSize: '18px', fontWeight: '800', color: '#15803d' }}>
+            {contracts.filter(c => c.status === 'signed' || (c.admin_signature && c.tenant_signature)).length} HĐ
+          </span>
+        </div>
+        <div style={{
+          background: '#fefce8',
+          borderRadius: '14px',
+          padding: '12px 14px',
+          border: '1px solid #fef08a',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center'
+        }}>
+          <span style={{ fontSize: '12px', color: '#a16207', fontWeight: '600' }}>Chờ ký kết</span>
+          <span style={{ fontSize: '18px', fontWeight: '800', color: '#a16207' }}>
+            {contracts.filter(c => !(c.status === 'signed' || (c.admin_signature && c.tenant_signature))).length} HĐ
+          </span>
+        </div>
+      </div>
+
+      {/* Contracts Table (Desktop & Tablet) */}
+      <div className="table-responsive hide-on-mobile">
         <table className="admin-table" style={{ minWidth: '880px' }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: '700' }}>
@@ -562,6 +617,350 @@ export default function AdminContracts() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* ═══════ MOBILE CONTRACTS CARDS LIST (<= 768px) ═══════ */}
+      <div className="hide-on-desktop mobile-contracts-card-list" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {loading ? (
+          [...Array(3)].map((_, idx) => (
+            <div key={idx} style={{ background: '#ffffff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0' }}>
+              <div className="skeleton-box" style={{ height: '24px', width: '50%', marginBottom: '12px', borderRadius: '6px' }} />
+              <div className="skeleton-box" style={{ height: '60px', width: '100%', marginBottom: '12px', borderRadius: '10px' }} />
+              <div className="skeleton-box" style={{ height: '36px', width: '100%', borderRadius: '8px' }} />
+            </div>
+          ))
+        ) : contracts.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '36px 16px', background: '#ffffff', borderRadius: '16px', border: '1px dashed #cbd5e1', color: '#64748b' }}>
+            <FileSignature size={40} color="#94a3b8" style={{ marginBottom: '8px', display: 'inline-block' }} />
+            <p style={{ fontWeight: '700', fontSize: '15px', color: '#334155', margin: '0 0 4px 0' }}>Chưa có hợp đồng nào</p>
+            <p style={{ fontSize: '13px', margin: 0 }}>Bấm nút "+ Tạo hợp đồng mới" ở trên để thiết lập hợp đồng đầu tiên.</p>
+          </div>
+        ) : (
+          contracts.map((c) => {
+            const isBothSigned = !!(c.admin_signature && c.tenant_signature);
+            const isLocked = c.status === 'signed' || isBothSigned;
+            const cfg = statusConfig[c.status] || statusConfig.draft;
+            return (
+              <div
+                key={c.id}
+                style={{
+                  background: '#ffffff',
+                  borderRadius: '16px',
+                  border: isLocked ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}
+              >
+                {/* Header: Room & Status Pill */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{
+                        fontWeight: '800',
+                        fontSize: '15px',
+                        color: '#1e40af',
+                        background: '#eff6ff',
+                        padding: '4px 10px',
+                        borderRadius: '8px'
+                      }}>
+                        Phòng {c.room_number}
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
+                        #{c.contract_number}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    {isLocked ? (
+                      <span style={{
+                        background: '#dcfce7',
+                        color: '#15803d',
+                        border: '1px solid #86efac',
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '800',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        <Lock size={12} />
+                        Đã ký & Khóa
+                      </span>
+                    ) : (
+                      <span style={{
+                        background: cfg.bg,
+                        color: cfg.color,
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {c.admin_signature && !c.tenant_signature ? 'Chờ khách ký' : (!c.admin_signature && c.tenant_signature ? 'Chờ chủ ký' : cfg.label)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tenant & Period */}
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  fontSize: '13px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Users size={15} color="#2563eb" />
+                      <span style={{ fontWeight: '700', color: '#0f172a' }}>{c.tenant_name}</span>
+                    </div>
+                    {c.tenant_phone && (
+                      <a
+                        href={`tel:${c.tenant_phone}`}
+                        style={{
+                          color: '#2563eb',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          textDecoration: 'none',
+                          background: '#ffffff',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid #bfdbfe',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px'
+                        }}
+                      >
+                        <Phone size={11} /> {c.tenant_phone}
+                      </a>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '12px' }}>
+                    <Calendar size={13} />
+                    <span>Thời hạn: {formatDate(c.start_date)} - {formatDate(c.end_date)}</span>
+                  </div>
+                </div>
+
+                {/* Financial Details Grid */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '8px',
+                  background: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  fontSize: '12px'
+                }}>
+                  <div>
+                    <span style={{ color: '#166534' }}>Giá thuê:</span>
+                    <div style={{ fontWeight: '800', color: '#15803d', fontSize: '14px' }}>
+                      {formatCurrency(c.rent_amount)} <span style={{ fontSize: '11px', fontWeight: '500' }}>/th</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b' }}>Tiền cọc:</span>
+                    <div style={{ fontWeight: '700', color: '#1e293b' }}>
+                      {formatCurrency(c.deposit_amount || c.rent_amount)}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b' }}>⚡ Điện:</span>
+                    <div style={{ fontWeight: '700', color: '#d97706' }}>
+                      {formatCurrency(c.electricity_price || 3000)}/kWh
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b' }}>💧 Nước:</span>
+                    <div style={{ fontWeight: '700', color: '#0284c7' }}>
+                      {formatCurrency(c.water_price || 12000)}/m³
+                    </div>
+                  </div>
+                </div>
+
+                {/* Signatures status & SHA-256 seal */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '8px 12px',
+                  background: '#f8fafc',
+                  borderRadius: '10px',
+                  fontSize: '12px'
+                }}>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <span style={{ color: c.admin_signature ? '#15803d' : '#d97706', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      {c.admin_signature ? <CheckCircle size={13} color="#15803d" /> : <Clock size={13} color="#d97706" />}
+                      Chủ: {c.admin_signature ? 'Đã ký' : 'Chưa ký'}
+                    </span>
+                    <span style={{ color: c.tenant_signature ? '#15803d' : '#d97706', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      {c.tenant_signature ? <CheckCircle size={13} color="#15803d" /> : <Clock size={13} color="#d97706" />}
+                      Khách: {c.tenant_signature ? 'Đã ký' : 'Chưa ký'}
+                    </span>
+                  </div>
+
+                  {c.document_hash && (
+                    <span
+                      title={`SHA-256: ${c.document_hash}`}
+                      style={{
+                        color: '#059669',
+                        fontSize: '11px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '2px',
+                        fontWeight: '700',
+                        background: '#dcfce7',
+                        padding: '2px 6px',
+                        borderRadius: '4px'
+                      }}
+                    >
+                      <ShieldCheck size={12} />
+                      Bảo mật
+                    </span>
+                  )}
+                </div>
+
+                {/* Action Buttons Row */}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* Print Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenPrint(c)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      padding: '9px 12px',
+                      background: '#eff6ff',
+                      color: '#1e40af',
+                      border: '1px solid #bfdbfe',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Printer size={14} />
+                    In
+                  </button>
+
+                  {/* If not signed by admin and not locked -> Sign Button */}
+                  {!c.admin_signature && !isLocked && (
+                    <button
+                      type="button"
+                      onClick={() => setSigningContractId(c.id)}
+                      style={{
+                        flex: 1,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '5px',
+                        padding: '9px 12px',
+                        background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                        color: '#ffffff',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        border: 'none',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)'
+                      }}
+                    >
+                      <PenTool size={14} />
+                      Chủ nhà ký
+                    </button>
+                  )}
+
+                  {/* Edit button if not locked */}
+                  {!isLocked && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(c)}
+                      style={{
+                        flex: c.admin_signature ? 1 : 'unset',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                        padding: '9px 12px',
+                        background: '#f0fdf4',
+                        color: '#166534',
+                        border: '1px solid #bbf7d0',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Edit size={14} />
+                      Sửa
+                    </button>
+                  )}
+
+                  {/* Reopen button if locked */}
+                  {isLocked && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenReopen(c)}
+                      style={{
+                        flex: 1,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                        padding: '9px 12px',
+                        background: '#fef3c7',
+                        color: '#b45309',
+                        border: '1px solid #fde68a',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <RotateCcw size={14} />
+                      Mở lại
+                    </button>
+                  )}
+
+                  {/* Delete button */}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDelete(c)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      padding: '9px 12px',
+                      background: '#fff1f2',
+                      color: '#be123c',
+                      border: '1px solid #fecdd3',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Trash2 size={14} />
+                    Xóa
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Admin Signature Modal */}
