@@ -18,6 +18,7 @@ import api from '../../services/api';
 import { formatCurrency, formatNumber, formatDateTime } from '../../utils/formatters';
 import { MeterDetailSkeleton } from '../../components/loading/LoadingComponents';
 import { useTenantRoom } from '../../contexts/TenantRoomContext';
+import MeterImageModal from '../../components/common/MeterImageModal';
 
 export default function TenantElectricity() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -539,42 +540,15 @@ export default function TenantElectricity() {
         </div>
       )}
 
-      {/* Image Zoom Modal */}
-      {isZoomed && reading?.image_url && (
-        <div className="modal-backdrop" onClick={() => setIsZoomed(false)}>
-          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }} onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setIsZoomed(false)}
-              style={{
-                position: 'absolute',
-                top: '-40px',
-                right: '0',
-                background: '#ffffff',
-                color: '#0f172a',
-                borderRadius: '50%',
-                width: '36px',
-                height: '36px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              <X size={20} />
-            </button>
-            <img
-              src={reading.image_url}
-              alt={`Chi tiết đồng hồ điện Tháng ${selectedMonth}/${selectedYear}`}
-              style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '14px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}
-              onError={(e) => {
-                e.target.src = 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&auto=format&fit=crop&q=80';
-              }}
-            />
-          </div>
-        </div>
-      )}
+      {/* Image Zoom Modal with In-Frame Double-Tap 2-Stage Zoom */}
+      <MeterImageModal
+        isOpen={isZoomed && !!reading?.image_url}
+        onClose={() => setIsZoomed(false)}
+        imageUrl={reading?.image_url}
+        alt={`Chi tiết đồng hồ điện Tháng ${selectedMonth}/${selectedYear}`}
+        fallbackUrl="https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&auto=format&fit=crop&q=80"
+        title={`Đồng hồ điện Tháng ${selectedMonth}/${selectedYear}`}
+      />
     </div>
   );
 }
