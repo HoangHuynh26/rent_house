@@ -143,6 +143,9 @@ export default function LandingPage() {
     }
   };
 
+  const availableCount = rooms.filter((r) => r.status === 'available').length;
+  const occupiedCount = rooms.filter((r) => r.status === 'occupied').length;
+
   const filteredRooms = rooms.filter((r) => {
     if (activeFilter === 'available') return r.status === 'available';
     if (activeFilter === 'occupied') return r.status === 'occupied';
@@ -186,9 +189,6 @@ export default function LandingPage() {
             <div>
               <div style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.3px' }}>
                 NHÀ TRỌ THANH TÂM
-              </div>
-              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>
-                Không Gian Sống Văn Minh & Hiện Đại
               </div>
             </div>
           </div>
@@ -255,9 +255,6 @@ export default function LandingPage() {
       {/* 3. ROOMS CATALOG SECTION (#rooms) */}
       <section id="rooms" style={{ padding: '80px 24px', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{ fontSize: '14px', color: '#2563eb', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            DANH MỤC PHÒNG TRỌ
-          </div>
 
           {/* Filter Pills */}
           <div style={{
@@ -269,9 +266,9 @@ export default function LandingPage() {
             marginTop: '24px'
           }}>
             {[
-              { id: 'all', label: 'Tất cả (3 phòng)' },
-              { id: 'available', label: 'Phòng còn trống' },
-              { id: 'occupied', label: 'Phòng đang thuê' }
+              { id: 'all', label: `Tất cả (${rooms.length} phòng)` },
+              { id: 'available', label: `Phòng còn trống (${availableCount})` },
+              { id: 'occupied', label: `Phòng đang thuê (${occupiedCount})` }
             ].map((f) => (
               <button
                 key={f.id}
@@ -282,7 +279,10 @@ export default function LandingPage() {
                   background: activeFilter === f.id ? '#1e3a8a' : 'transparent',
                   color: activeFilter === f.id ? '#ffffff' : '#475569',
                   fontSize: '14px',
-                  fontWeight: '700'
+                  fontWeight: '700',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
                 }}
               >
                 {f.label}
@@ -291,9 +291,233 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Room Cards Grid */}
+        {/* Room Cards Grid or Empty State */}
         {loadingRooms ? (
           <div style={{ textAlign: 'center', padding: '60px', color: '#64748b' }}>Đang tải danh sách phòng...</div>
+        ) : filteredRooms.length === 0 ? (
+          <div
+            style={{
+              maxWidth: '680px',
+              margin: '20px auto 0',
+              padding: '44px 32px',
+              background: '#ffffff',
+              borderRadius: '24px',
+              border: '2px dashed #cbd5e1',
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.04)',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+            }}
+          >
+            {/* Visual Icon Badge */}
+            <div
+              style={{
+                width: '76px',
+                height: '76px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                border: '1px solid #bfdbfe',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '18px',
+                position: 'relative'
+              }}
+            >
+              <DoorOpen size={38} color="#2563eb" />
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-6px',
+                  right: '-10px',
+                  background: '#f59e0b',
+                  color: '#ffffff',
+                  fontSize: '11px',
+                  fontWeight: '800',
+                  padding: '3px 8px',
+                  borderRadius: '12px',
+                  boxShadow: '0 2px 6px rgba(245, 158, 11, 0.35)',
+                  letterSpacing: '0.3px'
+                }}
+              >
+                100% ĐẦY
+              </span>
+            </div>
+
+            {/* Title & Description */}
+            <h3
+              style={{
+                fontSize: '22px',
+                fontWeight: '800',
+                color: '#0f172a',
+                marginBottom: '8px'
+              }}
+            >
+              {activeFilter === 'available'
+                ? 'Hiện Tại Nhà Trọ Đang Tạm Hết Phòng Trống'
+                : 'Không Có Phòng Nào Phù Hợp'}
+            </h3>
+
+            <p
+              style={{
+                fontSize: '15px',
+                color: '#64748b',
+                lineHeight: '1.6',
+                maxWidth: '520px',
+                margin: '0 auto 24px'
+              }}
+            >
+              {activeFilter === 'available'
+                ? 'Tất cả các phòng tại Nhà Trọ Thanh Tâm hiện đều đang có khách thuê ổn định dài hạn. Bạn có thể xem toàn bộ các phòng để tham khảo tiện nghi, cơ sở vật chất hoặc gọi trực tiếp chủ trọ để được ưu tiên thông báo ngay khi có phòng sắp trả.'
+                : 'Hiện không có phòng nào trong danh mục này. Vui lòng chọn bộ lọc khác để xem danh sách phòng.'}
+            </p>
+
+            {/* Quick Benefits Highlight */}
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: '12px',
+                marginBottom: '24px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569', background: '#f8fafc', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <CheckCircle2 size={15} color="#16a34a" />
+                <span>Camera an ninh 24/7 & Cửa khóa vân tay</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569', background: '#f8fafc', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <CheckCircle2 size={15} color="#16a34a" />
+                <span>Điện 3.000đ/kWh & Nước 12.000đ/m³ công tơ riêng</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569', background: '#f8fafc', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <CheckCircle2 size={15} color="#16a34a" />
+                <span>Giờ giấc tự do, không chung chủ 100%</span>
+              </div>
+            </div>
+
+            {/* Contact Hotline Banner */}
+            <div
+              style={{
+                width: '100%',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '16px',
+                padding: '16px 20px',
+                marginBottom: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+                textAlign: 'left'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                >
+                  <PhoneCall size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#64748b' }}>
+                    Hotline đặt lịch & đăng ký giữ phòng:
+                  </div>
+                  <div style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
+                    0909.256.680 (Chủ trọ Thanh Tâm)
+                  </div>
+                </div>
+              </div>
+
+              <a
+                href="tel:0909256680"
+                style={{
+                  padding: '9px 18px',
+                  background: '#16a34a',
+                  color: '#ffffff',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  borderRadius: '10px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)'
+                }}
+              >
+                <PhoneCall size={14} />
+                Gọi Đặt Chỗ Ngay
+              </a>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setActiveFilter('all')}
+                style={{
+                  padding: '11px 22px',
+                  borderRadius: '12px',
+                  background: '#1e3a8a',
+                  color: '#ffffff',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 12px rgba(30, 58, 138, 0.2)',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+              >
+                <Layers size={16} />
+                Xem Tất Cả Các Phòng ({rooms.length})
+              </button>
+
+              <a
+                href="#contact"
+                style={{
+                  padding: '11px 22px',
+                  borderRadius: '12px',
+                  background: '#ffffff',
+                  color: '#334155',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  border: '1px solid #cbd5e1',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#2563eb';
+                  e.currentTarget.style.color = '#2563eb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#cbd5e1';
+                  e.currentTarget.style.color = '#334155';
+                }}
+              >
+                <MapPin size={16} />
+                Xem Địa Chỉ Trọ
+              </a>
+            </div>
+          </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
             {filteredRooms.map((room) => {
@@ -418,12 +642,12 @@ export default function LandingPage() {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #f1f5f9', fontSize: '16px' }}>
             <span style={{ fontWeight: '600', color: '#334155' }}>⚡ Tiền điện sinh hoạt:</span>
-            <span style={{ fontWeight: '800', color: '#d97706' }}>3,000 đ / kWh (Công tơ riêng từng phòng)</span>
+            <span style={{ fontWeight: '800', color: '#d97706' }}>3,000 đ / kWh</span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #f1f5f9', fontSize: '16px' }}>
             <span style={{ fontWeight: '600', color: '#334155' }}>💧 Tiền nước sinh hoạt:</span>
-            <span style={{ fontWeight: '800', color: '#0284c7' }}>12,000 đ / m³ (Đồng hồ nước riêng)</span>
+            <span style={{ fontWeight: '800', color: '#0284c7' }}>12,000 đ / m³</span>
           </div>
         </div>
       </section>
