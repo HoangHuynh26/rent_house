@@ -4,7 +4,7 @@ import { isPostgresActive, query, memoryStore } from '../config/db.js';
 export const findAll = async (filter = {}) => {
   if (isPostgresActive()) {
     let q = `
-      SELECT b.*, r.room_number, u.full_name as tenant_name, u.phone as tenant_phone,
+      SELECT b.*, r.room_number, u.full_name as tenant_name, u.phone as tenant_phone, u.email as tenant_email,
              er.current_value as elec_current, er.previous_value as elec_previous, er.consumption as elec_kwh, er.unit_price as elec_unit_price, er.image_url as elec_image,
              COALESCE(ermi.captured_at, er.created_at) as elec_captured_at,
              wr.current_value as water_current, wr.previous_value as water_previous, wr.consumption as water_m3, wr.unit_price as water_unit_price, wr.image_url as water_image,
@@ -63,6 +63,7 @@ export const findAll = async (filter = {}) => {
       room_number: r ? r.room_number : null,
       tenant_name: u ? u.full_name : null,
       tenant_phone: u ? u.phone : null,
+      tenant_email: u ? u.email : null,
       elec_current: er ? er.current_value : null,
       elec_previous: er ? er.previous_value : null,
       elec_kwh: er ? er.consumption : null,
@@ -82,7 +83,7 @@ export const findAll = async (filter = {}) => {
 export const findById = async (id) => {
   if (isPostgresActive()) {
     const res = await query(
-      `SELECT b.*, r.room_number, u.full_name as tenant_name, u.phone as tenant_phone,
+      `SELECT b.*, r.room_number, u.full_name as tenant_name, u.phone as tenant_phone, u.email as tenant_email,
               er.current_value as elec_current, er.previous_value as elec_previous, er.consumption as elec_kwh, er.unit_price as elec_unit_price, er.image_url as elec_image,
               COALESCE(ermi.captured_at, er.created_at) as elec_captured_at,
               wr.current_value as water_current, wr.previous_value as water_previous, wr.consumption as water_m3, wr.unit_price as water_unit_price, wr.image_url as water_image,
@@ -114,6 +115,7 @@ export const findById = async (id) => {
     room_number: r ? r.room_number : null,
     tenant_name: u ? u.full_name : null,
     tenant_phone: u ? u.phone : null,
+    tenant_email: u ? u.email : null,
     elec_current: er ? er.current_value : null,
     elec_previous: er ? er.previous_value : null,
     elec_kwh: er ? er.consumption : null,

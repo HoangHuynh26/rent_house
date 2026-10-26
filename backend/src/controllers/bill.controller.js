@@ -9,6 +9,7 @@ import { successResponse, errorResponse } from '../utils/response.util.js';
 import { formatVND } from '../utils/currency.util.js';
 import * as auditService from '../services/audit.service.js';
 import * as autoBillingService from '../services/auto-billing.service.js';
+import * as notificationDelivery from '../services/notification-delivery.service.js';
 
 export const getBills = async (req, res) => {
   try {
@@ -36,7 +37,16 @@ export const getBillById = async (req, res) => {
 
 export const generateMonthlyBills = async (req, res) => {
   try {
-    const { month, year, due_date, discount_amount = 0, recalculate = false } = req.body;
+    const {
+      month,
+      year,
+      due_date,
+      discount_amount = 0,
+      recalculate = false,
+      send_email = true,
+      send_sms = true
+    } = req.body;
+
     if (!month || !year) {
       return errorResponse(res, 'Vui lòng cung cấp tháng và năm tính hóa đơn.', 'BAD_REQUEST', 400);
     }
@@ -111,25 +121,49 @@ export const generateMonthlyBills = async (req, res) => {
         payment_method: null
       });
 
-      // Send tenant in-app notification
-      await notificationRepo.create({
-        recipient_type: 'tenant',
-        recipient_id: tenant.id,
-        title: `Hóa đơn tiền phòng Tháng ${billingMonth}/${billingYear}`,
-        message: `Hóa đơn phòng ${room.room_number} tháng ${billingMonth}/${billingYear} đã sẵn sàng: ${formatVND(bill.total_amount)}. Hạn đóng: ${capturedDueDate}.`,
-        type: 'bill',
-        metadata: { bill_id: bill.id }
-      });
+      // Dispatch notifications across Resend Email, SMS OTP, and In-App
+      let notifResult = null;
+      try {
+        notifResult = await notificationDelivery.sendBillNotification({
+          bill,
+          tenant,
+          room,
+          elecReading,
+          waterReading,
+          options: { sendEmail: !!send_email, sendSms: !!send_sms, isManual: false }
+        });
+      } catch (notifErr) {
+        console.error(`[Bill Notification Error Room ${room.room_number}]:`, notifErr.message);
+      }
 
-      generated.push({ room_number: room.room_number, bill_id: bill.id, total_amount: bill.total_amount });
+      generated.push({
+        room_number: room.room_number,
+        bill_id: bill.id,
+        total_amount: bill.total_amount,
+        notification: notifResult
+      });
     }
+
+    const notifStats = {
+      emails_sent: generated.filter(g => g.notification?.email?.success && !g.notification?.email?.simulated).length,
+      emails_simulated: generated.filter(g => g.notification?.email?.simulated).length,
+      emails_skipped: generated.filter(g => g.notification?.email?.skipped).length,
+      sms_sent: generated.filter(g => g.notification?.sms?.success && !g.notification?.sms?.simulated).length,
+      sms_simulated: generated.filter(g => g.notification?.sms?.simulated).length,
+      sms_skipped: generated.filter(g => g.notification?.sms?.skipped).length
+    };
 
     await auditService.logAction({
       actorId: req.admin?.id,
       actorType: 'admin',
       action: 'GENERATE_MONTHLY_BILLS',
       entityType: 'bill',
-      newData: { month: billingMonth, year: billingYear, generated_count: generated.length },
+      newData: {
+        month: billingMonth,
+        year: billingYear,
+        generated_count: generated.length,
+        notification_summary: notifStats
+      },
       ip: req.ip,
       userAgent: req.get('User-Agent')
     });
@@ -138,11 +172,47 @@ export const generateMonthlyBills = async (req, res) => {
       generated_count: generated.length,
       skipped_count: skipped.length,
       generated,
-      skipped
+      skipped,
+      notification_summary: notifStats
     }, `Đã tạo ${generated.length} hóa đơn tháng ${billingMonth}/${billingYear}.`);
   } catch (err) {
     console.error('[Generate Monthly Bills Error]:', err);
     return errorResponse(res, 'Không thể lập hóa đơn tháng.', 'SERVER_ERROR', 500);
+  }
+};
+
+export const notifyBill = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { send_email = true, send_sms = true } = req.body;
+
+    const bill = await billRepo.findById(id);
+    if (!bill) {
+      return errorResponse(res, 'Không tìm thấy hóa đơn.', 'NOT_FOUND', 404);
+    }
+
+    const room = await roomRepo.findById(bill.room_id);
+    const tenant = await userRepo.findById(bill.tenant_id);
+    if (!room || !tenant) {
+      return errorResponse(res, 'Không tìm thấy thông tin phòng hoặc người thuê của hóa đơn này.', 'BAD_REQUEST', 400);
+    }
+
+    const elecReading = bill.electricity_reading_id ? await readingRepo.findElectricityByRoomAndPeriod(bill.room_id, bill.billing_month, bill.billing_year) : null;
+    const waterReading = bill.water_reading_id ? await readingRepo.findWaterByRoomAndPeriod(bill.room_id, bill.billing_month, bill.billing_year) : null;
+
+    const result = await notificationDelivery.sendBillNotification({
+      bill,
+      tenant,
+      room,
+      elecReading,
+      waterReading,
+      options: { sendEmail: !!send_email, sendSms: !!send_sms, isManual: true }
+    });
+
+    return successResponse(res, result, 'Đã gửi thông báo hóa đơn tới người thuê thành công.');
+  } catch (err) {
+    console.error('[Notify Bill Error]:', err);
+    return errorResponse(res, 'Lỗi khi gửi thông báo hóa đơn.', 'SERVER_ERROR', 500);
   }
 };
 

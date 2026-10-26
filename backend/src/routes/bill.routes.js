@@ -11,6 +11,7 @@ router.get('/auto-schedule/status', billController.getAutoScheduleStatus);
 router.post('/auto-schedule/trigger', billController.triggerAutoBillingNow);
 router.get('/:id', billController.getBillById);
 router.post('/generate', billController.generateMonthlyBills);
+router.post('/:id/notify', billController.notifyBill);
 router.patch('/:id/status', billController.updateBillStatus);
 router.delete('/:id', billController.deleteBill);
 

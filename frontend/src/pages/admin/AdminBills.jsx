@@ -17,7 +17,11 @@ import {
   Zap,
   Droplet,
   TrendingUp,
-  ShieldCheck
+  ShieldCheck,
+  Send,
+  Mail,
+  Smartphone,
+  Info
 } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, PieChart, Pie, Legend
@@ -43,6 +47,17 @@ export default function AdminBills() {
   const [paymentMethodChoice, setPaymentMethodChoice] = useState('cash');
   const [paymentStep, setPaymentStep] = useState(1); // 1 = choose method, 2 = confirm
   const [submittingPayment, setSubmittingPayment] = useState(false);
+
+  // Notification delivery options
+  const [sendEmailNotify, setSendEmailNotify] = useState(true);
+  const [sendSmsNotify, setSendSmsNotify] = useState(true);
+
+  // Single bill notification modal
+  const [notifyTargetBill, setNotifyTargetBill] = useState(null);
+  const [sendingNotify, setSendingNotify] = useState(false);
+  const [notifyResult, setNotifyResult] = useState(null);
+  const [singleSendEmail, setSingleSendEmail] = useState(true);
+  const [singleSendSms, setSingleSendSms] = useState(true);
 
   useEffect(() => {
     fetchBills();
@@ -95,7 +110,9 @@ export default function AdminBills() {
       const res = await api.post('/bills/generate', {
         month,
         year,
-        recalculate: recalculateExisting
+        recalculate: recalculateExisting,
+        send_email: sendEmailNotify,
+        send_sms: sendSmsNotify
       });
       setGenerateResult(res.data);
       fetchBills();
@@ -103,6 +120,24 @@ export default function AdminBills() {
       alert(err.message || 'Lỗi khi lập hóa đơn.');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleSendSingleNotification = async () => {
+    if (!notifyTargetBill) return;
+    try {
+      setSendingNotify(true);
+      setNotifyResult(null);
+      const res = await api.post(`/bills/${notifyTargetBill.id}/notify`, {
+        send_email: singleSendEmail,
+        send_sms: singleSendSms
+      });
+      setNotifyResult(res.data);
+      fetchBills();
+    } catch (err) {
+      alert(err.message || 'Lỗi khi gửi thông báo hóa đơn.');
+    } finally {
+      setSendingNotify(false);
     }
   };
 
@@ -660,6 +695,33 @@ export default function AdminBills() {
                       )}
 
                       <button
+                        onClick={() => {
+                          setNotifyTargetBill(b);
+                          setNotifyResult(null);
+                          setSingleSendEmail(true);
+                          setSingleSendSms(true);
+                        }}
+                        title="Gửi email Resend hoặc tin nhắn SMS OTP cho người thuê phòng này"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '6px 10px',
+                          background: '#eff6ff',
+                          color: '#2563eb',
+                          border: '1px solid #bfdbfe',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <Send size={13} />
+                        Gửi báo
+                      </button>
+
+                      <button
                         onClick={() => handleDeleteBill(b)}
                         title="Xóa hóa đơn để tạo lại"
                         style={{
@@ -918,7 +980,7 @@ export default function AdminBills() {
               📷 <strong>Hạn đóng tiền:</strong> Tự động gán theo <strong>ngày chụp ảnh công tơ thực tế</strong> của phòng trong tháng.
             </div>
 
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 14px', marginBottom: '18px' }}>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 14px', marginBottom: '14px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1e293b', cursor: 'pointer', fontWeight: '600' }}>
                 <input
                   type="checkbox"
@@ -930,14 +992,49 @@ export default function AdminBills() {
               </label>
             </div>
 
+            {/* Notification delivery options */}
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '12px 14px', marginBottom: '18px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e3a8a', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Send size={15} color="#2563eb" />
+                Gửi thông báo ngay cho người thuê khi lập:
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1e293b', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={sendEmailNotify}
+                    onChange={(e) => setSendEmailNotify(e.target.checked)}
+                    style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
+                  />
+                  <span>📧 <strong>Gửi Email qua Resend</strong> (kèm chi tiết bảng kê, số điện nước và STK chuyển khoản)</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1e293b', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={sendSmsNotify}
+                    onChange={(e) => setSendSmsNotify(e.target.checked)}
+                    style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
+                  />
+                  <span>📱 <strong>Gửi tin nhắn SMS & Mã OTP</strong> tới số điện thoại người thuê</span>
+                </label>
+              </div>
+            </div>
+
             {generateResult ? (
-              <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
-                <div style={{ fontWeight: '700', color: '#166534' }}>
+              <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #bbf7d0' }}>
+                <div style={{ fontWeight: '800', color: '#166534', fontSize: '15px' }}>
                   ✓ Đã tạo thành công {generateResult.generated_count} hóa đơn mới!
                 </div>
                 {generateResult.skipped_count > 0 && (
                   <div style={{ fontSize: '13px', color: '#b45309', marginTop: '6px' }}>
                     ({generateResult.skipped_count} phòng đã có hóa đơn từ trước được bỏ qua để tránh trùng lặp)
+                  </div>
+                )}
+                {generateResult.notification_summary && (
+                  <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #86efac', fontSize: '13px', color: '#15803d', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ fontWeight: '700' }}>📬 Kết quả thông báo:</div>
+                    <div>• 📧 <strong>Email Resend:</strong> {generateResult.notification_summary.emails_sent > 0 ? `${generateResult.notification_summary.emails_sent} email đã gửi thực tế` : (generateResult.notification_summary.emails_simulated > 0 ? `${generateResult.notification_summary.emails_simulated} email đã mô phỏng gửi thành công` : '0 email')} {generateResult.notification_summary.emails_skipped > 0 ? `(${generateResult.notification_summary.emails_skipped} phòng chưa có email)` : ''}</div>
+                    <div>• 📱 <strong>SMS / OTP:</strong> {generateResult.notification_summary.sms_sent > 0 ? `${generateResult.notification_summary.sms_sent} tin nhắn đã gửi` : `${generateResult.notification_summary.sms_simulated} tin nhắn SMS/OTP đã gửi tới số điện thoại`}</div>
                   </div>
                 )}
               </div>
@@ -971,6 +1068,121 @@ export default function AdminBills() {
                   }}
                 >
                   {generating ? 'Đang tạo...' : 'Xác nhận lập hóa đơn'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════ SINGLE BILL NOTIFICATION MODAL ═══════ */}
+      {notifyTargetBill && (
+        <div className="modal-backdrop" onClick={() => { setNotifyTargetBill(null); setNotifyResult(null); }}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Send size={20} color="#2563eb" />
+              Gửi Thông Báo Hóa Đơn Phòng {notifyTargetBill.room_number}
+            </h3>
+            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
+              Kỳ thanh toán: Tháng {notifyTargetBill.billing_month}/{notifyTargetBill.billing_year} • Tổng tiền: <strong style={{ color: '#1d4ed8' }}>{formatCurrency(notifyTargetBill.total_amount)}</strong>
+            </p>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', marginBottom: '16px', fontSize: '13px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ color: '#64748b' }}>Người thuê:</span>
+                <strong style={{ color: '#0f172a' }}>{notifyTargetBill.tenant_name}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ color: '#64748b' }}>Số điện thoại (SMS/OTP):</span>
+                <strong style={{ color: '#0f172a' }}>{notifyTargetBill.tenant_phone || '(Chưa có)'}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>Email (Resend):</span>
+                <strong style={{ color: notifyTargetBill.tenant_email ? '#0f172a' : '#d97706' }}>
+                  {notifyTargetBill.tenant_email || 'Chưa cập nhật email'}
+                </strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '14px', marginBottom: '18px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e3a8a', marginBottom: '10px' }}>
+                Chọn kênh thông báo muốn gửi:
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1e293b', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={singleSendEmail}
+                    onChange={(e) => setSingleSendEmail(e.target.checked)}
+                    style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
+                  />
+                  <span>
+                    📧 <strong>Gửi Email Resend</strong> {notifyTargetBill.tenant_email ? `tới ${notifyTargetBill.tenant_email}` : '(Khách chưa có email - sẽ bỏ qua)'}
+                  </span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1e293b', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={singleSendSms}
+                    onChange={(e) => setSingleSendSms(e.target.checked)}
+                    style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
+                  />
+                  <span>
+                    📱 <strong>Gửi SMS & Mã tra cứu OTP</strong> tới {notifyTargetBill.tenant_phone}
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {notifyResult ? (
+              <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', padding: '14px', marginBottom: '18px', fontSize: '13px' }}>
+                <div style={{ fontWeight: '800', color: '#166534', marginBottom: '6px' }}>
+                  ✓ Đã gửi thông báo thành công!
+                </div>
+                {notifyResult.otp && (
+                  <div style={{ color: '#15803d', marginTop: '4px' }}>
+                    • Mã OTP tra cứu đã tạo: <strong style={{ letterSpacing: '1px', background: '#dcfce7', padding: '2px 6px', borderRadius: '4px' }}>{notifyResult.otp}</strong>
+                  </div>
+                )}
+                {notifyResult.email && (
+                  <div style={{ color: '#15803d', marginTop: '4px' }}>
+                    • Email Resend: {notifyResult.email.success ? (notifyResult.email.simulated ? 'Mô phỏng gửi thành công (chưa có RESEND_API_KEY trong .env)' : 'Đã gửi tới hộp thư') : (notifyResult.email.skipped ? notifyResult.email.reason : notifyResult.email.error)}
+                  </div>
+                )}
+                {notifyResult.sms && (
+                  <div style={{ color: '#15803d', marginTop: '4px' }}>
+                    • SMS OTP: {notifyResult.sms.success ? (notifyResult.sms.simulated ? 'Đã tạo và gửi SMS/OTP tới điện thoại người thuê' : 'Đã gửi SMS tới điện thoại') : notifyResult.sms.error}
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => { setNotifyTargetBill(null); setNotifyResult(null); }}
+                style={{ padding: '10px 16px', background: '#e2e8f0', color: '#475569', borderRadius: '10px', border: 'none', fontWeight: '600', cursor: 'pointer' }}
+              >
+                Đóng
+              </button>
+              {!notifyResult && (
+                <button
+                  type="button"
+                  disabled={sendingNotify || (!singleSendEmail && !singleSendSms)}
+                  onClick={handleSendSingleNotification}
+                  style={{
+                    padding: '10px 20px',
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    fontWeight: '700',
+                    borderRadius: '10px',
+                    border: 'none',
+                    cursor: (sendingNotify || (!singleSendEmail && !singleSendSms)) ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '6px'
+                  }}
+                >
+                  <Send size={15} />
+                  {sendingNotify ? 'Đang gửi thông báo...' : 'Gửi ngay cho người thuê'}
                 </button>
               )}
             </div>

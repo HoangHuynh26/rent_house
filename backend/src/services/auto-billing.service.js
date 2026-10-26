@@ -8,6 +8,7 @@ import * as readingRepo from '../repositories/reading.repo.js';
 import * as notificationRepo from '../repositories/notification.repo.js';
 import * as meterImageRepo from '../repositories/meter-image.repo.js';
 import * as auditService from './audit.service.js';
+import * as notificationDelivery from './notification-delivery.service.js';
 import { formatVND } from '../utils/currency.util.js';
 
 export const getVnTime = (date = new Date()) => {
@@ -152,15 +153,19 @@ export const runAutoMonthlyBilling = async ({ force = false, month = null, year 
         payment_method: existing?.payment_method || null
       });
 
-      // Send tenant in-app notification
-      await notificationRepo.create({
-        recipient_type: 'tenant',
-        recipient_id: tenant.id,
-        title: `Hóa đơn phòng Tháng ${targetMonth}/${targetYear} (Tự động chốt ngày 10)`,
-        message: `Hóa đơn phòng ${room.room_number} tháng ${targetMonth}/${targetYear} đã được tự động cập nhật vào ngày 10: ${formatVND(bill.total_amount)} (Điện: ${formatVND(elecAmount)}, Nước: ${formatVND(waterAmount)}). Hạn đóng: ${capturedDueDate}.`,
-        type: 'bill',
-        metadata: { bill_id: bill.id, auto_day_10: true }
-      });
+      // Send tenant multi-channel notification (Email Resend, SMS OTP, and In-App)
+      try {
+        await notificationDelivery.sendBillNotification({
+          bill,
+          tenant,
+          room,
+          elecReading,
+          waterReading,
+          options: { sendEmail: true, sendSms: true, isManual: false }
+        });
+      } catch (notifErr) {
+        console.error(`[Auto Billing Notification Error Room ${room.room_number}]:`, notifErr.message);
+      }
 
       if (existing) {
         updatedBills.push({ room_number: room.room_number, bill_id: bill.id, total_amount: bill.total_amount });
