@@ -24,10 +24,16 @@ Hệ thống quản lý nhà trọ, phòng trọ, khách thuê, chỉ số đi�
   - Cảnh báo bất thường nếu chỉ số mới thấp hơn chỉ số cũ hoặc tăng vọt đột biến.
   - **Quy trình duyệt Human-In-The-Loop**: Chủ nhà đối chiếu ảnh thực tế và số AI đọc được song song, phê duyệt 1 chạm hoặc điều chỉnh số liệu trước khi chính thức ghi nhận.
   - Tự động ghi nhận mẫu dữ liệu chuẩn vào tập dữ liệu huấn luyện AI (`ai_training_samples`).
-- **Lập hóa đơn tự động 1 chạm**:
-  - Tự động tập hợp tiền phòng + tiền điện + tiền nước + phí dịch vụ - giảm trừ cho các phòng đang thuê.
-  - Chốt đơn giá tại thời điểm lập (snapshot pricing) để hóa đơn lịch sử không bao giờ bị sai lệch khi giá điện nước thay đổi trong tương lai.
-  - Tự động gửi thông báo trong ứng dụng đến khách thuê.
+- **Lập hóa đơn tự động & Thông báo đa kênh (SMS OTP & Email Resend)**:
+  - Tự động tập hợp tiền phòng + tiền điện + tiền nước + phí dịch vụ cho các phòng đang thuê.
+  - Tự động gửi thông báo trực tiếp qua **SMS OTP** và **Email Resend** kèm bảng kê chi tiết cho khách thuê ngay khi lập.
+  - Chốt đơn giá tại thời điểm lập (snapshot pricing) để hóa đơn lịch sử không bao giờ bị sai lệch.
+- **Tối ưu hóa Giao diện Di động (Mobile-First Card UI)**:
+  - Danh sách hóa đơn, danh sách phòng trọ và hợp đồng tự động chuyển sang giao diện thẻ card thông minh trên màn hình nhỏ ($\le 768\text{px}$).
+  - Không cần cuộn ngang, nút bấm lớn thuận tiện thao tác một tay, có khoảng đệm đáy tránh che khuất bởi chatbot AI.
+  - Thanh điều hướng đáy kính lỏng Apple (Liquid Glass Dock) phong cách tối giản.
+- **Tối ưu hóa SEO & Khả năng Tìm kiếm**:
+  - Tích hợp chuẩn Schema.org JSON-LD (ApartmentComplex), OpenGraph, Twitter Card, Sitemap.xml, Robots.txt và Dynamic Page SEO Hook.
 - **Quản lý hợp đồng & Tính toàn vẹn**:
   - Soạn thảo hợp đồng mới, chủ nhà ký điện tử trước.
   - Giữ lại vĩnh viễn lịch sử hợp đồng cũ khi khách rời đi và có khách mới đến thuê.
