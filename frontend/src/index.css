@@ -403,6 +403,45 @@ button:disabled {
   }
 }
 
+/* =========================================================
+   Tenant Top Navbar - Responsive Tablet Icon-Only Layout
+   ========================================================= */
+.tenant-header-navlink {
+  padding: 8px 14px;
+  gap: 8px;
+}
+
+.tenant-nav-label {
+  display: inline;
+  white-space: nowrap;
+}
+
+/* Tablet view (768px <= width <= 1180px): Show ONLY icons, hide text labels */
+@media (min-width: 768px) and (max-width: 1180px) {
+  .tenant-header-navlink {
+    padding: 8px 12px !important;
+    gap: 0 !important;
+    justify-content: center !important;
+    min-width: 42px !important;
+    height: 38px !important;
+  }
+  .tenant-nav-label {
+    display: none !important;
+  }
+}
+
+/* Desktop view (> 1180px): Show both icons and labels without wrapping */
+@media (min-width: 1181px) {
+  .tenant-header-navlink {
+    padding: 8px 14px !important;
+    gap: 8px !important;
+  }
+  .tenant-nav-label {
+    display: inline !important;
+    white-space: nowrap !important;
+  }
+}
+
 /* Responsive visibility & Period selector layout for Mobile */
 @media (max-width: 768px) {
   .hide-on-mobile,
