@@ -578,11 +578,75 @@ button:disabled {
 }
 
 /* =========================================================
-   Tenant Top Navbar - Responsive Tablet Icon-Only Layout
+   Tenant Top Navbar - Apple Fluid Sliding Pill & Tablet Icon-Only Layout
    ========================================================= */
+.desktop-header-nav {
+  position: relative !important;
+  isolation: isolate !important;
+}
+
+.desktop-header-sliding-pill {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 
+    0 4px 14px rgba(15, 23, 42, 0.16),
+    0 2px 6px rgba(37, 99, 235, 0.14),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.95);
+  pointer-events: none;
+  z-index: 1;
+  will-change: transform, width;
+}
+
+.desktop-header-sliding-pill.is-animated {
+  transition: 
+    transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1),
+    width 0.38s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.2s ease;
+}
+
 .tenant-header-navlink {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #e2e8f0;
+  background: transparent !important;
+  font-size: 14px;
+  font-weight: 600;
   padding: 8px 14px;
   gap: 8px;
+  transition: color 0.22s ease, font-weight 0.22s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tenant-header-navlink:hover {
+  color: #ffffff;
+}
+
+.tenant-header-navlink:active {
+  transform: scale(0.95);
+}
+
+.tenant-header-navlink.is-active {
+  color: #1e3a8a !important;
+  font-weight: 800 !important;
+}
+
+.tenant-header-navlink .tenant-nav-icon {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.tenant-header-navlink.is-active .tenant-nav-icon {
+  color: #1e3a8a !important;
+  transform: scale(1.08);
 }
 
 .tenant-nav-label {

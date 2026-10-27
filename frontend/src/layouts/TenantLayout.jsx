@@ -71,6 +71,50 @@ export default function TenantLayout() {
     } catch {}
   };
 
+  // Desktop & Tablet top header sliding pill animation state
+  const headerNavRef = useRef(null);
+  const headerTabRefs = useRef([]);
+  const [headerPill, setHeaderPill] = useState({ left: 4, width: 0, opacity: 0, animated: false });
+
+  // Smoothly calculate and slide pill to active/clicked tab
+  const updateHeaderPill = useCallback((index, animated = true) => {
+    const nav = headerNavRef.current;
+    const tab = headerTabRefs.current[index];
+    if (!nav || !tab) return;
+
+    const navRect = nav.getBoundingClientRect();
+    const tabRect = tab.getBoundingClientRect();
+    const left = tabRect.left - navRect.left;
+    const width = tabRect.width;
+
+    setHeaderPill({
+      left,
+      width,
+      opacity: 1,
+      animated,
+    });
+  }, []);
+
+  // Update header pill on active tab / route change
+  useEffect(() => {
+    updateHeaderPill(currentActiveIndex, true);
+  }, [currentActiveIndex, updateHeaderPill]);
+
+  // Handle header pill resizing on window resize / orientation change
+  useEffect(() => {
+    const handleResize = () => {
+      updateHeaderPill(currentActiveIndex, false);
+    };
+    window.addEventListener('resize', handleResize);
+    const t1 = setTimeout(() => updateHeaderPill(currentActiveIndex, false), 40);
+    const t2 = setTimeout(() => updateHeaderPill(currentActiveIndex, false), 150);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [currentActiveIndex, updateHeaderPill]);
+
   const isPointerDownRef = useRef(false);
   const hasDraggedRef = useRef(false);
   const dragStartXRef = useRef(0);
@@ -505,34 +549,41 @@ export default function TenantLayout() {
               )}
             </div>
 
-            {/* Desktop & Tablet Top Navigation (Visible on screens >= 768px) */}
-            <nav className="desktop-header-nav" style={{
-              alignItems: 'center',
-              gap: '6px',
-              background: 'rgba(255, 255, 255, 0.1)',
-              padding: '4px',
-              borderRadius: '12px'
-            }}>
-              {navItems.map((item) => {
+            {/* Desktop & Tablet Top Navigation (Visible on screens >= 768px with Apple Fluid Sliding Pill) */}
+            <nav
+              ref={headerNavRef}
+              className="desktop-header-nav"
+              style={{
+                position: 'relative',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                padding: '4px',
+                borderRadius: '12px',
+                isolation: 'isolate'
+              }}
+            >
+              {/* Apple Fluid White Sliding Pill Indicator */}
+              <div
+                className={`desktop-header-sliding-pill ${headerPill.animated ? 'is-animated' : ''}`}
+                style={{
+                  transform: `translateX(${headerPill.left}px)`,
+                  width: `${headerPill.width}px`,
+                  opacity: headerPill.opacity,
+                }}
+              />
+
+              {navItems.map((item, index) => {
                 const Icon = item.icon;
+                const isCurrent = currentActiveIndex === index;
                 return (
                   <NavLink
                     key={item.to}
                     to={item.to}
+                    ref={(el) => (headerTabRefs.current[index] = el)}
+                    onClick={() => updateHeaderPill(index, true)}
                     title={item.label}
-                    className="tenant-header-navlink"
-                    style={({ isActive }) => ({
-                      display: 'flex',
-                      alignItems: 'center',
-                      borderRadius: '8px',
-                      textDecoration: 'none',
-                      color: isActive ? '#1e3a8a' : '#e2e8f0',
-                      background: isActive ? '#ffffff' : 'transparent',
-                      fontSize: '14px',
-                      fontWeight: isActive ? '800' : '600',
-                      transition: 'all 0.15s ease',
-                      whiteSpace: 'nowrap'
-                    })}
+                    className={`tenant-header-navlink ${isCurrent ? 'is-active' : ''}`}
                   >
                     <Icon size={19} className="tenant-nav-icon" />
                     <span className="tenant-nav-label">{item.label}</span>
