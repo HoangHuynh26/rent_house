@@ -344,12 +344,186 @@ button:disabled {
   transform: translateY(0.5px);
 }
 
+/* =========================================================
+   Apple iPhone Duo & iOS Trailing-Edge Vertical Dock (Right Side)
+   ========================================================= */
+.liquid-glass-dock.is-side-dock {
+  top: 50% !important;
+  bottom: auto !important;
+  right: calc(10px + env(safe-area-inset-right, 0px)) !important;
+  left: auto !important;
+  transform: translateY(-50%) !important;
+  width: 58px !important;
+  max-width: 58px !important;
+  height: auto !important;
+  padding: 8px 5px !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  border-radius: 36px !important;
+  box-shadow: 
+    -10px 20px 42px -10px rgba(15, 23, 42, 0.22),
+    -4px 6px 18px -4px rgba(37, 99, 235, 0.16),
+    inset 1.5px 1.5px 2px rgba(255, 255, 255, 0.95),
+    inset -1.5px -1.5px 2px rgba(148, 163, 184, 0.25) !important;
+  transition: box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), right 0.3s ease !important;
+}
+
+.liquid-glass-dock.is-side-dock.is-pressing {
+  box-shadow: 
+    -14px 24px 48px -8px rgba(15, 23, 42, 0.28),
+    0 0 25px rgba(37, 99, 235, 0.3),
+    inset 2px 2px 3px rgba(255, 255, 255, 1),
+    inset -2px -2px 3px rgba(147, 197, 253, 0.4) !important;
+}
+
+.liquid-glass-dock.is-side-dock::before {
+  top: 10% !important;
+  bottom: 10% !important;
+  left: 1px !important;
+  right: auto !important;
+  width: 1.5px !important;
+  height: auto !important;
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.98) 50%, transparent) !important;
+}
+
+.liquid-glass-dock.is-side-dock::after {
+  border-radius: 36px !important;
+  background: radial-gradient(ellipse at 0% 50%, rgba(147, 197, 253, 0.32) 0%, transparent 75%) !important;
+}
+
+/* Nav items inside side dock */
+.liquid-glass-dock.is-side-dock .liquid-nav-item {
+  width: 48px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  flex: none !important;
+  padding: 0 !important;
+  border-radius: 24px !important;
+  justify-content: center !important;
+}
+
+/* Hide text labels according to Apple HIG compact side rail standard */
+.liquid-glass-dock.is-side-dock .liquid-nav-label {
+  display: none !important;
+}
+
+.liquid-glass-dock.is-side-dock .liquid-nav-icon-wrap {
+  transform: none !important;
+}
+
+.liquid-glass-dock.is-side-dock .liquid-nav-item.active .liquid-nav-icon-wrap,
+.liquid-glass-dock.is-side-dock .liquid-nav-item.is-drag-target .liquid-nav-icon-wrap {
+  transform: scale(1.18) !important;
+  color: #2563eb !important;
+}
+
+/* Fluid indicator pill inside side dock */
+.liquid-glass-dock.is-side-dock .liquid-indicator-pill {
+  left: 5px !important;
+  right: 5px !important;
+  top: 0 !important;
+  bottom: auto !important;
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 24px !important;
+  will-change: transform, height !important;
+}
+
+.liquid-glass-dock.is-side-dock .liquid-indicator-pill.is-smooth {
+  transition: 
+    transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1),
+    height 0.42s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s ease,
+    background 0.25s ease !important;
+}
+
+/* Divider & Orientation Toggle Button */
+.liquid-dock-divider {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.liquid-glass-dock:not(.is-side-dock) .liquid-dock-divider {
+  width: 1px;
+  height: 24px;
+  margin: 0 4px;
+}
+
+.liquid-glass-dock.is-side-dock .liquid-dock-divider {
+  width: 24px;
+  height: 1px;
+  margin: 4px auto;
+}
+
+.liquid-dock-toggle-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  z-index: 5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.liquid-glass-dock.is-side-dock .liquid-dock-toggle-btn {
+  width: 44px;
+  height: 36px;
+}
+
+.liquid-glass-dock:not(.is-side-dock) .liquid-dock-toggle-btn {
+  width: 36px;
+  height: 48px;
+}
+
+.liquid-dock-toggle-btn:hover,
+.liquid-dock-toggle-btn:active {
+  background: rgba(255, 255, 255, 0.65);
+  color: #1e40af;
+  transform: scale(1.08);
+}
+
+/* Container clearance when side dock is active */
+.tenant-layout-wrapper.has-side-dock .tenant-container {
+  padding-right: calc(76px + env(safe-area-inset-right, 0px)) !important;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
 /* AI Chatbot Floating Launcher Adjustment for Mobile */
 .ai-chatbot-launcher-btn {
   position: fixed !important;
   bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
   right: 20px !important;
   z-index: 9999 !important;
+}
+
+.tenant-layout-wrapper.has-side-dock .ai-chatbot-launcher-btn {
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
+  right: calc(14px + env(safe-area-inset-right, 0px)) !important;
+}
+
+/* Landscape compact adjustments for iPhone Duo */
+@media (orientation: landscape) and (max-height: 540px) {
+  .liquid-glass-dock.is-side-dock {
+    gap: 3px !important;
+    padding: 5px 3px !important;
+    width: 50px !important;
+  }
+  .liquid-glass-dock.is-side-dock .liquid-nav-item {
+    width: 44px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+  }
+  .liquid-glass-dock.is-side-dock .liquid-indicator-pill {
+    width: 44px !important;
+    height: 38px !important;
+    left: 3px !important;
+  }
 }
 
 /* Header Responsive Controls for Tenant Layout */
