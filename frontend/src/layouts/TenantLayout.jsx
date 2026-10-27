@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Zap, Droplet, History, FileText, LogOut, User, DoorOpen, Bell, PanelRightClose, PanelBottomClose } from 'lucide-react';
+import { Home, Zap, Droplet, History, FileText, LogOut, User, DoorOpen, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenantRoom } from '../contexts/TenantRoomContext';
 import AiChatbotWidget from '../components/chat/AiChatbotWidget';
@@ -41,51 +41,25 @@ export default function TenantLayout() {
   // Liquid glass swipe & drag gesture state
   const dockRef = useRef(null);
   const tabRefs = useRef([]);
-  const [pillStyle, setPillStyle] = useState({ left: 8, width: 72, top: 0, height: 48, opacity: 0, smooth: false });
+  const [pillStyle, setPillStyle] = useState({ left: 8, width: 72, opacity: 0, smooth: false });
   const [isPressing, setIsPressing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState(currentActiveIndex);
   const [dragStretch, setDragStretch] = useState(1);
   const [dragAngle, setDragAngle] = useState(0);
 
-  // Apple iPhone Duo trailing-edge dock state (defaults to 'right' per Apple HIG)
-  const [dockPosition, setDockPosition] = useState(() => {
-    try {
-      const saved = localStorage.getItem('tenant_dock_position');
-      if (saved === 'bottom' || saved === 'right') return saved;
-    } catch {}
-    return 'right';
-  });
-
-  const isSideDock = dockPosition === 'right';
-
-  const toggleDockPosition = (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    const next = isSideDock ? 'bottom' : 'right';
-    setDockPosition(next);
-    try {
-      localStorage.setItem('tenant_dock_position', next);
-    } catch {}
-  };
-
   const isPointerDownRef = useRef(false);
   const hasDraggedRef = useRef(false);
   const dragStartXRef = useRef(0);
-  const dragStartYRef = useRef(0);
   const dragInitialLeftRef = useRef(0);
-  const dragInitialTopRef = useRef(0);
   const lastClientXRef = useRef(0);
-  const lastClientYRef = useRef(0);
   const currentHoveredIndexRef = useRef(currentActiveIndex);
 
   useEffect(() => {
     currentHoveredIndexRef.current = hoveredIndex;
   }, [hoveredIndex]);
 
-  // Position liquid pill over a specific tab (supports both horizontal & vertical geometry)
+  // Position liquid pill over a specific tab
   const updatePillToTab = useCallback((index, smooth = true) => {
     const dock = dockRef.current;
     const tab = tabRefs.current[index];
@@ -95,14 +69,10 @@ export default function TenantLayout() {
     const tabRect = tab.getBoundingClientRect();
     const left = tabRect.left - dockRect.left;
     const width = tabRect.width;
-    const top = tabRect.top - dockRect.top;
-    const height = tabRect.height;
 
     setPillStyle({
       left,
       width,
-      top,
-      height,
       opacity: 1,
       smooth,
     });
@@ -116,7 +86,7 @@ export default function TenantLayout() {
     }
   }, [currentActiveIndex, isDragging, updatePillToTab]);
 
-  // Handle window resizing or dock position changes
+  // Handle window resizing or initial layout render
   useEffect(() => {
     const handleResize = () => {
       if (!isDragging) {
@@ -129,9 +99,9 @@ export default function TenantLayout() {
       window.removeEventListener('resize', handleResize);
       clearTimeout(t);
     };
-  }, [currentActiveIndex, isDragging, isSideDock, updatePillToTab]);
+  }, [currentActiveIndex, isDragging, updatePillToTab]);
 
-  // Press & swipe gesture handlers (supporting both vertical rail & bottom dock)
+  // Press & swipe gesture handlers
   const handlePointerDown = (e) => {
     if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
 
@@ -139,8 +109,6 @@ export default function TenantLayout() {
     hasDraggedRef.current = false;
     dragStartXRef.current = e.clientX;
     lastClientXRef.current = e.clientX;
-    dragStartYRef.current = e.clientY;
-    lastClientYRef.current = e.clientY;
 
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -154,7 +122,6 @@ export default function TenantLayout() {
       const dockRect = dock.getBoundingClientRect();
       const tabRect = tab.getBoundingClientRect();
       dragInitialLeftRef.current = tabRect.left - dockRect.left;
-      dragInitialTopRef.current = tabRect.top - dockRect.top;
     }
 
     setIsPressing(true);
@@ -164,114 +131,58 @@ export default function TenantLayout() {
   const handlePointerMove = (e) => {
     if (!isPointerDownRef.current) return;
 
-    if (isSideDock) {
-      // Apple HIG Trailing-Edge Vertical Rail Gestures
-      const deltaY = e.clientY - dragStartYRef.current;
-      const vy = e.clientY - lastClientYRef.current;
-      lastClientYRef.current = e.clientY;
+    const deltaX = e.clientX - dragStartXRef.current;
+    const vx = e.clientX - lastClientXRef.current;
+    lastClientXRef.current = e.clientX;
 
-      if (!isDragging && Math.abs(deltaY) > 6) {
-        setIsDragging(true);
-        hasDraggedRef.current = true;
-      }
+    if (!isDragging && Math.abs(deltaX) > 6) {
+      setIsDragging(true);
+      hasDraggedRef.current = true;
+    }
 
-      if (isDragging || Math.abs(deltaY) > 6) {
-        const dock = dockRef.current;
-        if (!dock) return;
-        const dockRect = dock.getBoundingClientRect();
+    if (isDragging || Math.abs(deltaX) > 6) {
+      const dock = dockRef.current;
+      if (!dock) return;
+      const dockRect = dock.getBoundingClientRect();
 
-        const minTop = 4;
-        const pillHeight = pillStyle.height || 48;
-        const maxTop = dockRect.height - pillHeight - 4;
-        const newTop = Math.max(minTop, Math.min(maxTop, dragInitialTopRef.current + deltaY));
+      const minLeft = 4;
+      const pillWidth = pillStyle.width || 70;
+      const maxLeft = dockRect.width - pillWidth - 4;
+      const newLeft = Math.max(minLeft, Math.min(maxLeft, dragInitialLeftRef.current + deltaX));
 
-        const stretch = 1 + Math.min(0.24, Math.abs(vy) * 0.035);
-        setDragStretch(stretch);
+      // Apple liquid mercury stretch physics
+      const stretch = 1 + Math.min(0.24, Math.abs(vx) * 0.035);
+      const angle = Math.max(-10, Math.min(10, vx * 1.2));
+      setDragStretch(stretch);
+      setDragAngle(angle);
 
-        setPillStyle((prev) => ({
-          ...prev,
-          top: newTop,
-          smooth: false,
-        }));
+      setPillStyle((prev) => ({
+        ...prev,
+        left: newLeft,
+        smooth: false,
+      }));
 
-        let closestIdx = currentActiveIndex;
-        let minDistance = Infinity;
+      // Find closest tab to current pointer position
+      let closestIdx = currentActiveIndex;
+      let minDistance = Infinity;
 
-        tabRefs.current.forEach((tabEl, idx) => {
-          if (!tabEl) return;
-          const r = tabEl.getBoundingClientRect();
-          const tabCenter = r.top + r.height / 2;
-          const dist = Math.abs(e.clientY - tabCenter);
-          if (dist < minDistance) {
-            minDistance = dist;
-            closestIdx = idx;
-          }
-        });
-
-        if (closestIdx !== currentHoveredIndexRef.current) {
-          setHoveredIndex(closestIdx);
-          if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-            try {
-              navigator.vibrate(8);
-            } catch {}
-          }
+      tabRefs.current.forEach((tabEl, idx) => {
+        if (!tabEl) return;
+        const r = tabEl.getBoundingClientRect();
+        const tabCenter = r.left + r.width / 2;
+        const dist = Math.abs(e.clientX - tabCenter);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestIdx = idx;
         }
-      }
-    } else {
-      // Horizontal swipe on bottom dock
-      const deltaX = e.clientX - dragStartXRef.current;
-      const vx = e.clientX - lastClientXRef.current;
-      lastClientXRef.current = e.clientX;
+      });
 
-      if (!isDragging && Math.abs(deltaX) > 6) {
-        setIsDragging(true);
-        hasDraggedRef.current = true;
-      }
-
-      if (isDragging || Math.abs(deltaX) > 6) {
-        const dock = dockRef.current;
-        if (!dock) return;
-        const dockRect = dock.getBoundingClientRect();
-
-        const minLeft = 4;
-        const pillWidth = pillStyle.width || 70;
-        const maxLeft = dockRect.width - pillWidth - 4;
-        const newLeft = Math.max(minLeft, Math.min(maxLeft, dragInitialLeftRef.current + deltaX));
-
-        // Apple liquid mercury stretch physics
-        const stretch = 1 + Math.min(0.24, Math.abs(vx) * 0.035);
-        const angle = Math.max(-10, Math.min(10, vx * 1.2));
-        setDragStretch(stretch);
-        setDragAngle(angle);
-
-        setPillStyle((prev) => ({
-          ...prev,
-          left: newLeft,
-          smooth: false,
-        }));
-
-        // Find closest tab to current pointer position
-        let closestIdx = currentActiveIndex;
-        let minDistance = Infinity;
-
-        tabRefs.current.forEach((tabEl, idx) => {
-          if (!tabEl) return;
-          const r = tabEl.getBoundingClientRect();
-          const tabCenter = r.left + r.width / 2;
-          const dist = Math.abs(e.clientX - tabCenter);
-          if (dist < minDistance) {
-            minDistance = dist;
-            closestIdx = idx;
-          }
-        });
-
-        if (closestIdx !== currentHoveredIndexRef.current) {
-          setHoveredIndex(closestIdx);
-          if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-            try {
-              navigator.vibrate(8);
-            } catch {}
-          }
+      if (closestIdx !== currentHoveredIndexRef.current) {
+        setHoveredIndex(closestIdx);
+        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+          try {
+            navigator.vibrate(8);
+          } catch {}
         }
       }
     }
@@ -447,7 +358,7 @@ export default function TenantLayout() {
   );
 
   return (
-    <div className={`tenant-layout-wrapper ${isSideDock ? 'has-side-dock' : ''}`}>
+    <div className="tenant-layout-wrapper">
       {/* Top Header - Apple Frosted Glass with Safe Area Support */}
       <header style={{
         background: 'rgba(30, 58, 138, 0.92)',
@@ -574,10 +485,10 @@ export default function TenantLayout() {
         <Outlet />
       </main>
 
-      {/* Liquid Glass Navigation Dock (Apple iOS Style - Supporting iPhone Duo Trailing Right Rail) */}
+      {/* Liquid Glass Bottom Navigation Dock (Apple iOS Style - Fluid Swipe & Drag) */}
       <nav
         ref={dockRef}
-        className={`mobile-bottom-nav liquid-glass-dock ${isSideDock ? 'is-side-dock' : ''} ${isPressing ? 'is-pressing' : ''} ${isDragging ? 'is-dragging' : ''}`}
+        className={`mobile-bottom-nav liquid-glass-dock ${isPressing ? 'is-pressing' : ''} ${isDragging ? 'is-dragging' : ''}`}
         aria-label="Thanh điều hướng di động"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -587,13 +498,8 @@ export default function TenantLayout() {
         {/* Apple Fluid Liquid Glass Indicator Capsule */}
         <div
           className={`liquid-indicator-pill ${pillStyle.smooth ? 'is-smooth' : ''} ${isDragging ? 'is-dragging' : ''} ${isPressing ? 'is-pressing' : ''}`}
-          style={isSideDock ? {
-            transform: `translateY(${pillStyle.top ?? 0}px) scaleY(${dragStretch})`,
-            height: `${pillStyle.height || 48}px`,
-            width: `${pillStyle.width || 48}px`,
-            opacity: pillStyle.opacity,
-          } : {
-            transform: `translateX(${pillStyle.left ?? 0}px) scaleX(${dragStretch}) rotate(${dragAngle * 0.25}deg)`,
+          style={{
+            transform: `translateX(${pillStyle.left}px) scaleX(${dragStretch}) rotate(${dragAngle * 0.25}deg)`,
             width: `${pillStyle.width || 72}px`,
             opacity: pillStyle.opacity,
           }}
@@ -617,7 +523,6 @@ export default function TenantLayout() {
               ref={(el) => (tabRefs.current[index] = el)}
               onClick={(e) => handleTabClick(e, index, item.to)}
               className={`liquid-nav-item ${isVisualActive ? 'active' : ''} ${isTarget ? 'is-drag-target' : ''}`}
-              title={item.label}
             >
               <div className="liquid-nav-icon-wrap">
                 <Icon size={21} strokeWidth={isVisualActive ? 2.5 : 1.8} />
@@ -626,22 +531,6 @@ export default function TenantLayout() {
             </NavLink>
           );
         })}
-
-        {/* Apple HIG Duo Orientation / Position Switcher */}
-        <div className="liquid-dock-divider" />
-        <button
-          type="button"
-          onClick={toggleDockPosition}
-          className="liquid-dock-toggle-btn"
-          title={isSideDock ? 'Chuyển thanh công cụ xuống đáy màn hình' : 'Chế độ iPhone Duo: Chuyển thanh sang cạnh phải (chuẩn Apple)'}
-          aria-label="Đổi vị trí thanh công cụ"
-        >
-          {isSideDock ? (
-            <PanelBottomClose size={18} strokeWidth={2.2} />
-          ) : (
-            <PanelRightClose size={18} strokeWidth={2.2} />
-          )}
-        </button>
       </nav>
 
       {/* Pop-up & Bell Notification system for Tenants */}
