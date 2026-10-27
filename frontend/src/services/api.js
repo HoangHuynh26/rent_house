@@ -1,12 +1,38 @@
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1500;
 const TIMEOUT_MS = 15000;
 
-// Resolve API base URL from environment (VITE_API_URL) or fallback to '/api'
-const rawApiUrl = import.meta.env.VITE_API_URL || '/api';
-export const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
+export const PRODUCTION_API_URL = 'https://rent-house-3jm7.onrender.com/api';
+
+/**
+ * Dynamically resolves the API base URL based on runtime environment (Capacitor Native, PWA, or Web)
+ */
+export function getResolvedApiBaseUrl() {
+  try {
+    const customUrl = localStorage.getItem('custom_api_url');
+    if (customUrl && customUrl.trim()) {
+      return customUrl.trim().replace(/\/+$/, '');
+    }
+  } catch (e) {}
+
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && envUrl.startsWith('http')) {
+    return envUrl.replace(/\/+$/, '');
+  }
+
+  // Running as native Android/iOS app via Capacitor
+  if (Capacitor.isNativePlatform() || (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform())) {
+    return PRODUCTION_API_URL;
+  }
+
+  // Running in local dev or web proxy
+  return (envUrl || '/api').replace(/\/+$/, '');
+}
+
+export const API_BASE_URL = getResolvedApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -18,6 +44,8 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  // Ensure baseURL stays accurate if custom server is set
+  config.baseURL = getResolvedApiBaseUrl();
   // Attach fallback session headers for cross-site cookie resilience (e.g. iOS Safari, Chrome incognito)
   try {
     const adminSession = localStorage.getItem('admin_session_id');
@@ -108,15 +136,16 @@ export function getFullApiUrl(path = '') {
     return path;
   }
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  if (API_BASE_URL.startsWith('http://') || API_BASE_URL.startsWith('https://')) {
-    const backendOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
+  const currentBase = getResolvedApiBaseUrl();
+  if (currentBase.startsWith('http://') || currentBase.startsWith('https://')) {
+    const backendOrigin = currentBase.replace(/\/api\/?$/, '');
     if (cleanPath.startsWith('/api/')) {
       return `${backendOrigin}${cleanPath}`;
     }
     if (cleanPath.startsWith('/uploads/')) {
       return `${backendOrigin}${cleanPath}`;
     }
-    return `${API_BASE_URL}${cleanPath}`;
+    return `${currentBase}${cleanPath}`;
   }
   return cleanPath;
 }

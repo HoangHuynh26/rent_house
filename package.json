@@ -9,7 +9,11 @@
   "scripts": {
     "build": "npm run build --workspace=rent-house-frontend",
     "dev": "npm run dev --workspace=rent-house-frontend",
-    "test": "npm run test --workspace=rent-house-backend"
+    "test": "npm run test --workspace=rent-house-backend",
+    "mobile:build": "npm run cap:build:android --workspace=rent-house-frontend",
+    "mobile:sync": "npm run cap:sync --workspace=rent-house-frontend",
+    "mobile:android": "npm run cap:open:android --workspace=rent-house-frontend",
+    "mobile:ios": "npm run cap:open:ios --workspace=rent-house-frontend"
   },
   "engines": {
     "node": ">=20 <23"

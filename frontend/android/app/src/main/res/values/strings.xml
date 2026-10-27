@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Nhà Trọ Thông Minh</string>
+    <string name="title_activity_main">Nhà Trọ Thông Minh</string>
+    <string name="package_name">com.renthouse.app</string>
+    <string name="custom_url_scheme">com.renthouse.app</string>
+</resources>
