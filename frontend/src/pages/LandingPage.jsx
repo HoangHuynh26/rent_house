@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -80,6 +80,37 @@ export default function LandingPage() {
   const [rooms, setRooms] = useState(defaultSeedRooms);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'available' | 'occupied'
+
+  // Sliding pill indicator state for catalog filter
+  const filterContainerRef = useRef(null);
+  const filterButtonsRef = useRef({});
+  const isFirstFilterRender = useRef(true);
+  const [pillIndicator, setPillIndicator] = useState({ left: 4, width: 0, ready: false });
+
+  useLayoutEffect(() => {
+    const updateIndicator = () => {
+      const activeBtn = filterButtonsRef.current[activeFilter];
+      const container = filterContainerRef.current;
+      if (activeBtn && container) {
+        const containerRect = container.getBoundingClientRect();
+        const btnRect = activeBtn.getBoundingClientRect();
+        setPillIndicator({
+          left: btnRect.left - containerRect.left,
+          width: btnRect.width,
+          ready: true
+        });
+        if (isFirstFilterRender.current) {
+          requestAnimationFrame(() => {
+            isFirstFilterRender.current = false;
+          });
+        }
+      }
+    };
+
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [activeFilter, rooms.length]);
   
   // Login Modal state (strictly triggered ONLY when clicking a specific room)
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -247,7 +278,7 @@ export default function LandingPage() {
                 }}
               >
                 <UserCheck size={16} />
-                Phòng của bạn ({tenant.room_number})
+                Tiếp tục xem phòng {tenant.room_number}
               </button>
             ) : (
               <a
@@ -277,75 +308,84 @@ export default function LandingPage() {
       {/* 3. ROOMS CATALOG SECTION (#rooms) */}
       <section id="rooms" style={{ padding: '80px 24px', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: 'rgba(37, 99, 235, 0.08)',
-            color: '#2563eb',
-            padding: '6px 14px',
-            borderRadius: '20px',
-            fontSize: '13px',
-            fontWeight: '700',
-            marginBottom: '14px'
-          }}>
-            <Sparkles size={16} />
-            <span>KHÔNG GIAN SỐNG HIỆN ĐẠI & MINH BẠCH</span>
-          </div>
 
-          <h1 style={{
-            fontSize: 'clamp(28px, 4vw, 42px)',
-            fontWeight: '900',
-            color: '#0f172a',
-            letterSpacing: '-0.5px',
-            lineHeight: 1.25,
-            marginBottom: '12px'
-          }}>
-            Hệ Thống Phòng Trọ <span style={{ color: '#2563eb' }}>Nhà Trọ Thanh Tâm</span>
-          </h1>
+          {/* Filter Pills with Animated Sliding Indicator */}
+          <div
+            ref={filterContainerRef}
+            style={{
+              position: 'relative',
+              display: 'inline-flex',
+              background: '#e2e8f0',
+              padding: '4px',
+              borderRadius: '14px',
+              gap: '4px',
+              marginTop: '24px',
+              boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.08)',
+              userSelect: 'none'
+            }}
+          >
+            {/* Animated Sliding Pill */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                top: '4px',
+                left: 0,
+                height: 'calc(100% - 8px)',
+                width: `${pillIndicator.width}px`,
+                transform: `translateX(${pillIndicator.left}px)`,
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #172554 100%)',
+                borderRadius: '10px',
+                boxShadow: '0 3px 10px rgba(30, 58, 138, 0.35), 0 1px 2px rgba(0, 0, 0, 0.1)',
+                transition: isFirstFilterRender.current
+                  ? 'opacity 0.2s ease'
+                  : 'transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), width 0.35s cubic-bezier(0.25, 1, 0.5, 1)',
+                opacity: pillIndicator.ready ? 1 : 0,
+                pointerEvents: 'none',
+                zIndex: 1
+              }}
+            />
 
-          <p style={{
-            fontSize: 'clamp(15px, 2vw, 17px)',
-            color: '#64748b',
-            maxWidth: '680px',
-            margin: '0 auto 16px',
-            lineHeight: 1.6
-          }}>
-            Phòng trọ cao cấp, sạch sẽ, an ninh 24/7 với công nghệ tra cứu tiền điện nước minh bạch bằng hình ảnh chụp công tơ thực tế hàng tháng.
-          </p>
-
-          {/* Filter Pills */}
-          <div style={{
-            display: 'inline-flex',
-            background: '#e2e8f0',
-            padding: '4px',
-            borderRadius: '14px',
-            gap: '4px',
-            marginTop: '24px'
-          }}>
             {[
               { id: 'all', label: `Tất cả (${rooms.length} phòng)` },
               { id: 'available', label: `Phòng còn trống (${availableCount})` },
               { id: 'occupied', label: `Phòng đang thuê (${occupiedCount})` }
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setActiveFilter(f.id)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '10px',
-                  background: activeFilter === f.id ? '#1e3a8a' : 'transparent',
-                  color: activeFilter === f.id ? '#ffffff' : '#475569',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
+            ].map((f) => {
+              const isActive = activeFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  ref={(el) => (filterButtonsRef.current[f.id] = el)}
+                  onClick={() => setActiveFilter(f.id)}
+                  style={{
+                    position: 'relative',
+                    zIndex: 2,
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    background: 'transparent',
+                    color: isActive ? '#ffffff' : '#475569',
+                    fontSize: '14px',
+                    fontWeight: '700',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'color 0.25s ease, transform 0.12s ease',
+                    outline: 'none',
+                    whiteSpace: 'nowrap'
+                  }}
+                  onMouseDown={(e) => {
+                    e.currentTarget.style.transform = 'scale(0.96)';
+                  }}
+                  onMouseUp={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -937,7 +977,7 @@ export default function LandingPage() {
         </div>
 
         <div style={{ textAlign: 'center', fontSize: '13px', color: '#64748b', borderTop: '1px solid #1e293b', paddingTop: '20px' }}>
-          © 2026 Hệ Thống Quản Lý Nhà Trọ Thanh Tâm. Bảo lưu mọi quyền.
+          © 2026 Hệ Thống Quản Lý Nhà Trọ Thanh Tâm. Bảo lưu mọi quyền. Powered by <a href="https://hoanghuynh-potfolio.netlify.app/" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>Hoàng Huynh</a>
         </div>
       </footer>
 
