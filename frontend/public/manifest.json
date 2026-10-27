@@ -1,21 +1,30 @@
 {
-  "short_name": "Thanh Tâm",
-  "name": "Nhà Trọ Thanh Tâm - Cho Thuê Phòng Trọ & Quản Lý Minh Bạch",
+  "short_name": "Nhà Trọ",
+  "name": "Nhà Trọ Thông Minh - Thanh Tâm",
   "icons": [
     {
-      "src": "/dist/logo.png",
+      "src": "/icon-192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
-      "src": "/dist/logo.png",
+      "src": "/icon-512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "1024x1024",
+      "purpose": "any"
     }
   ],
   "start_url": "/",
-  "background_color": "#f8fafc",
+  "background_color": "#0f172a",
   "theme_color": "#1e3a8a",
   "display": "standalone",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "categories": ["utilities", "business"]
 }

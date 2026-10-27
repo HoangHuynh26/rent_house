@@ -31,6 +31,13 @@ dist/
 **/dist/
 build/
 **/build/
+dist-mobile/
+*.apk
+*.aab
+local.properties
+**/local.properties
+.gradle/
+**/.gradle/
 
 # Scratch, cache & logs
 scratch/

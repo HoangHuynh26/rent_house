@@ -52,6 +52,7 @@ Hệ thống quản lý nhà trọ, phòng trọ, khách thuê, chỉ số đi�
 | Thành Phần | Công Nghệ |
 |---|---|
 | **Frontend** | React 18, Vite 6, React Router 6, Axios, Recharts, Lucide React, High-Contrast Accessible CSS |
+| **Mobile App (Android & iOS)** | Capacitor 8, Android Studio / Gradle, Xcode (Swift Package Manager), PWA Standalone |
 | **Backend** | Node.js (v20+), Express.js, `pg` (PostgreSQL Client), Argon2 / bcryptjs, Cookie-Parser, Helmet, Multer, PDFKit |
 | **Database** | Neon Serverless PostgreSQL 16+ (Normalized, UUIDs, Triggers, Indexes, Constraints) |
 | **AI OCR Service** | Python 3.11+, FastAPI, OpenCV, NumPy, Pillow (100% Self-Hosted, Không phụ thuộc bên ngoài) |
@@ -100,6 +101,16 @@ docker-compose up --build
 - Backend API: `http://localhost:5000`
 - AI Microservice: `http://localhost:8000`
 - Database: Kết nối trực tiếp máy chủ đám mây **Neon PostgreSQL** (không cần container PostgreSQL cục bộ)
+
+---
+
+### 📱 Cách 3: Ứng Dụng Di Động (Android & iOS)
+
+- **Tệp APK Android đã biên dịch sẵn**: [`dist-mobile/NhaTroThanhTam-v1.0.0.apk`](file:///c:/rent_house/dist-mobile/NhaTroThanhTam-v1.0.0.apk) (Chép vào điện thoại Android và cài đặt ngay).
+- **Dự án iOS**: [`frontend/ios/App`](file:///c:/rent_house/frontend/ios/App) (Mở bằng Xcode trên macOS: `npm run mobile:ios`).
+- **Cài đặt tức thì trên iPhone qua Safari (PWA)**: Mở `https://nhatrothanhtam.netlify.app` > Bấm *Chia sẻ* > Chọn *"Thêm vào Màn hình chính"*.
+- **Tài liệu hướng dẫn chi tiết**: Xem tại [`MOBILE_APP_GUIDE.md`](file:///c:/rent_house/MOBILE_APP_GUIDE.md).
+- **Lệnh biên dịch lại APK 1 chạm**: Chạy file [`build-android-apk.bat`](file:///c:/rent_house/build-android-apk.bat) hoặc gõ `npm run mobile:build`.
 
 ---
 
