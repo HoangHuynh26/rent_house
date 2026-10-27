@@ -430,22 +430,23 @@ export default function TenantLayout() {
                   <NavLink
                     key={item.to}
                     to={item.to}
+                    title={item.label}
+                    className="tenant-header-navlink"
                     style={({ isActive }) => ({
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 14px',
                       borderRadius: '8px',
                       textDecoration: 'none',
                       color: isActive ? '#1e3a8a' : '#e2e8f0',
                       background: isActive ? '#ffffff' : 'transparent',
                       fontSize: '14px',
                       fontWeight: isActive ? '800' : '600',
-                      transition: 'all 0.15s ease'
+                      transition: 'all 0.15s ease',
+                      whiteSpace: 'nowrap'
                     })}
                   >
-                    <Icon size={18} />
-                    <span>{item.label}</span>
+                    <Icon size={19} className="tenant-nav-icon" />
+                    <span className="tenant-nav-label">{item.label}</span>
                   </NavLink>
                 );
               })}
