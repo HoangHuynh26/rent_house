@@ -166,8 +166,6 @@ test('collectAllDatabaseData assembles all 9 sheets and strips huge base64 signa
     'Chi_So_Dien',
     'Chi_So_Nuoc',
     'Hoa_Don',
-    'Thong_Bao',
-    'Nhat_Ky_He_Thong',
   ];
 
   assert.deepStrictEqual(Object.keys(snapshot.sheets), expectedTabs);

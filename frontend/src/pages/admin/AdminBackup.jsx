@@ -228,8 +228,6 @@ export default function AdminBackup() {
     { label: 'Chỉ số điện', value: counts.electricityReadings ?? 0, color: '#d97706', bg: '#fffbeb' },
     { label: 'Chỉ số nước', value: counts.waterReadings ?? 0, color: '#0284c7', bg: '#f0f9ff' },
     { label: 'Hóa đơn', value: counts.bills ?? 0, color: '#dc2626', bg: '#fef2f2' },
-    { label: 'Thông báo', value: counts.notifications ?? 0, color: '#4f46e5', bg: '#eef2ff' },
-    { label: 'Nhật ký', value: counts.auditLogs ?? 0, color: '#475569', bg: '#f8fafc' },
   ];
 
   const triggerLabels = {
@@ -433,7 +431,7 @@ export default function AdminBackup() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Database size={18} color="#1e40af" />
             <h2 style={{ fontSize: '16px', fontWeight: '800', margin: 0, color: '#0f172a' }}>
-              Toàn Bộ Dữ Liệu Sẽ Được Sao Lưu (9 Sheet Excel • Tổng {totalRows} dòng)
+              Toàn Bộ Dữ Liệu Sẽ Được Sao Lưu (7 Sheet Excel • Tổng {totalRows} dòng)
             </h2>
           </div>
           <span style={{ fontSize: '13px', fontWeight: '600', color: '#475569' }}>

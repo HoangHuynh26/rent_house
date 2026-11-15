@@ -29,8 +29,6 @@ var SHEET_ORDER = [
   'Chi_So_Dien',
   'Chi_So_Nuoc',
   'Hoa_Don',
-  'Thong_Bao',
-  'Nhat_Ky_He_Thong',
 ];
 
 /**

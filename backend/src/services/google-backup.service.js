@@ -431,8 +431,9 @@ const fetchRecentAuditLogs = async () => {
 };
 
 /**
- * Thu thập TOÀN BỘ dữ liệu hệ thống (không chứa dữ liệu nhị phân BYTEA/base64 lớn)
- * thành cấu trúc nhiều sheet chuẩn cho Google Sheets & Excel (.xlsx / .xls).
+ * Thu thập TOÀN BỘ dữ liệu nghiệp vụ hệ thống (Phòng, Người thuê, Hợp đồng, Điện, Nước, Hóa đơn)
+ * thành cấu trúc 7 sheet chuẩn cho Google Sheets & Excel (.xlsx / .xls).
+ * Không sao lưu Nhật ký hệ thống (audit_logs) và Thông báo (notifications) theo yêu cầu.
  */
 export const collectAllDatabaseData = async ({
   reason = 'Sao lưu dữ liệu hệ thống',
@@ -440,7 +441,7 @@ export const collectAllDatabaseData = async ({
   periodMonth = null,
   periodYear = null,
 } = {}) => {
-  // Run all 8 queries in a single parallel batch to cut Neon DB latency in half (~1s)
+  // Run all 6 core queries in a single parallel batch (~0.8s on Neon DB)
   const [
     rooms,
     tenants,
@@ -448,8 +449,6 @@ export const collectAllDatabaseData = async ({
     bills,
     rawElecReadings,
     rawWaterReadings,
-    rawNotifications,
-    auditLogs,
   ] = await Promise.all([
     roomRepo.findAll(true),
     userRepo.findAll(true),
@@ -457,8 +456,6 @@ export const collectAllDatabaseData = async ({
     billRepo.findAll({}),
     fetchAllElectricityReadings(null),
     fetchAllWaterReadings(null),
-    fetchAllNotificationsRaw(),
-    fetchRecentAuditLogs(),
   ]);
 
   const roomsById = new Map(rooms.map((r) => [r.id, r]));
@@ -472,11 +469,6 @@ export const collectAllDatabaseData = async ({
     ...r,
     room_number: r.room_number || roomsById.get(r.room_id)?.room_number || '',
   }));
-  const notifications = rawNotifications.map((n) => ({
-    ...n,
-    target_room_number: roomsById.get(n.target_room_id)?.room_number || '',
-    recipient_name: tenantsById.get(n.recipient_id)?.full_name || '',
-  }));
 
   const vnNow = getVnNowParts();
   const totalRevenuePaid = bills
@@ -487,7 +479,7 @@ export const collectAllDatabaseData = async ({
     .reduce((sum, b) => sum + toNumber(b.total_amount), 0);
 
   const summaryRows = [
-    ['Hệ thống', 'Nhà Trọ Thành Tâm', 'Dữ liệu đồng bộ đầy đủ'],
+    ['Hệ thống', 'Nhà Trọ Thanh Tâm', 'Dữ liệu đồng bộ đầy đủ'],
     ['Thời điểm xuất sao lưu (VN)', formatDateTimeVn(new Date()), 'Tự động chuẩn hóa múi giờ Asia/Ho_Chi_Minh'],
     ['Nguồn kích hoạt', triggerSource, reason],
     [
@@ -501,8 +493,6 @@ export const collectAllDatabaseData = async ({
     ['Tổng bản ghi chỉ số điện', electricityReadings.length, 'Đầy đủ các tháng & link ảnh công tơ'],
     ['Tổng bản ghi chỉ số nước', waterReadings.length, 'Đầy đủ các tháng & link ảnh công tơ'],
     ['Tổng số hóa đơn', bills.length, `Đã thu: ${totalRevenuePaid.toLocaleString('vi-VN')} đ | Chưa thu: ${totalRevenueUnpaid.toLocaleString('vi-VN')} đ`],
-    ['Tổng thông báo', notifications.length, 'Thông báo hóa đơn, hợp đồng & pop-up'],
-    ['Nhật ký hệ thống gần nhất', auditLogs.length, 'Giới hạn 250 bản ghi gần nhất'],
   ];
 
   const roomRows = rooms.map((r) => [
@@ -606,29 +596,6 @@ export const collectAllDatabaseData = async ({
     ];
   });
 
-  const notificationRows = notifications.map((n) => [
-    formatDateTimeVn(n.created_at),
-    n.title || '',
-    n.message || '',
-    n.type || '',
-    n.recipient_type || '',
-    n.recipient_name || '',
-    n.target_room_number ? `Phòng ${n.target_room_number}` : 'Tất cả phòng',
-    n.is_popup ? 'Có' : 'Không',
-    n.is_active ? 'Đang bật' : 'Đã tắt',
-    formatDateTimeVn(n.start_at),
-    formatDateTimeVn(n.end_at),
-  ]);
-
-  const auditRows = auditLogs.map((a) => [
-    formatDateTimeVn(a.created_at),
-    a.actor_name || a.actor_type || 'system',
-    a.action || '',
-    a.entity_type || '',
-    a.entity_id || '',
-    a.ip_address || '',
-  ]);
-
   const sheets = {
     Tong_Hop: {
       headers: ['Hạng mục', 'Giá trị', 'Ghi chú'],
@@ -658,14 +625,6 @@ export const collectAllDatabaseData = async ({
       headers: ['Kỳ hóa đơn', 'Tháng', 'Năm', 'Phòng', 'Người thuê', 'SĐT', 'Tiền phòng', 'Tiền điện', 'Tiền nước', 'Giảm giá', 'Tổng cộng (VNĐ)', 'Trạng thái', 'Hình thức TT', 'Ngày thu tiền', 'Ghi chú', 'Ngày lập'],
       rows: billRows,
     },
-    Thong_Bao: {
-      headers: ['Thời gian tạo', 'Tiêu đề', 'Nội dung', 'Loại', 'Đối tượng', 'Người nhận', 'Phòng áp dụng', 'Pop-up', 'Kích hoạt', 'Từ ngày', 'Đến ngày'],
-      rows: notificationRows,
-    },
-    Nhat_Ky_He_Thong: {
-      headers: ['Thời gian (VN)', 'Người thực hiện', 'Hành động', 'Loại đối tượng', 'ID đối tượng', 'Địa chỉ IP'],
-      rows: auditRows,
-    },
   };
 
   const counts = {
@@ -675,8 +634,6 @@ export const collectAllDatabaseData = async ({
     electricityReadings: electricityRows.length,
     waterReadings: waterRows.length,
     bills: billRows.length,
-    notifications: notificationRows.length,
-    auditLogs: auditRows.length,
   };
 
   const totalRows = Object.values(sheets).reduce((sum, s) => sum + s.rows.length, 0);
