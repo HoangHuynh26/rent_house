@@ -16,13 +16,17 @@ export const generateSignedContractPDF = async (contract, room, tenant) => {
         const pdfBuffer = Buffer.concat(buffers);
         const documentHash = computeSHA256(pdfBuffer);
         
-        // Save to disk
+        // Save to disk (best-effort in serverless environments)
         const fileName = `contract_${contract.contract_number}_${Date.now()}.pdf`;
         const filePath = path.join(CONTRACTS_DIR, fileName);
-        if (!fs.existsSync(path.dirname(filePath))) {
-          fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        try {
+          if (!fs.existsSync(path.dirname(filePath))) {
+            fs.mkdirSync(path.dirname(filePath), { recursive: true });
+          }
+          fs.writeFileSync(filePath, pdfBuffer);
+        } catch (fsErr) {
+          console.warn('[PDF Service] Skipping disk write in serverless environment:', fsErr.message);
         }
-        fs.writeFileSync(filePath, pdfBuffer);
 
         resolve({
           filePath,

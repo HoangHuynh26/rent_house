@@ -124,4 +124,21 @@ test('Netlify apiHandler serves public /api/seo endpoints and enforces requireAd
   const adminJson = JSON.parse(adminRes.body);
   assert.strictEqual(adminJson.data.healthReport.score, 100);
   assert.strictEqual(adminJson.data.gscInfo.verificationFileName, 'googlece2476463a9f3baa.html');
+
+  const healthRes = await apiHandler(
+    { httpMethod: 'GET', path: '/.netlify/functions/api/health', headers: {} },
+    {}
+  );
+  assert.strictEqual(healthRes.statusCode, 200);
+
+  const loginRes = await apiHandler(
+    {
+      httpMethod: 'POST',
+      path: '/.netlify/functions/api/auth/admin/login',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ username: 'admin', password: 'wrong_password' }),
+    },
+    {}
+  );
+  assert.strictEqual(loginRes.statusCode, 401);
 });

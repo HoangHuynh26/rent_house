@@ -1,13 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { isPostgresActive, memoryStore, query } from '../config/db.js';
 import * as roomRepo from '../repositories/room.repo.js';
 import * as auditService from './audit.service.js';
 
 const SEO_SETTINGS_ACTION = 'SEO_SETTINGS';
-const projectRoot = process.env.LAMBDA_TASK_ROOT
-  || (import.meta.url ? fileURLToPath(new URL('../../../', import.meta.url)) : process.cwd());
+const projectRoot = process.env.LAMBDA_TASK_ROOT || process.cwd();
 
 export const DEFAULT_GSC_VERIFICATION_FILE = 'googlece2476463a9f3baa.html';
 export const DEFAULT_GSC_VERIFICATION_CONTENT = 'google-site-verification: googlece2476463a9f3baa.html';

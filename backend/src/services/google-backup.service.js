@@ -1,7 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { isPostgresActive, memoryStore, query } from '../config/db.js';
 import * as roomRepo from '../repositories/room.repo.js';
 import * as userRepo from '../repositories/user.repo.js';
@@ -22,8 +21,7 @@ export const BACKUP_FOLDER_NAME = 'Sao_Luu_Nha_Tro_Thanh_Tam';
 const SETTINGS_ACTION = 'GOOGLE_BACKUP_SETTINGS';
 const BACKUP_LOG_ACTION = 'GOOGLE_DRIVE_BACKUP';
 
-const projectRoot = process.env.LAMBDA_TASK_ROOT
-  || (import.meta.url ? fileURLToPath(new URL('../../../', import.meta.url)) : process.cwd());
+const projectRoot = process.env.LAMBDA_TASK_ROOT || process.cwd();
 
 export const extractSpreadsheetId = (input) => {
   if (!input) return '';
