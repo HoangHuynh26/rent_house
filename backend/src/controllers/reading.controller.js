@@ -3,6 +3,7 @@ import * as roomRepo from '../repositories/room.repo.js';
 import * as contractRepo from '../repositories/contract.repo.js';
 import { successResponse, errorResponse } from '../utils/response.util.js';
 import * as auditService from '../services/audit.service.js';
+import * as googleBackupService from '../services/google-backup.service.js';
 
 // ============================================================================
 // ELECTRICITY READINGS
@@ -87,6 +88,15 @@ export const createElectricityReading = async (req, res) => {
       userAgent: req.get('User-Agent')
     });
 
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'electricity_reading_create',
+      reason: `Ghi nhận chỉ số điện tháng ${reading?.reading_month || ''}/${reading?.reading_year || ''}`,
+      periodMonth: reading?.reading_month || null,
+      periodYear: reading?.reading_year || null,
+      isMonthlySnapshotTrigger: true,
+      actorId: req.admin?.id || null,
+    });
+
     return successResponse(res, reading, 'Tạo bản ghi chỉ số điện thành công.', 201);
   } catch (err) {
     console.error('[Create Electricity Reading Error]:', err);
@@ -120,6 +130,15 @@ export const verifyElectricityReading = async (req, res) => {
       newData: verified,
       ip: req.ip,
       userAgent: req.get('User-Agent')
+    });
+
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'electricity_reading_verify',
+      reason: `Phê duyệt chỉ số điện tháng ${verified?.reading_month || ''}/${verified?.reading_year || ''}`,
+      periodMonth: verified?.reading_month || null,
+      periodYear: verified?.reading_year || null,
+      isMonthlySnapshotTrigger: true,
+      actorId: req.admin?.id || null,
     });
 
     return successResponse(res, verified, 'Phê duyệt chỉ số điện thành công.');
@@ -246,6 +265,15 @@ export const createWaterReading = async (req, res) => {
       userAgent: req.get('User-Agent')
     });
 
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'water_reading_create',
+      reason: `Ghi nhận chỉ số nước tháng ${reading?.reading_month || ''}/${reading?.reading_year || ''}`,
+      periodMonth: reading?.reading_month || null,
+      periodYear: reading?.reading_year || null,
+      isMonthlySnapshotTrigger: true,
+      actorId: req.admin?.id || null,
+    });
+
     return successResponse(res, reading, 'Tạo bản ghi chỉ số nước thành công.', 201);
   } catch (err) {
     console.error('[Create Water Reading Error]:', err);
@@ -279,6 +307,15 @@ export const verifyWaterReading = async (req, res) => {
       newData: verified,
       ip: req.ip,
       userAgent: req.get('User-Agent')
+    });
+
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'water_reading_verify',
+      reason: `Phê duyệt chỉ số nước tháng ${verified?.reading_month || ''}/${verified?.reading_year || ''}`,
+      periodMonth: verified?.reading_month || null,
+      periodYear: verified?.reading_year || null,
+      isMonthlySnapshotTrigger: true,
+      actorId: req.admin?.id || null,
     });
 
     return successResponse(res, verified, 'Phê duyệt chỉ số nước thành công.');

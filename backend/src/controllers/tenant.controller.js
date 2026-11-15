@@ -4,6 +4,7 @@ import * as contractRepo from '../repositories/contract.repo.js';
 import * as billRepo from '../repositories/bill.repo.js';
 import { successResponse, errorResponse } from '../utils/response.util.js';
 import * as auditService from '../services/audit.service.js';
+import * as googleBackupService from '../services/google-backup.service.js';
 import { isPostgresActive, query, memoryStore } from '../config/db.js';
 
 export const getTenants = async (req, res) => {
@@ -112,6 +113,12 @@ export const createTenant = async (req, res) => {
       userAgent: req.get('User-Agent')
     });
 
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'tenant_create',
+      reason: `Thêm người thuê mới ${tenant?.full_name || ''}`,
+      actorId: req.admin?.id || null,
+    });
+
     return successResponse(res, tenant, 'Thêm người thuê mới thành công.', 201);
   } catch (err) {
     console.error('[Create Tenant Error]:', err);
@@ -174,6 +181,12 @@ export const updateTenant = async (req, res) => {
       userAgent: req.get('User-Agent')
     });
 
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'tenant_update',
+      reason: `Cập nhật người thuê ${updated?.full_name || oldTenant?.full_name || id}`,
+      actorId: req.admin?.id || null,
+    });
+
     return successResponse(res, updated, 'Cập nhật người thuê thành công.');
   } catch (err) {
     console.error('[Update Tenant Error]:', err);
@@ -208,6 +221,12 @@ export const deleteTenant = async (req, res) => {
       oldData: tenant,
       ip: req.ip,
       userAgent: req.get('User-Agent')
+    });
+
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'tenant_delete',
+      reason: `Xóa người thuê ${tenant?.full_name || id}`,
+      actorId: req.admin?.id || null,
     });
 
     return successResponse(res, null, 'Đã xóa người thuê thành công.');

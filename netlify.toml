@@ -9,6 +9,7 @@
   directory = "backend/netlify/functions"
   node_bundler = "esbuild"
   external_node_modules = ["pdfkit"]
+  included_files = ["google-apps-script/Code.gs"]
 
 [functions."monthly-billing"]
   schedule = "0 3 10 * *"

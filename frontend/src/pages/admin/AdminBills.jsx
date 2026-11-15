@@ -29,6 +29,7 @@ import {
 import api from '../../services/api';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { ActionLoadingOverlay } from '../../components/loading/LoadingComponents';
+import GoogleDriveBackupButton from '../../components/admin/GoogleDriveBackupButton';
 
 export default function AdminBills() {
   const [bills, setBills] = useState([]);
@@ -295,6 +296,8 @@ export default function AdminBills() {
             <Plus size={18} />
             Lập hóa đơn tháng {month}/{year}
           </button>
+
+          <GoogleDriveBackupButton month={month} year={year} />
         </div>
       </div>
 

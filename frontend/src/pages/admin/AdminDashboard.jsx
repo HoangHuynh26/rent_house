@@ -10,6 +10,7 @@ import {
   PieChart, Pie, Cell, ComposedChart, Bar
 } from 'recharts';
 import api from '../../services/api';
+import GoogleDriveBackupButton from '../../components/admin/GoogleDriveBackupButton';
 import { formatCurrency } from '../../utils/formatters';
 import { DashboardSkeleton } from '../../components/loading/LoadingComponents';
 import usePageSEO from '../../utils/usePageSEO';
@@ -180,7 +181,8 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <GoogleDriveBackupButton />
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}

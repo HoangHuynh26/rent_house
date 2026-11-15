@@ -1,5 +1,6 @@
 import * as notificationRepo from '../repositories/notification.repo.js';
 import { successResponse, errorResponse } from '../utils/response.util.js';
+import * as googleBackupService from '../services/google-backup.service.js';
 
 /**
  * Helper to compute real-time status of scheduled notification
@@ -69,6 +70,12 @@ export const createNotification = async (req, res) => {
       end_at: end_at || null
     });
 
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'notification_create',
+      reason: `Tạo thông báo mới: ${notif?.title || ''}`,
+      actorId: req.admin?.id || null,
+    });
+
     return successResponse(res, notif, 'Tạo thông báo thành công!', 201);
   } catch (err) {
     console.error('[Create Notification Error]:', err);
@@ -112,6 +119,12 @@ export const updateNotification = async (req, res) => {
       return errorResponse(res, 'Không tìm thấy thông báo cần sửa.', 404);
     }
 
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'notification_update',
+      reason: `Cập nhật thông báo: ${updated?.title || id}`,
+      actorId: req.admin?.id || null,
+    });
+
     return successResponse(res, updated, 'Cập nhật thông báo thành công!');
   } catch (err) {
     console.error('[Update Notification Error]:', err);
@@ -153,6 +166,12 @@ export const deleteNotification = async (req, res) => {
     if (!deleted) {
       return errorResponse(res, 'Không tìm thấy thông báo để xóa.', 404);
     }
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'notification_delete',
+      reason: `Xóa thông báo ${id}`,
+      actorId: req.admin?.id || null,
+    });
+
     return successResponse(res, deleted, 'Đã xóa thông báo thành công!');
   } catch (err) {
     console.error('[Delete Notification Error]:', err);

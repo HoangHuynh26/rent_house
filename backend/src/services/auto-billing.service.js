@@ -8,6 +8,7 @@ import * as readingRepo from '../repositories/reading.repo.js';
 import * as notificationRepo from '../repositories/notification.repo.js';
 import * as meterImageRepo from '../repositories/meter-image.repo.js';
 import * as auditService from './audit.service.js';
+import * as googleBackupService from './google-backup.service.js';
 import * as notificationDelivery from './notification-delivery.service.js';
 import { formatVND } from '../utils/currency.util.js';
 
@@ -191,6 +192,16 @@ export const runAutoMonthlyBilling = async ({ force = false, month = null, year 
       is_forced: force
     }
   });
+
+  if (createdBills.length > 0 || updatedBills.length > 0 || force) {
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'auto_billing_day10',
+      reason: `Tự động chốt & cập nhật hóa đơn ngày 10 Tháng ${targetMonth}/${targetYear} (${createdBills.length} mới, ${updatedBills.length} cập nhật)`,
+      periodMonth: targetMonth,
+      periodYear: targetYear,
+      isMonthlySnapshotTrigger: true,
+    });
+  }
 
   return {
     success: true,
