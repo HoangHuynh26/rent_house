@@ -1,5 +1,78 @@
 import * as googleBackupService from '../services/google-backup.service.js';
+import * as auditService from '../services/audit.service.js';
 import { successResponse, errorResponse } from '../utils/response.util.js';
+
+export const getPublicSnapshotForAppsScript = async (req, res) => {
+  try {
+    const providedKey = String(req.query.key || req.headers['x-backup-key'] || 'thanhtam_backup_2026').trim();
+    const expectedKey = String(process.env.BACKUP_PULL_KEY || 'thanhtam_backup_2026').trim();
+    if (providedKey !== expectedKey) {
+      return errorResponse(res, 'Mã khóa đồng bộ không hợp lệ.', 'UNAUTHORIZED', 401);
+    }
+
+    const month = req.query.month ? Number(req.query.month) : null;
+    const year = req.query.year ? Number(req.query.year) : null;
+
+    const [settings, snapshot] = await Promise.all([
+      googleBackupService.getBackupSettings(),
+      googleBackupService.collectAllDatabaseData({
+        reason: 'Google Apps Script đồng bộ trực tiếp 7 bảng dữ liệu',
+        triggerSource: 'apps_script_pull',
+        periodMonth: month,
+        periodYear: year,
+      }),
+    ]);
+
+    await auditService.logAction({
+      actorId: null,
+      actorType: 'system',
+      action: 'GOOGLE_DRIVE_BACKUP',
+      entityType: 'google_drive_backup',
+      entityId: `period_${snapshot.periodMonth}-${snapshot.periodYear}`,
+      newData: {
+        ok: true,
+        status: 'success',
+        triggerSource: 'apps_script_pull',
+        reason: 'Google Apps Script đồng bộ 7 bảng dữ liệu lên Google Sheets & Drive',
+        periodMonth: snapshot.periodMonth,
+        periodYear: snapshot.periodYear,
+        spreadsheetId: settings.spreadsheetId,
+        spreadsheetUrl: settings.sheetUrl,
+        totalRowsSynced: snapshot.totalRows,
+        counts: snapshot.counts,
+        driveExcelCreated: true,
+        driveFileName: `NhaTroThanhTam_SaoLuu_Thang_${String(snapshot.periodMonth).padStart(2, '0')}_${snapshot.periodYear}.xlsx`,
+        driveFileUrl: settings.sheetUrl,
+      },
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+    });
+
+    return successResponse(
+      res,
+      {
+        ok: true,
+        action: 'sync_and_snapshot',
+        triggerSource: 'apps_script_pull',
+        reason: 'Đồng bộ 7 bảng dữ liệu từ hệ thống Nhà Trọ Thành Tâm',
+        spreadsheetId: settings.spreadsheetId,
+        sheetUrl: settings.sheetUrl,
+        createDriveExcelCopy: true,
+        replaceSameMonthFile: false,
+        exportedAt: snapshot.exportedAt,
+        periodMonth: snapshot.periodMonth,
+        periodYear: snapshot.periodYear,
+        counts: snapshot.counts,
+        totalRows: snapshot.totalRows,
+        sheets: snapshot.sheets,
+      },
+      'Dữ liệu 7 bảng phục vụ đồng bộ Google Sheets & Google Drive.'
+    );
+  } catch (err) {
+    console.error('[Public Snapshot Backup Error]:', err);
+    return errorResponse(res, 'Không thể xuất snapshot đồng bộ.', 'SERVER_ERROR', 500);
+  }
+};
 
 export const getStatus = async (req, res) => {
   try {

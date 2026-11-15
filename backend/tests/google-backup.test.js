@@ -412,4 +412,27 @@ test('Netlify apiHandler /api/backup endpoints enforce requireAdmin and serve st
   const scriptJson = JSON.parse(scriptRes.body);
   assert.ok(scriptJson.data.code.includes('function doPost(e)'));
   assert.ok(scriptJson.data.code.includes('13oK6Jo1zQvKYuEhBU6tsDfNgl84lJjZePkNRYe-rotk'));
+
+  // 6. GET /api/backup/public-snapshot (for Apps Script pull sync)
+  const snapshotRes = await apiHandler(
+    {
+      httpMethod: 'GET',
+      path: '/.netlify/functions/api/backup/public-snapshot',
+      queryStringParameters: { key: 'thanhtam_backup_2026' },
+      headers: {},
+    },
+    {}
+  );
+  assert.strictEqual(snapshotRes.statusCode, 200);
+  const snapshotJson = JSON.parse(snapshotRes.body);
+  assert.strictEqual(snapshotJson.success, true);
+  assert.deepStrictEqual(Object.keys(snapshotJson.data.sheets), [
+    'Tong_Hop',
+    'Phong_Tro',
+    'Nguoi_Thue',
+    'Hop_Dong',
+    'Chi_So_Dien',
+    'Chi_So_Nuoc',
+    'Hoa_Don',
+  ]);
 });

@@ -226,7 +226,7 @@ export const saveBackupSettings = async ({
   if (
     webhookUrl !== undefined &&
     nextWebhookInput &&
-    !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec/i.test(nextWebhookInput)
+    !/^https:\/\/script\.google\.com\/macros\/s\/.+\/(exec|dev)/i.test(nextWebhookInput)
   ) {
     const err = new Error('Link Google Apps Script Web App phải có dạng https://script.google.com/macros/s/.../exec');
     err.status = 400;
@@ -887,20 +887,20 @@ export const runGoogleBackup = async ({
   } catch (err) {
     const isAbort = err?.name === 'AbortError';
 
-    // When Google Apps Script takes > 5.5s on Netlify (writing 9 tabs + copying Drive file),
-    // the POST payload has already been delivered to Google Apps Script (since auth rejections fail in ~1s).
-    // Return success with backgroundDispatched + clientSyncPayload so Netlify never times out with 502!
-    if (isAbort && isServerlessRuntime && !hasCustomFetch) {
+    // When Google Apps Script takes > 5.5s on Netlify OR requires browser session cookies (302 ServiceLogin),
+    // return 200 OK with clientSyncPayload so the browser session completes the sync and never fails with 422/502!
+    if (!hasCustomFetch) {
       const bgFileName = createDriveExcelCopy
         ? replaceSameMonthFile
-          ? `NhaTroThanhTam_SaoLuu_Thang_${String(snapshot.periodMonth).padStart(2, '0')}_${snapshot.periodYear}`
-          : `NhaTroThanhTam_BanSao_T${String(snapshot.periodMonth).padStart(2, '0')}_${snapshot.periodYear}`
+          ? `NhaTroThanhTam_SaoLuu_Thang_${String(snapshot.periodMonth).padStart(2, '0')}_${snapshot.periodYear}.xlsx`
+          : `NhaTroThanhTam_BanSao_T${String(snapshot.periodMonth).padStart(2, '0')}_${snapshot.periodYear}.xlsx`
         : null;
 
       responseData = {
         ok: true,
         simulated: false,
-        backgroundDispatched: true,
+        backgroundDispatched: isAbort,
+        requiresBrowserAuth: !isAbort,
         triggerSource,
         reason,
         periodMonth: snapshot.periodMonth,

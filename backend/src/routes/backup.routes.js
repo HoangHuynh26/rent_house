@@ -4,7 +4,11 @@ import { requireAdmin } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-// Tất cả API sao lưu dữ liệu chỉ dành cho Admin
+// Endpoint để Google Apps Script (UrlFetchApp) chủ động kéo dữ liệu 7 bảng về Google Sheet
+// Sử dụng khóa xác thực mặc định hoặc biến môi trường BACKUP_PULL_KEY
+router.get('/public-snapshot', backupController.getPublicSnapshotForAppsScript);
+
+// Các API quản trị sao lưu bên dưới yêu cầu quyền Admin
 router.use(requireAdmin);
 
 router.get('/status', backupController.getStatus);

@@ -34,13 +34,20 @@ export default function GoogleDriveBackupButton({
       const data = res?.data || {};
       if (data.clientSyncPayload && data.webhookUrl) {
         try {
-          await fetch(data.webhookUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'include',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(data.clientSyncPayload),
-          });
+          await Promise.allSettled([
+            fetch(data.webhookUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              credentials: 'include',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify(data.clientSyncPayload),
+            }),
+            fetch(`${data.webhookUrl}${data.webhookUrl.includes('?') ? '&' : '?'}t=${Date.now()}`, {
+              method: 'GET',
+              mode: 'no-cors',
+              credentials: 'include',
+            }),
+          ]);
         } catch (browserErr) {
           console.warn('[Browser Apps Script Sync Fallback]:', browserErr);
         }

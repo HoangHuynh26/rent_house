@@ -119,15 +119,23 @@ export default function AdminBackup() {
       });
 
       const result = res?.data || {};
-      if (result.clientSyncPayload && (result.webhookUrl || webhookUrl)) {
+      const targetWebhook = result.webhookUrl || webhookUrl;
+      if (result.clientSyncPayload && targetWebhook) {
         try {
-          await fetch(result.webhookUrl || webhookUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'include',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(result.clientSyncPayload),
-          });
+          await Promise.allSettled([
+            fetch(targetWebhook, {
+              method: 'POST',
+              mode: 'no-cors',
+              credentials: 'include',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify(result.clientSyncPayload),
+            }),
+            fetch(`${targetWebhook}${targetWebhook.includes('?') ? '&' : '?'}t=${Date.now()}`, {
+              method: 'GET',
+              mode: 'no-cors',
+              credentials: 'include',
+            }),
+          ]);
         } catch (browserErr) {
           console.warn('[Browser Apps Script Sync Fallback]:', browserErr);
         }
