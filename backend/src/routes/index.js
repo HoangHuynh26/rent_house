@@ -8,7 +8,6 @@ import meterImageRoutes from './meter-image.routes.js';
 import billRoutes from './bill.routes.js';
 import analyticsRoutes from './analytics.routes.js';
 import tenantPortalRoutes from './tenant-portal.routes.js';
-import chatbotRoutes from './chatbot.routes.js';
 import notificationRoutes from './notification.routes.js';
 
 const apiRouter = Router();
@@ -22,7 +21,6 @@ apiRouter.use('/meter-images', meterImageRoutes);
 apiRouter.use('/bills', billRoutes);
 apiRouter.use('/analytics', analyticsRoutes);
 apiRouter.use('/tenant-portal', tenantPortalRoutes);
-apiRouter.use('/chatbot', chatbotRoutes);
 apiRouter.use('/notifications', notificationRoutes);
 
 export default apiRouter;

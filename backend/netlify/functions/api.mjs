@@ -2,7 +2,14 @@ import serverless from 'serverless-http';
 import app from '../../src/app.js';
 import { testConnection } from '../../src/config/db.js';
 
-const expressHandler = serverless(app);
+const expressHandler = serverless(app, {
+  binary: [
+    'multipart/form-data',
+    'image/*',
+    'application/pdf',
+    'application/octet-stream'
+  ]
+});
 const functionPrefix = '/.netlify/functions/api';
 
 let dbWarmupDone = false;

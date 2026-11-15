@@ -58,13 +58,13 @@ Dành cho người thuê phòng hoặc chủ nhà dùng iPhone muốn dùng ngay
 
 | Tính Năng | Chi Tiết Tối Ưu Trên Di Động |
 |---|---|
-| **Camera & Thư viện ảnh** | Tích hợp quyền máy ảnh gốc (`CAMERA`, `NSCameraUsageDescription`) để chụp đồng hồ điện nước trực tiếp phục vụ AI OCR. |
+| **Camera & Thư viện ảnh** | Tích hợp quyền máy ảnh gốc (`CAMERA`, `NSCameraUsageDescription`) để chủ nhà chụp ảnh đồng hồ điện nước trực tiếp và nhập chỉ số lưu trữ minh bạch. |
 | **Ký hợp đồng cảm ứng** | Khung chữ ký số HTML5 Canvas hỗ trợ cảm ứng đa điểm, ngón tay hoặc bút cảm ứng Stylus cực nhạy. |
 | **Giao diện thẻ thông minh** | Tự động chuyển toàn bộ bảng dữ liệu phức tạp thành các thẻ card trực quan trên màn hình nhỏ. |
 | **Dock điều hướng Apple** | Thanh menu đáy *Liquid Glass Dock* nổi với hiệu ứng kính mờ frosted glass, cử chỉ vuốt mượt mà. |
 | **Hỗ trợ Safe Area** | Tự động thụt lề an toàn (`env(safe-area-inset-top)` & `env(safe-area-inset-bottom)`) tương thích tai thỏ (Notch), Dynamic Island trên iPhone và thanh điều hướng cử chỉ Android. |
 | **Nút Back phần cứng** | Hỗ trợ nút quay lại phần cứng trên Android: tự động quay lại trang trước hoặc thu nhỏ ứng dụng khi ở màn hình chính. |
-| **Tự động kết nối Backend** | Khi chạy trong ứng dụng gốc di động, app tự động kết nối API đám mây `https://rent-house-3jm7.onrender.com/api` hoặc máy chủ tuỳ chọn. |
+| **Tự động kết nối Backend** | Khi chạy trong ứng dụng gốc di động, app tự động kết nối API đám mây `https://nhatrothanhtam.netlify.app/api` hoặc máy chủ tuỳ chọn. |
 
 ---
 

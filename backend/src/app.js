@@ -8,7 +8,7 @@ import { UPLOAD_DIR } from './services/storage.service.js';
 
 const app = express();
 
-// Trust reverse proxy (Netlify, Render, Cloudflare, Load Balancer)
+// Trust reverse proxy (Netlify, Cloudflare, Load Balancer)
 app.set('trust proxy', 1);
 
 // Security Headers
@@ -29,6 +29,8 @@ const allowedOrigins = [
   'http://127.0.0.1:3000',
   'https://nhatrothanhtam.netlify.app',
   ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL.trim()] : []),
+  ...(process.env.URL ? [process.env.URL.trim()] : []),
+  ...(process.env.DEPLOY_PRIME_URL ? [process.env.DEPLOY_PRIME_URL.trim()] : []),
   ...envOrigins
 ];
 

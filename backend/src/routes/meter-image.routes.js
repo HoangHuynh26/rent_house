@@ -30,11 +30,6 @@ const uploadMeterImageMiddleware = (req, res, next) => {
 };
 
 router.post('/upload', uploadMeterImageMiddleware, meterImageController.uploadMeterImage);
-router.get('/learning/stats', meterImageController.getLearningStats);
-router.post('/learning/retrain', meterImageController.triggerRetrain);
-router.get('/ai-config', meterImageController.getAiConfig);
-router.post('/ai-config', meterImageController.updateAiConfig);
-router.post('/:id/analyze', meterImageController.analyzeMeterImage);
 
 export default router;
 

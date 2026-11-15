@@ -5,20 +5,36 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# Proxy API sang Render Backend
+[functions]
+  directory = "backend/netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["pdfkit"]
+
+[functions."monthly-billing"]
+  schedule = "0 3 10 * *"
+
+# Proxy API requests to Netlify Functions backend
 [[redirects]]
   from = "/api/*"
-  to = "https://rent-house-3jm7.onrender.com/api/:splat"
+  to = "/.netlify/functions/api/:splat"
   status = 200
   force = true
 
+# Proxy uploaded files to Netlify Functions backend
 [[redirects]]
   from = "/uploads/*"
-  to = "https://rent-house-3jm7.onrender.com/uploads/:splat"
+  to = "/.netlify/functions/api/uploads/:splat"
   status = 200
   force = true
 
-# Cấu hình Single Page Application (SPA) cho React Vite
+# Proxy health endpoint to Netlify Functions backend
+[[redirects]]
+  from = "/health"
+  to = "/.netlify/functions/api/health"
+  status = 200
+  force = true
+
+# SPA Fallback for React Router
 [[redirects]]
   from = "/*"
   to = "/index.html"

@@ -14,8 +14,12 @@ export default defineConfig(({ mode }) => {
   } catch (e) {}
   const env = { ...envParent, ...envLocal };
 
-  // Resolve API target: priority from VITE_API_TARGET, then VITE_API_URL, default to Render backend
-  const apiTarget = env.VITE_API_TARGET || (env.VITE_API_URL && env.VITE_API_URL.startsWith('http') ? env.VITE_API_URL.replace(/\/api\/?$/, '') : 'https://rent-house-3jm7.onrender.com');
+  // Resolve API target for local Vite dev proxy -> local backend server (port 5000)
+  const apiTarget =
+    env.VITE_API_TARGET ||
+    (env.VITE_API_URL && env.VITE_API_URL.startsWith('http')
+      ? env.VITE_API_URL.replace(/\/api\/?$/, '')
+      : 'http://localhost:5000');
 
   return {
     plugins: [react()],
@@ -23,7 +27,6 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       proxy: {
-        // 1. API chính kết nối đến backend
         '/api': {
           target: apiTarget,
           changeOrigin: true,
@@ -33,13 +36,6 @@ export default defineConfig(({ mode }) => {
           target: apiTarget,
           changeOrigin: true,
           secure: false,
-        },
-        // 2. Proxy phụ hỗ trợ kết nối trực tiếp
-        '/api-render': {
-          target: apiTarget,
-          changeOrigin: true,
-          secure: false,
-          rewrite: (path) => path.replace(/^\/api-render/, '/api'),
         }
       }
     }

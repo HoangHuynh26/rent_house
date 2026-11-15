@@ -38,8 +38,8 @@ export const VERIFICATION_STATUS = {
 const isProduction = process.env.NODE_ENV === 'production';
 export const COOKIE_OPTIONS = {
   httpOnly: true,
-  // When cross-site (Netlify frontend -> external backend API), sameSite must be 'none' and secure must be true
-  secure: process.env.COOKIE_SECURE === 'true' || isProduction,
-  sameSite: process.env.COOKIE_SAMESITE || (isProduction ? 'none' : 'lax'),
+  // Backend & Frontend are hosted on the same Netlify domain -> 'lax' works reliably across browsers
+  secure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : isProduction,
+  sameSite: process.env.COOKIE_SAMESITE || 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
 };

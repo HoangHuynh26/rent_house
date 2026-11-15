@@ -5,20 +5,24 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# Proxy API sang Render Backend
 [[redirects]]
   from = "/api/*"
-  to = "https://rent-house-3jm7.onrender.com/api/:splat"
+  to = "/.netlify/functions/api/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/uploads/*"
-  to = "https://rent-house-3jm7.onrender.com/uploads/:splat"
+  to = "/.netlify/functions/api/uploads/:splat"
   status = 200
   force = true
 
-# Cấu hình Single Page Application (SPA) cho React Vite
+[[redirects]]
+  from = "/health"
+  to = "/.netlify/functions/api/health"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

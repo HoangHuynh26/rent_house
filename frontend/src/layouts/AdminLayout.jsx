@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, DoorOpen, Users, Cpu, Receipt, FileSignature, ShieldAlert, LogOut, Home, Menu, X, Bell } from 'lucide-react';
+import { LayoutDashboard, DoorOpen, Users, Camera, Receipt, FileSignature, ShieldAlert, LogOut, Home, Menu, X, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 
@@ -18,7 +18,7 @@ export default function AdminLayout() {
     { to: '/admin/dashboard', label: 'Bảng tổng quan', icon: LayoutDashboard },
     { to: '/admin/rooms', label: 'Quản lý phòng trọ', icon: DoorOpen },
     { to: '/admin/tenants', label: 'Quản lý người thuê', icon: Users },
-    { to: '/admin/meters', label: 'Đo điện nước & AI OCR', icon: Cpu },
+    { to: '/admin/meters', label: 'Chụp & Ghi điện nước', icon: Camera },
     { to: '/admin/bills', label: 'Hóa đơn & Thanh toán', icon: Receipt },
     { to: '/admin/contracts', label: 'Hợp đồng thuê phòng', icon: FileSignature },
     { to: '/admin/notifications', label: 'Thông báo & Pop-up', icon: Bell },
