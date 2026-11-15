@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 process.env.DATABASE_URL = '';
 process.env.DISABLE_EXTERNAL_BACKUP = 'true';
 process.env.NODE_ENV = 'test';
+process.env.BACKUP_PULL_KEY = 'backup-test-key';
 
 const { memoryStore } = await import('../src/config/db.js');
 const googleBackupService = await import('../src/services/google-backup.service.js');
@@ -148,7 +149,7 @@ test('extractSpreadsheetId parses full Google Sheet URL and raw ID cleanly', () 
   assert.strictEqual(googleBackupService.extractSpreadsheetId('invalid-link'), '');
 });
 
-test('collectAllDatabaseData assembles all 9 sheets and strips huge base64 signatures', async () => {
+test('collectAllDatabaseData assembles all 7 sheets and strips huge base64 signatures', async () => {
   seedSampleDomainData();
 
   const snapshot = await googleBackupService.collectAllDatabaseData({
@@ -186,7 +187,7 @@ test('collectAllDatabaseData assembles all 9 sheets and strips huge base64 signa
   );
 });
 
-test('buildExcelXmlWorkbook generates valid escaped SpreadsheetML Excel XML with 9 worksheets', async () => {
+test('buildExcelXmlWorkbook generates valid escaped SpreadsheetML Excel XML with 7 worksheets', async () => {
   seedSampleDomainData();
   const snapshot = await googleBackupService.collectAllDatabaseData({
     periodMonth: 11,
@@ -198,6 +199,16 @@ test('buildExcelXmlWorkbook generates valid escaped SpreadsheetML Excel XML with
   assert.ok(xml.includes('<Worksheet ss:Name="Tong_Hop">'));
   assert.ok(xml.includes('<Worksheet ss:Name="Hoa_Don">'));
   assert.ok(xml.includes('&lt;XML &amp; Test&gt;'), 'XML entities must be escaped cleanly');
+});
+
+test('production backup refuses to read sample data when PostgreSQL is unavailable', async () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'production';
+  try {
+    await assert.rejects(googleBackupService.collectAllDatabaseData(), { status: 503 });
+  } finally {
+    process.env.NODE_ENV = previousNodeEnv;
+  }
 });
 
 test('runGoogleBackup posts full payload via fetchImpl, handles monthly Drive copy, and records audit history', async () => {
@@ -219,8 +230,11 @@ test('runGoogleBackup posts full payload via fetchImpl, handles monthly Drive co
           spreadsheetId: '13oK6Jo1zQvKYuEhBU6tsDfNgl84lJjZePkNRYe-rotk',
           spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/13oK6Jo1zQvKYuEhBU6tsDfNgl84lJjZePkNRYe-rotk/edit',
           syncedAt: '15/11/2026 17:10:00',
-          totalRowsSynced: 42,
+          totalRowsSynced: Object.values(capturedRequest.body.sheets).reduce((sum, tab) => sum + tab.rows.length, 0),
           driveExcelCreated: true,
+          driveFolderId: capturedRequest.body.driveFolderId,
+          driveDatabaseFileId: 'drive-database-file',
+          driveDatabaseFileUrl: 'https://drive.google.com/file/d/drive-database-file/view',
           driveFileId: 'drive-file-123',
           driveFileName: 'NhaTroThanhTam_SaoLuu_Thang_11_2026.xlsx',
           driveFileUrl: 'https://drive.google.com/file/d/drive-file-123/view',
@@ -246,8 +260,11 @@ test('runGoogleBackup posts full payload via fetchImpl, handles monthly Drive co
     '13oK6Jo1zQvKYuEhBU6tsDfNgl84lJjZePkNRYe-rotk'
   );
   assert.strictEqual(capturedRequest.body.createDriveExcelCopy, true);
+  assert.strictEqual(capturedRequest.body.backupKey, process.env.BACKUP_PULL_KEY);
   assert.strictEqual(result.ok, true);
   assert.strictEqual(result.driveExcelCreated, true);
+  assert.strictEqual(result.status, 'success');
+  assert.strictEqual(result.driveDatabaseFileId, 'drive-database-file');
   assert.strictEqual(result.driveFileName, 'NhaTroThanhTam_SaoLuu_Thang_11_2026.xlsx');
 
   const history = await googleBackupService.getBackupHistory(5);
@@ -266,6 +283,67 @@ test('runGoogleBackup surfaces clear error when Apps Script returns HTML permiss
       }),
     /Code\.gs/i
   );
+});
+
+test('runGoogleBackup requires verified sheet rows and reports missing Drive copy separately', async () => {
+  const confirm = (overrides) => async (_url, init) => {
+    const payload = JSON.parse(init.body);
+    const sheetStats = Object.fromEntries(Object.entries(payload.sheets).map(([name, tab]) => [name, tab.rows.length]));
+    return new Response(JSON.stringify({
+      ok: true,
+      spreadsheetId: payload.spreadsheetId,
+      totalRowsSynced: Object.values(sheetStats).reduce((sum, count) => sum + count, 0),
+      sheetStats,
+      driveFolderId: payload.driveFolderId,
+      driveDatabaseFileId: 'drive-json-only',
+      driveDatabaseFileUrl: 'https://drive.google.com/file/d/drive-json-only/view',
+      ...overrides,
+    }));
+  };
+
+  await assert.rejects(
+    googleBackupService.runGoogleBackup({ fetchImpl: async () => new Response('{}') }),
+    /chưa xác nhận sao lưu/
+  );
+  await assert.rejects(
+    googleBackupService.runGoogleBackup({ fetchImpl: confirm({ spreadsheetId: 'different-spreadsheet' }) }),
+    /đúng Google Sheet/
+  );
+  await assert.rejects(
+    googleBackupService.runGoogleBackup({ fetchImpl: confirm({ totalRowsSynced: 0 }) }),
+    /đủ dữ liệu/
+  );
+  await assert.rejects(
+    googleBackupService.runGoogleBackup({ fetchImpl: confirm({ sheetStats: { Tong_Hop: 0 } }) }),
+    /các tab Google Sheets/
+  );
+
+  const result = await googleBackupService.runGoogleBackup({
+    fetchImpl: confirm({ driveExcelCreated: true, driveFileName: 'unverified.xlsx' }),
+  });
+  assert.equal(result.status, 'warning');
+  assert.equal(result.driveExcelCreated, false);
+  assert.equal(result.driveFileName, null);
+  assert.equal(result.driveDatabaseFileId, 'drive-json-only');
+  assert.ok(result.totalRowsSynced > 0);
+  const wrongFolder = await googleBackupService.runGoogleBackup({
+    fetchImpl: confirm({ driveFolderId: 'wrong-drive-folder' }),
+  });
+  assert.equal(wrongFolder.status, 'warning');
+  assert.equal(wrongFolder.driveDatabaseFileUrl, null);
+});
+
+test('runGoogleBackup reports a timeout as unconfirmed with zero confirmed rows', async () => {
+  await assert.rejects(
+    googleBackupService.runGoogleBackup({
+      fetchImpl: async () => { throw new DOMException('Test timeout', 'AbortError'); },
+    }),
+    { status: 504 }
+  );
+  const [result] = await googleBackupService.getBackupHistory(1);
+  assert.equal(result.status, 'unconfirmed');
+  assert.equal(result.totalRowsSynced, 0);
+  assert.equal(result.driveFileUrl, null);
 });
 
 test('triggerAutoBackupOnDataChange respects autoBackupEnabled setting and triggers monthly Excel copy', async () => {
@@ -315,7 +393,10 @@ test('triggerAutoBackupOnDataChange respects autoBackupEnabled setting and trigg
             spreadsheetId: '13oK6Jo1zQvKYuEhBU6tsDfNgl84lJjZePkNRYe-rotk',
             driveExcelCreated: true,
             driveFileName: 'NhaTroThanhTam_SaoLuu_Thang_12_2026.xlsx',
-            totalRowsSynced: 30,
+            driveFolderId: parsed.driveFolderId,
+            driveFileId: 'drive-monthly-test',
+            driveFileUrl: 'https://drive.google.com/file/d/drive-monthly-test/view',
+            totalRowsSynced: Object.values(parsed.sheets).reduce((sum, tab) => sum + tab.rows.length, 0),
           }),
       };
     },
@@ -411,18 +492,22 @@ test('Netlify apiHandler /api/backup endpoints enforce requireAdmin and serve st
   assert.strictEqual(scriptRes.statusCode, 200);
   const scriptJson = JSON.parse(scriptRes.body);
   assert.ok(scriptJson.data.code.includes('function doPost(e)'));
-  assert.ok(scriptJson.data.code.includes('13oK6Jo1zQvKYuEhBU6tsDfNgl84lJjZePkNRYe-rotk'));
+  assert.ok(scriptJson.data.code.includes('BACKUP_PULL_KEY'));
+  assert.ok(!scriptJson.data.code.includes(process.env.BACKUP_PULL_KEY));
 
-  // 6. GET /api/backup/public-snapshot (for Apps Script pull sync)
-  const snapshotRes = await apiHandler(
-    {
-      httpMethod: 'GET',
-      path: '/.netlify/functions/api/backup/public-snapshot',
-      queryStringParameters: { key: 'thanhtam_backup_2026' },
-      headers: {},
-    },
-    {}
-  );
+  // 6. Only authenticated Apps Script requests can retrieve the snapshot.
+  const snapshotEvent = {
+    httpMethod: 'GET',
+    path: '/.netlify/functions/api/backup/public-snapshot',
+  };
+  const denied = await apiHandler({ ...snapshotEvent, headers: {} }, {});
+  assert.strictEqual(denied.statusCode, 401);
+  const previousHistory = await googleBackupService.getBackupHistory();
+  const snapshotRes = await apiHandler({
+    ...snapshotEvent,
+    headers: { 'x-backup-key': process.env.BACKUP_PULL_KEY },
+  }, {});
+  assert.deepStrictEqual(await googleBackupService.getBackupHistory(), previousHistory);
   assert.strictEqual(snapshotRes.statusCode, 200);
   const snapshotJson = JSON.parse(snapshotRes.body);
   assert.strictEqual(snapshotJson.success, true);

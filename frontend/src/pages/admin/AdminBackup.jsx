@@ -23,6 +23,39 @@ const DEFAULT_DRIVE_FOLDER_URL =
 const DEFAULT_WEBHOOK_URL =
   'https://script.google.com/macros/s/AKfycbz3gJhQ2khFr8UqoYCcGYGtyIUI6w5fN6ksfwKPjQmHD8F4Jy7qBE4mY9g7Sfuqdiew/exec';
 
+const BACKUP_STATUS = {
+  success: { label: 'Thành công', color: '#15803d', background: '#dcfce7' },
+  warning: { label: 'Đã ghi Sheet', color: '#92400e', background: '#fffbeb' },
+  error: { label: 'Thất bại', color: '#b91c1c', background: '#fee2e2' },
+  unconfirmed: { label: 'Chưa xác nhận', color: '#92400e', background: '#fffbeb' },
+  simulated: { label: 'Mô phỏng', color: '#475569', background: '#f1f5f9' },
+};
+
+function BackupStatus({ backup }) {
+  let status = backup.status;
+  if (backup.simulated) status = 'simulated';
+  if (['success', 'warning'].includes(status) && !hasConfirmedSheet(backup)) status = 'unconfirmed';
+  const { label, ...colors } = BACKUP_STATUS[status] || BACKUP_STATUS.unconfirmed;
+  return (
+    <span style={{
+      ...colors,
+      display: 'inline-block',
+      padding: '3px 9px',
+      borderRadius: '999px',
+      fontSize: '12px',
+      fontWeight: '700',
+    }}>
+      {label}
+    </span>
+  );
+}
+
+function hasConfirmedSheet(backup) {
+  return backup && ['success', 'warning'].includes(backup.status) && !backup.simulated
+    && !backup.clientSyncPayload && !backup.backgroundDispatched && !backup.requiresBrowserAuth
+    && Number.isInteger(backup.totalRowsSynced) && backup.totalRowsSynced > 0;
+}
+
 export default function AdminBackup() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -41,7 +74,7 @@ export default function AdminBackup() {
   const [webhookUrl, setWebhookUrl] = useState(DEFAULT_WEBHOOK_URL);
   const [autoBackupEnabled, setAutoBackupEnabled] = useState(true);
 
-  const [banner, setBanner] = useState(null); // { type: 'success' | 'error', text, driveFileUrl, driveFolderUrl }
+  const [banner, setBanner] = useState(null);
   const [appsScriptCode, setAppsScriptCode] = useState('');
   const [showScriptModal, setShowScriptModal] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -123,55 +156,33 @@ export default function AdminBackup() {
         reason: replaceSameMonthFile
           ? `Admin cập nhật bản Excel & Database tháng ${periodMonth}/${periodYear} trên Google Drive`
           : `Admin chủ động lưu bản sao Excel & Database dự phòng (T${periodMonth}/${periodYear})`,
-      });
+      }, { timeout: 30000 });
 
-      const result = res?.data || {};
-      const targetWebhook = result.webhookUrl || webhookUrl;
-      if (result.clientSyncPayload && targetWebhook) {
-        try {
-          await Promise.allSettled([
-            fetch(targetWebhook, {
-              method: 'POST',
-              mode: 'no-cors',
-              credentials: 'include',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify(result.clientSyncPayload),
-            }),
-            fetch(`${targetWebhook}${targetWebhook.includes('?') ? '&' : '?'}t=${Date.now()}`, {
-              method: 'GET',
-              mode: 'no-cors',
-              credentials: 'include',
-            }),
-          ]);
-        } catch (browserErr) {
-          console.warn('[Browser Apps Script Sync Fallback]:', browserErr);
+      const result = res?.data;
+      if (result?.simulated) {
+        setBanner({ type: 'warning', text: 'Lần sao lưu đang chạy mô phỏng. Dữ liệu trên Google Sheets và Drive chưa được cập nhật.' });
+      } else {
+        if (!result?.ok || !hasConfirmedSheet(result)) {
+          throw new Error('Google Apps Script chưa xác nhận đã ghi dữ liệu. Kiểm tra lịch sử sao lưu và cấu hình Web App.');
         }
-      }
 
-      setBanner({
-        type: result.warning ? 'warning' : 'success',
-        text: res?.message || 'Đã sao lưu toàn bộ dữ liệu lên Google Drive thành công!',
-        driveFileUrl: result.driveFileUrl,
-        driveFolderUrl: result.driveFolderUrl,
-        spreadsheetUrl: result.spreadsheetUrl || sheetUrl,
-      });
+        const driveFileUrl = result.driveExcelCreated ? result.driveFileUrl : null;
+        const driveDatabaseFileUrl = result.driveDatabaseFileUrl;
+        const warning = result.warning || (!driveFileUrl || !driveDatabaseFileUrl
+          ? `Đã ghi ${result.totalRowsSynced} dòng vào Google Sheets. Chưa xác nhận đủ file Excel và JSON trên Drive.`
+          : null);
+
+        setBanner({
+          type: warning ? 'warning' : 'success',
+          text: warning || res.message,
+          driveFileUrl,
+          driveDatabaseFileUrl,
+          driveFolderUrl: driveFileUrl || driveDatabaseFileUrl ? result.driveFolderUrl : null,
+          spreadsheetUrl: result.spreadsheetUrl,
+        });
+      }
       await fetchStatus();
     } catch (err) {
-      const fallbackDetails = err?.details;
-      if (fallbackDetails?.clientSyncPayload && (fallbackDetails.webhookUrl || webhookUrl)) {
-        try {
-          await fetch(fallbackDetails.webhookUrl || webhookUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'include',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(fallbackDetails.clientSyncPayload),
-          });
-        } catch (browserErr) {
-          console.warn('[Browser Apps Script Sync Fallback]:', browserErr);
-        }
-      }
-
       setBanner({
         type: 'error',
         text:
@@ -293,7 +304,7 @@ export default function AdminBackup() {
             </h1>
           </div>
           <p style={{ margin: 0, fontSize: '14px', color: '#cbd5e1', lineHeight: '1.55' }}>
-            Tự động đồng bộ toàn bộ dữ liệu hệ thống lên Google Sheets và tạo file Excel (<code>.xlsx</code>) trong thư mục{' '}
+            Tự động đồng bộ dữ liệu lên Google Sheets và lưu file Excel (<code>.xlsx</code>) cùng dữ liệu (<code>.json</code>) trong thư mục{' '}
             <strong>Sao_Luu_Nha_Tro_Thanh_Tam</strong> trên Google Drive mỗi tháng khi có dữ liệu mới, hoặc chủ động lưu bản sao bất kỳ lúc nào.
           </p>
         </div>
@@ -323,7 +334,7 @@ export default function AdminBackup() {
           </button>
 
           <a
-            href={sheetUrl}
+            href={banner?.spreadsheetUrl || sheetUrl}
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -431,6 +442,16 @@ export default function AdminBackup() {
             <div style={{ fontSize: '14px', fontWeight: '600', lineHeight: '1.5' }}>
               {banner.text}
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '6px' }}>
+                {banner.spreadsheetUrl && (
+                  <a
+                    href={banner.spreadsheetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#0369a1', textDecoration: 'underline', fontWeight: '700', fontSize: '13px' }}
+                  >
+                    Mở dữ liệu trên Google Sheets →
+                  </a>
+                )}
                 {banner.driveFileUrl && (
                   <a
                     href={banner.driveFileUrl}
@@ -439,6 +460,16 @@ export default function AdminBackup() {
                     style={{ color: '#047857', textDecoration: 'underline', fontWeight: '700', fontSize: '13px' }}
                   >
                     Mở file Excel (.xlsx) vừa tạo trên Google Drive →
+                  </a>
+                )}
+                {banner.driveDatabaseFileUrl && (
+                  <a
+                    href={banner.driveDatabaseFileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#047857', textDecoration: 'underline', fontWeight: '700', fontSize: '13px' }}
+                  >
+                    Mở file dữ liệu (.json) trên Google Drive →
                   </a>
                 )}
                 {banner.driveFolderUrl && (
@@ -608,7 +639,7 @@ export default function AdminBackup() {
               onChange={(e) => setAutoBackupEnabled(e.target.checked)}
               style={{ width: '16px', height: '16px' }}
             />
-            Tự động sao lưu Google Sheet & file Excel (.xlsx) theo tháng khi có dữ liệu mới
+            Tự động đồng bộ Google Sheets và cập nhật file Excel, JSON trên Drive khi có dữ liệu mới
           </label>
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '4px' }}>
@@ -680,23 +711,39 @@ export default function AdminBackup() {
                   <strong>Lý do:</strong> {lastBackup.reason}
                 </div>
                 <div>
-                  <strong>Số dòng đã đồng bộ:</strong> {lastBackup.totalRowsSynced} dòng
+                  <strong>Số dòng đã đồng bộ:</strong>{' '}
+                  {hasConfirmedSheet(lastBackup) ? `${lastBackup.totalRowsSynced} dòng` : '—'}
                 </div>
                 <div>
                   <strong>Trạng thái:</strong>{' '}
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '2px 8px',
-                    borderRadius: '999px',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    background: lastBackup.status === 'error' ? '#fee2e2' : '#dcfce7',
-                    color: lastBackup.status === 'error' ? '#b91c1c' : '#15803d',
-                  }}>
-                    {lastBackup.status === 'error' ? 'Lỗi kết nối' : lastBackup.simulated ? 'Mô phỏng (Test)' : 'Thành công'}
-                  </span>
+                  <BackupStatus backup={lastBackup} />
                 </div>
-                {lastBackup.driveFileUrl && (
+                {(lastBackup.error || lastBackup.warning) && <div>{lastBackup.error || lastBackup.warning}</div>}
+                {hasConfirmedSheet(lastBackup) && lastBackup.spreadsheetUrl && (
+                  <div>
+                    <a
+                      href={lastBackup.spreadsheetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#2563eb', fontWeight: '700', textDecoration: 'underline' }}
+                    >
+                      Mở dữ liệu trên Google Sheets →
+                    </a>
+                  </div>
+                )}
+                {hasConfirmedSheet(lastBackup) && lastBackup.driveDatabaseFileUrl && (
+                  <div>
+                    <a
+                      href={lastBackup.driveDatabaseFileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#2563eb', fontWeight: '700', textDecoration: 'underline' }}
+                    >
+                      Mở file {lastBackup.driveDatabaseFileName || 'dữ liệu (.json)'} trên Drive →
+                    </a>
+                  </div>
+                )}
+                {hasConfirmedSheet(lastBackup) && lastBackup.driveExcelCreated && lastBackup.driveFileUrl && (
                   <div style={{ marginTop: '4px' }}>
                     <a
                       href={lastBackup.driveFileUrl}
@@ -746,7 +793,10 @@ export default function AdminBackup() {
                 Mã Nguồn Google Apps Script (google-apps-script/Code.gs)
               </h3>
               <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: '#94a3b8' }}>
-                Dán vào Google Apps Script → Chạy hàm <code>testSetupPermissions</code> 1 lần để cấp quyền → Triển khai Phiên bản mới (Anyone).
+                Dán mã vào Google Apps Script. Đặt cùng một giá trị bí mật <code>BACKUP_PULL_KEY</code> trong biến môi trường phạm vi Functions
+                trên Netlify và trong Project Settings → Script Properties của Apps Script. Triển khai lại Netlify sau khi lưu biến.
+                Trong Apps Script, vào Deploy → Manage deployments → Edit → New version để cập nhật Web App hiện tại.
+                Chọn chạy với tài khoản của bạn và cấp quyền truy cập Anyone để Netlify gọi Web App qua URL <code>/exec</code>.
               </p>
             </div>
             <button
@@ -806,7 +856,7 @@ export default function AdminBackup() {
                 <th style={{ padding: '10px 12px', fontWeight: '700', color: '#475569' }}>Thời gian</th>
                 <th style={{ padding: '10px 12px', fontWeight: '700', color: '#475569' }}>Nguồn</th>
                 <th style={{ padding: '10px 12px', fontWeight: '700', color: '#475569' }}>Kỳ</th>
-                <th style={{ padding: '10px 12px', fontWeight: '700', color: '#475569' }}>Lý do / File Excel Drive</th>
+                <th style={{ padding: '10px 12px', fontWeight: '700', color: '#475569' }}>Lý do / File trên Drive</th>
                 <th style={{ padding: '10px 12px', fontWeight: '700', color: '#475569' }}>Số dòng</th>
                 <th style={{ padding: '10px 12px', fontWeight: '700', color: '#475569' }}>Trạng thái</th>
               </tr>
@@ -825,7 +875,7 @@ export default function AdminBackup() {
                   </td>
                   <td style={{ padding: '10px 12px', color: '#475569' }}>
                     <div>{item.reason}</div>
-                    {item.driveFileUrl && (
+                    {hasConfirmedSheet(item) && item.driveExcelCreated && item.driveFileUrl && (
                       <a
                         href={item.driveFileUrl}
                         target="_blank"
@@ -835,25 +885,27 @@ export default function AdminBackup() {
                         📄 {item.driveFileName || 'Xem file Excel trên Drive'}
                       </a>
                     )}
-                    {item.error && (
-                      <div style={{ fontSize: '12px', color: '#dc2626', marginTop: '2px' }}>{item.error}</div>
+                    {hasConfirmedSheet(item) && item.driveDatabaseFileUrl && (
+                      <div>
+                        <a
+                          href={item.driveDatabaseFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: '12px', color: '#2563eb', fontWeight: '600' }}
+                        >
+                          {item.driveDatabaseFileName || 'Mở file dữ liệu (.json) trên Drive'}
+                        </a>
+                      </div>
+                    )}
+                    {(item.error || item.warning) && (
+                      <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>{item.error || item.warning}</div>
                     )}
                   </td>
                   <td style={{ padding: '10px 12px', fontWeight: '700', color: '#0f172a' }}>
-                    {item.totalRowsSynced}
+                    {hasConfirmedSheet(item) ? item.totalRowsSynced : '—'}
                   </td>
                   <td style={{ padding: '10px 12px' }}>
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '3px 9px',
-                      borderRadius: '999px',
-                      fontSize: '11.5px',
-                      fontWeight: '700',
-                      background: item.status === 'error' ? '#fee2e2' : '#dcfce7',
-                      color: item.status === 'error' ? '#b91c1c' : '#15803d',
-                    }}>
-                      {item.status === 'error' ? 'Thất bại' : item.simulated ? 'Test' : 'Hoàn tất'}
-                    </span>
+                    <BackupStatus backup={item} />
                   </td>
                 </tr>
               ))}

@@ -2,9 +2,6 @@ import React, { useState } from 'react';
 import { CloudUpload, CheckCircle2, RefreshCw, ExternalLink } from 'lucide-react';
 import api from '../../services/api';
 
-const DEFAULT_SHEET_URL =
-  'https://docs.google.com/spreadsheets/d/13oK6Jo1zQvKYuEhBU6tsDfNgl84lJjZePkNRYe-rotk/edit?usp=sharing';
-
 export default function GoogleDriveBackupButton({
   month = null,
   year = null,
@@ -29,50 +26,32 @@ export default function GoogleDriveBackupButton({
         createDriveExcelCopy: true,
         replaceSameMonthFile: false,
         reason,
-      });
+      }, { timeout: 30000 });
 
-      const data = res?.data || {};
-      if (data.clientSyncPayload && data.webhookUrl) {
-        try {
-          await Promise.allSettled([
-            fetch(data.webhookUrl, {
-              method: 'POST',
-              mode: 'no-cors',
-              credentials: 'include',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify(data.clientSyncPayload),
-            }),
-            fetch(`${data.webhookUrl}${data.webhookUrl.includes('?') ? '&' : '?'}t=${Date.now()}`, {
-              method: 'GET',
-              mode: 'no-cors',
-              credentials: 'include',
-            }),
-          ]);
-        } catch (browserErr) {
-          console.warn('[Browser Apps Script Sync Fallback]:', browserErr);
-        }
+      const data = res?.data;
+      if (data?.simulated) {
+        alert('Lần sao lưu đang chạy mô phỏng. Dữ liệu trên Google Sheets và Drive chưa được cập nhật.');
+        return;
+      }
+      if (
+        !data?.ok || !['success', 'warning'].includes(data.status)
+        || data.clientSyncPayload || data.backgroundDispatched || data.requiresBrowserAuth
+        || !Number.isInteger(data.totalRowsSynced) || data.totalRowsSynced <= 0
+      ) {
+        throw new Error('Google Apps Script chưa xác nhận đã ghi dữ liệu. Kiểm tra lịch sử sao lưu và cấu hình Web App.');
       }
 
-      setLastResult({
-        ok: true,
-        url: data.driveFileUrl || data.spreadsheetUrl || DEFAULT_SHEET_URL,
-        fileName: data.driveFileName,
-      });
-      alert(res?.message || 'Đã lưu bản sao dữ liệu Excel lên Google Drive thành công!');
+      const driveFileUrl = data.driveExcelCreated ? data.driveFileUrl : null;
+      const driveDatabaseFileUrl = data.driveDatabaseFileUrl;
+      const url = driveFileUrl || driveDatabaseFileUrl || data.spreadsheetUrl;
+      const label = driveFileUrl ? 'Mở file Excel vừa lưu'
+        : driveDatabaseFileUrl ? 'Mở file dữ liệu (.json)' : 'Mở dữ liệu trên Google Sheets';
+      if (url) setLastResult({ url, label });
+
+      alert(data.warning || (driveFileUrl && driveDatabaseFileUrl
+        ? res.message
+        : `Đã ghi ${data.totalRowsSynced} dòng vào Google Sheets. Chưa xác nhận đủ file Excel và JSON trên Drive.`));
     } catch (err) {
-      if (err?.details?.clientSyncPayload && err?.details?.webhookUrl) {
-        try {
-          await fetch(err.details.webhookUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'include',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(err.details.clientSyncPayload),
-          });
-        } catch (browserErr) {
-          console.warn('[Browser Apps Script Sync Fallback]:', browserErr);
-        }
-      }
       alert(err?.message || 'Không thể lưu bản sao lên Google Drive. Vui lòng kiểm tra cấu hình trong mục Sao lưu Google Drive.');
     } finally {
       setSyncing(false);
@@ -85,7 +64,7 @@ export default function GoogleDriveBackupButton({
         type="button"
         onClick={handleQuickBackup}
         disabled={syncing}
-        title="Đồng bộ toàn bộ dữ liệu lên Google Sheets & lưu file Excel (.xlsx) lên Google Drive"
+        title="Đồng bộ dữ liệu lên Google Sheets và lưu file Excel, JSON trên Google Drive"
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -107,7 +86,7 @@ export default function GoogleDriveBackupButton({
         {syncing ? 'Đang lưu lên Drive...' : label}
       </button>
 
-      {lastResult?.ok && (
+      {lastResult && (
         <a
           href={lastResult.url}
           target="_blank"
@@ -127,7 +106,7 @@ export default function GoogleDriveBackupButton({
           }}
         >
           <CheckCircle2 size={14} />
-          Mở bản sao vừa lưu
+          {lastResult.label}
           <ExternalLink size={12} />
         </a>
       )}

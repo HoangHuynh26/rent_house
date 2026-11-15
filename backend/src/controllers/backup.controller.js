@@ -1,12 +1,11 @@
 import * as googleBackupService from '../services/google-backup.service.js';
-import * as auditService from '../services/audit.service.js';
 import { successResponse, errorResponse } from '../utils/response.util.js';
 
 export const getPublicSnapshotForAppsScript = async (req, res) => {
   try {
-    const providedKey = String(req.query.key || req.headers['x-backup-key'] || 'thanhtam_backup_2026').trim();
-    const expectedKey = String(process.env.BACKUP_PULL_KEY || 'thanhtam_backup_2026').trim();
-    if (providedKey !== expectedKey) {
+    res.set('Cache-Control', 'no-store');
+    const expectedKey = String(process.env.BACKUP_PULL_KEY || '').trim();
+    if (!expectedKey || req.get('X-Backup-Key') !== expectedKey) {
       return errorResponse(res, 'Mã khóa đồng bộ không hợp lệ.', 'UNAUTHORIZED', 401);
     }
 
@@ -22,31 +21,6 @@ export const getPublicSnapshotForAppsScript = async (req, res) => {
         periodYear: year,
       }),
     ]);
-
-    await auditService.logAction({
-      actorId: null,
-      actorType: 'system',
-      action: 'GOOGLE_DRIVE_BACKUP',
-      entityType: 'google_drive_backup',
-      entityId: `period_${snapshot.periodMonth}-${snapshot.periodYear}`,
-      newData: {
-        ok: true,
-        status: 'success',
-        triggerSource: 'apps_script_pull',
-        reason: 'Google Apps Script đồng bộ 7 bảng dữ liệu lên Google Sheets & Drive',
-        periodMonth: snapshot.periodMonth,
-        periodYear: snapshot.periodYear,
-        spreadsheetId: settings.spreadsheetId,
-        spreadsheetUrl: settings.sheetUrl,
-        totalRowsSynced: snapshot.totalRows,
-        counts: snapshot.counts,
-        driveExcelCreated: true,
-        driveFileName: `NhaTroThanhTam_SaoLuu_Thang_${String(snapshot.periodMonth).padStart(2, '0')}_${snapshot.periodYear}.xlsx`,
-        driveFileUrl: settings.sheetUrl,
-      },
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-    });
 
     return successResponse(
       res,
@@ -149,9 +123,14 @@ export const syncNow = async (req, res) => {
       userAgent: req.get('User-Agent'),
     });
 
-    const msg = result.driveFileName
-      ? `Đã sao lưu ${result.totalRowsSynced} dòng lên Google Sheets và tạo file Excel "${result.driveFileName}" trên Google Drive.`
-      : `Đã đồng bộ ${result.totalRowsSynced} dòng dữ liệu lên Google Sheets thành công.`;
+    let msg = `Đã đồng bộ ${result.totalRowsSynced} dòng lên Google Sheets.`;
+    if (result.simulated) {
+      msg = 'Đã chạy mô phỏng sao lưu.';
+    } else if (result.warning) {
+      msg = `${msg} ${result.warning}`;
+    } else if (result.driveDatabaseFileUrl) {
+      msg = `${msg} Đã lưu file ${result.driveExcelCreated ? 'JSON và Excel' : 'JSON'} trên Google Drive.`;
+    }
 
     return successResponse(res, result, msg);
   } catch (err) {
@@ -160,15 +139,7 @@ export const syncNow = async (req, res) => {
       res,
       err.message || 'Không thể sao lưu dữ liệu lên Google Drive.',
       err.status === 400 ? 'BAD_REQUEST' : 'BACKUP_SYNC_ERROR',
-      err.status === 502 ? 422 : (err.status || 422),
-      err.clientSyncPayload
-        ? {
-            clientSyncPayload: err.clientSyncPayload,
-            webhookUrl: err.webhookUrl,
-            sheetUrl: err.sheetUrl,
-            totalRowsSynced: err.totalRowsSynced,
-          }
-        : null
+      err.status || 422
     );
   }
 };
