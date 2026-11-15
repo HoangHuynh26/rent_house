@@ -1,10 +1,12 @@
 # robots.txt for Nha Tro Thanh Tam
 User-agent: *
 Allow: /
-Allow: /#rooms
-Allow: /#rules
-Allow: /#guide
-Allow: /#contact
+Allow: /googlece2476463a9f3baa.html
+Allow: /sitemap.xml
+Allow: /logo.png
+Allow: /og-image.png
+Allow: /favicon.ico
+Allow: /favicon-48x48.png
 Allow: /images/
 
 # Disallow private user-authenticated portal and admin routes

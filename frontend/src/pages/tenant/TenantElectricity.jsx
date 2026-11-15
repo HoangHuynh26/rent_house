@@ -24,7 +24,8 @@ import usePageSEO from '../../utils/usePageSEO';
 export default function TenantElectricity() {
   usePageSEO({
     title: 'Theo Dõi Tiền Điện & Ảnh Công Tơ Thực Tế',
-    description: 'Tra cứu chỉ số công tơ điện, số kWh tiêu thụ, hình ảnh chụp công tơ thực tế và thành tiền điện theo từng tháng minh bạch.'
+    description: 'Tra cứu chỉ số công tơ điện, số kWh tiêu thụ, hình ảnh chụp công tơ thực tế và thành tiền điện theo từng tháng minh bạch.',
+    noIndex: true
   });
 
   const [searchParams, setSearchParams] = useSearchParams();

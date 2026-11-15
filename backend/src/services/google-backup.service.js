@@ -22,8 +22,8 @@ export const BACKUP_FOLDER_NAME = 'Sao_Luu_Nha_Tro_Thanh_Tam';
 const SETTINGS_ACTION = 'GOOGLE_BACKUP_SETTINGS';
 const BACKUP_LOG_ACTION = 'GOOGLE_DRIVE_BACKUP';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const projectRoot = process.env.LAMBDA_TASK_ROOT
+  || (import.meta.url ? fileURLToPath(new URL('../../../', import.meta.url)) : process.cwd());
 
 export const extractSpreadsheetId = (input) => {
   if (!input) return '';
@@ -972,7 +972,7 @@ export const triggerAutoBackupOnDataChange = async ({
 
 export const getAppsScriptSource = async () => {
   const candidates = [
-    path.resolve(__dirname, '../../../google-apps-script/Code.gs'),
+    path.resolve(projectRoot, 'google-apps-script/Code.gs'),
     path.resolve(process.cwd(), 'google-apps-script/Code.gs'),
     path.resolve(process.cwd(), '../google-apps-script/Code.gs'),
   ];

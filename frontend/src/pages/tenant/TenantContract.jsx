@@ -11,7 +11,8 @@ import usePageSEO from '../../utils/usePageSEO';
 export default function TenantContract() {
   usePageSEO({
     title: 'Hợp Đồng Thuê Phòng Điện Tử',
-    description: 'Xem hợp đồng thuê phòng trọ điện tử có chữ ký số xác thực hai chiều, thông tin tiền cọc và điều khoản thuê nhà.'
+    description: 'Xem hợp đồng thuê phòng trọ điện tử có chữ ký số xác thực hai chiều, thông tin tiền cọc và điều khoản thuê nhà.',
+    noIndex: true
   });
 
   const [contract, setContract] = useState(null);

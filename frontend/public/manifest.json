@@ -1,12 +1,12 @@
 {
-  "short_name": "Nhà Trọ",
-  "name": "Nhà Trọ Thông Minh - Thanh Tâm",
+  "short_name": "Thanh Tâm",
+  "name": "Nhà Trọ Thanh Tâm - Quản Lý & Thuê Phòng Minh Bạch",
   "icons": [
     {
       "src": "/icon-192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
@@ -17,7 +17,7 @@
     {
       "src": "/logo.png",
       "type": "image/png",
-      "sizes": "1024x1024",
+      "sizes": "512x512",
       "purpose": "any"
     }
   ],

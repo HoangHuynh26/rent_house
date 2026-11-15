@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, User, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import usePageSEO from '../../utils/usePageSEO';
+import BrandLogo from '../../components/BrandLogo';
 
 export default function AdminLogin() {
   usePageSEO({
     title: 'Đăng Nhập Quản Trị Viên',
-    description: 'Cổng đăng nhập quản trị hệ thống quản lý phòng trọ Nhà Trọ Thanh Tâm.'
+    description: 'Cổng đăng nhập quản trị hệ thống quản lý phòng trọ Nhà Trọ Thanh Tâm.',
+    noIndex: true,
+    useRemoteConfig: false
   });
 
   const [username, setUsername] = useState('admin');
@@ -55,18 +58,8 @@ export default function AdminLogin() {
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{
-            width: '60px',
-            height: '60px',
-            background: '#2563eb',
-            color: '#ffffff',
-            borderRadius: '16px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '12px'
-          }}>
-            <ShieldCheck size={32} />
+          <div style={{ display: 'inline-flex', justifyContent: 'center', marginBottom: '12px' }}>
+            <BrandLogo size={64} rounded={16} />
           </div>
           <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a' }}>Đăng Nhập Quản Trị</h1>
           <p style={{ fontSize: '14px', color: '#64748b', marginTop: '4px' }}>

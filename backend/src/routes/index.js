@@ -10,6 +10,7 @@ import analyticsRoutes from './analytics.routes.js';
 import tenantPortalRoutes from './tenant-portal.routes.js';
 import notificationRoutes from './notification.routes.js';
 import backupRoutes from './backup.routes.js';
+import seoRoutes from './seo.routes.js';
 
 const apiRouter = Router();
 
@@ -24,6 +25,7 @@ apiRouter.use('/analytics', analyticsRoutes);
 apiRouter.use('/tenant-portal', tenantPortalRoutes);
 apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/backup', backupRoutes);
+apiRouter.use('/seo', seoRoutes);
 
 export default apiRouter;
 

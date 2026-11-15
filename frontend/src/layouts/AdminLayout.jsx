@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, DoorOpen, Users, Camera, Receipt, FileSignature, ShieldAlert, LogOut, Home, Menu, X, Bell, CloudUpload } from 'lucide-react';
+import { LayoutDashboard, DoorOpen, Users, Camera, Receipt, FileSignature, ShieldAlert, LogOut, Menu, X, Bell, CloudUpload, Globe } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import BrandLogo from '../components/BrandLogo';
 
 
 export default function AdminLayout() {
@@ -24,6 +25,7 @@ export default function AdminLayout() {
     { to: '/admin/notifications', label: 'Thông báo & Pop-up', icon: Bell },
     { to: '/admin/audit', label: 'Nhật ký kiểm toán', icon: ShieldAlert },
     { to: '/admin/backup', label: 'Sao lưu Google Drive', icon: CloudUpload },
+    { to: '/admin/seo', label: 'SEO & Search Console', icon: Globe },
   ];
 
   return (
@@ -48,11 +50,9 @@ export default function AdminLayout() {
           justifyContent: 'space-between'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ background: '#2563eb', padding: '8px', borderRadius: '10px' }}>
-              <Home size={22} color="#ffffff" />
-            </div>
+            <BrandLogo size={40} rounded={10} />
             <div>
-              <div style={{ fontSize: '16px', fontWeight: '800', letterSpacing: '-0.3px' }}>THANH TÂM HOUSE</div>
+              <div style={{ fontSize: '15px', fontWeight: '800', letterSpacing: '-0.3px' }}>NHÀ TRỌ THANH TÂM</div>
               <div style={{ fontSize: '11px', color: '#94a3b8' }}>Admin Control Center</div>
             </div>
           </div>
