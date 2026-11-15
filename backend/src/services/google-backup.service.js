@@ -321,6 +321,12 @@ export const getBackupHistory = async (limit = 25) => {
 
     return rows.map((row) => {
       const meta = safeJsonParse(row.new_data, {}) || {};
+      const unconfirmed = meta.status === 'unconfirmed'
+        || meta.backgroundDispatched || meta.requiresBrowserAuth || meta.triggerSource === 'apps_script_pull';
+      const status = unconfirmed ? 'unconfirmed' : meta.status || 'unconfirmed';
+      const confirmed = status === 'success' || status === 'warning';
+      const driveExcelCreated = Boolean(confirmed && meta.driveExcelCreated && meta.driveFileId);
+      const driveDatabaseCreated = Boolean(confirmed && meta.driveDatabaseFileId && meta.driveDatabaseFileUrl);
       return {
         id: row.id,
         created_at: row.created_at,
@@ -328,15 +334,17 @@ export const getBackupHistory = async (limit = 25) => {
         reason: meta.reason || 'Sao lưu dữ liệu',
         periodMonth: meta.periodMonth || null,
         periodYear: meta.periodYear || null,
-        status: meta.status || 'success',
+        status,
         simulated: Boolean(meta.simulated),
-        totalRowsSynced: meta.totalRowsSynced || 0,
+        totalRowsSynced: confirmed ? meta.totalRowsSynced || 0 : 0,
         spreadsheetId: meta.spreadsheetId || row.entity_id,
         spreadsheetUrl: meta.spreadsheetUrl || DEFAULT_GOOGLE_SHEET_URL,
-        driveExcelCreated: Boolean(meta.driveExcelCreated),
-        driveFileName: meta.driveFileName || null,
-        driveFileUrl: meta.driveFileUrl || null,
-        driveFolderUrl: meta.driveFolderUrl || null,
+        driveExcelCreated,
+        driveFileName: driveExcelCreated ? meta.driveFileName || null : null,
+        driveFileUrl: driveExcelCreated ? meta.driveFileUrl || null : null,
+        driveDatabaseFileName: driveDatabaseCreated ? meta.driveDatabaseFileName || null : null,
+        driveDatabaseFileUrl: driveDatabaseCreated ? meta.driveDatabaseFileUrl : null,
+        driveFolderUrl: driveExcelCreated || driveDatabaseCreated ? meta.driveFolderUrl || null : null,
         warning: meta.warning || null,
         error: meta.error || null,
       };
@@ -344,34 +352,6 @@ export const getBackupHistory = async (limit = 25) => {
   } catch (err) {
     console.warn('[Google Backup] Không thể tải lịch sử sao lưu:', err.message);
     return [];
-  }
-};
-
-const hasPeriodSnapshotBeenCreated = async (month, year) => {
-  if (!month || !year) return false;
-  const periodKey = `${Number(month)}-${Number(year)}`;
-  try {
-    if (isPostgresActive()) {
-      const safeEntityUuid = auditService.toSafeEntityUuid(`period_${periodKey}`);
-      const res = await query(
-        `SELECT id FROM audit_logs
-         WHERE action = $1
-           AND entity_id = $2
-           AND (new_data->>'driveExcelCreated')::boolean IS TRUE
-         LIMIT 1`,
-        [BACKUP_LOG_ACTION, safeEntityUuid]
-      );
-      if (res.rows.length > 0) return true;
-    }
-    const history = await getBackupHistory(50);
-    return history.some(
-      (item) =>
-        Number(item.periodMonth) === Number(month) &&
-        Number(item.periodYear) === Number(year) &&
-        item.driveExcelCreated
-    );
-  } catch {
-    return false;
   }
 };
 
@@ -484,6 +464,12 @@ export const collectAllDatabaseData = async ({
   periodMonth = null,
   periodYear = null,
 } = {}) => {
+  if (process.env.NODE_ENV === 'production' && !isPostgresActive()) {
+    const error = new Error('Chưa kết nối được PostgreSQL để đọc dữ liệu sao lưu.');
+    error.status = 503;
+    throw error;
+  }
+
   // Run all 6 core queries in a single parallel batch (~0.8s on Neon DB)
   const [
     rooms,
@@ -825,6 +811,7 @@ export const runGoogleBackup = async ({
     driveFolderId: settings.driveFolderId || DEFAULT_DRIVE_FOLDER_ID,
     driveFolderUrl: settings.driveFolderUrl || DEFAULT_DRIVE_FOLDER_URL,
     exportedAt: snapshot.exportedAt,
+    backupKey: String(process.env.BACKUP_PULL_KEY || '').trim(),
     counts: snapshot.counts,
     sheets: snapshot.sheets,
     databaseDump: snapshot.databaseDump,
@@ -874,21 +861,9 @@ export const runGoogleBackup = async ({
     throw new Error('Chưa cấu hình URL Google Apps Script Web App.');
   }
 
-  // On Netlify Serverless Functions, synchronous requests time out at 10.0s (returning 502 Bad Gateway).
-  // Cap server-side wait at 5500ms so total execution (DB ~1s + fetch 5.5s = 6.5s) always finishes cleanly.
-  const isServerlessRuntime =
-    process.env.NETLIFY === 'true' ||
-    Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
-    Boolean(process.env.LAMBDA_TASK_ROOT);
-  const effectiveTimeoutMs = isServerlessRuntime && !hasCustomFetch
-    ? Math.min(Number(timeoutMs) || 5500, 5500)
-    : (Number(timeoutMs) || 20000);
-
+  const effectiveTimeoutMs = Number(timeoutMs) || 20000;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), effectiveTimeoutMs);
-
-  let responseData = null;
-  let errorMessage = null;
 
   try {
     const response = await doFetch(settings.webhookUrl, {
@@ -909,7 +884,7 @@ export const runGoogleBackup = async ({
       parsed = null;
     }
 
-    if (!response.ok || !parsed || parsed.ok === false) {
+    if (!response.ok || parsed?.ok !== true) {
       const lowerRaw = (rawText || '').toLowerCase();
       if (
         response.status === 401 ||
@@ -918,38 +893,57 @@ export const runGoogleBackup = async ({
         lowerRaw.includes('servicelogin') ||
         lowerRaw.includes('accounts.google.com')
       ) {
-        errorMessage =
-          'Google Apps Script chưa được cập nhật code Code.gs hoặc chưa mở quyền truy cập "Bất kỳ ai" (Anyone). Vui lòng dán code Code.gs vào Apps Script và Triển khai phiên bản mới.';
-      } else {
-        errorMessage =
-          parsed?.error ||
-          `Google Apps Script trả về lỗi HTTP ${response.status}. Vui lòng kiểm tra cấu hình triển khai Apps Script.`;
+        throw new Error(
+          'Google Apps Script chưa được cập nhật code Code.gs hoặc chưa mở quyền truy cập "Bất kỳ ai" (Anyone). Vui lòng dán code Code.gs vào Apps Script và triển khai phiên bản mới.'
+        );
       }
-      throw new Error(errorMessage);
+      throw new Error(parsed?.error || `Google Apps Script chưa xác nhận sao lưu (HTTP ${response.status}).`);
     }
 
-    responseData = {
+    if (parsed.spreadsheetId !== settings.spreadsheetId) {
+      throw new Error('Apps Script chưa xác nhận đã ghi vào đúng Google Sheet đã cấu hình.');
+    }
+    if (parsed.totalRowsSynced !== snapshot.totalRows || parsed.totalRowsSynced <= 0) {
+      throw new Error('Apps Script chưa xác nhận đã ghi đủ dữ liệu vào Google Sheets.');
+    }
+    if (parsed.sheetStats && Object.entries(snapshot.sheets).some(
+      ([name, sheet]) => parsed.sheetStats[name] !== sheet.rows.length
+    )) {
+      throw new Error('Apps Script chưa xác nhận đã ghi đủ dữ liệu vào các tab Google Sheets.');
+    }
+
+    const confirmedFolder = parsed.driveFolderId === settings.driveFolderId;
+    const driveExcelCreated = Boolean(confirmedFolder && parsed.driveExcelCreated && parsed.driveFileId && parsed.driveFileUrl);
+    const driveDatabaseCreated = Boolean(confirmedFolder && parsed.driveDatabaseFileId && parsed.driveDatabaseFileUrl);
+    const missingDriveFiles = [
+      !driveDatabaseCreated && 'JSON',
+      createDriveExcelCopy && !driveExcelCreated && 'Excel',
+    ].filter(Boolean);
+    const warning = parsed.warning || (missingDriveFiles.length
+      ? `Google Apps Script chưa xác nhận đã lưu file ${missingDriveFiles.join(' và ')} vào thư mục Drive đã cấu hình.`
+      : null);
+    const responseData = {
       ok: true,
       simulated: false,
       triggerSource,
       reason,
       periodMonth: snapshot.periodMonth,
       periodYear: snapshot.periodYear,
-      spreadsheetId: parsed.spreadsheetId || settings.spreadsheetId,
+      spreadsheetId: parsed.spreadsheetId,
       spreadsheetUrl: parsed.spreadsheetUrl || settings.sheetUrl,
       syncedAt: parsed.syncedAt || new Date().toISOString(),
-      totalRowsSynced: parsed.totalRowsSynced ?? snapshot.totalRows,
+      totalRowsSynced: parsed.totalRowsSynced,
       counts: snapshot.counts,
-      driveExcelCreated: Boolean(parsed.driveExcelCreated),
-      driveFileId: parsed.driveFileId || null,
-      driveFileName: parsed.driveFileName || null,
-      driveFileUrl: parsed.driveFileUrl || null,
-      driveDatabaseFileId: parsed.driveDatabaseFileId || null,
-      driveDatabaseFileName: parsed.driveDatabaseFileName || 'NhaTroThanhTam_Database.json',
-      driveDatabaseFileUrl: parsed.driveDatabaseFileUrl || null,
-      driveFolderUrl: parsed.driveFolderUrl || settings.driveFolderUrl || DEFAULT_DRIVE_FOLDER_URL,
-      warning: parsed.warning || null,
-      status: parsed.warning ? 'warning' : 'success',
+      driveExcelCreated,
+      driveFileId: driveExcelCreated ? parsed.driveFileId : null,
+      driveFileName: driveExcelCreated ? parsed.driveFileName || null : null,
+      driveFileUrl: driveExcelCreated ? parsed.driveFileUrl : null,
+      driveDatabaseFileId: driveDatabaseCreated ? parsed.driveDatabaseFileId : null,
+      driveDatabaseFileName: driveDatabaseCreated ? parsed.driveDatabaseFileName || null : null,
+      driveDatabaseFileUrl: driveDatabaseCreated ? parsed.driveDatabaseFileUrl : null,
+      driveFolderUrl: confirmedFolder ? parsed.driveFolderUrl || null : null,
+      warning,
+      status: warning ? 'warning' : 'success',
     };
 
     await auditService.logAction({
@@ -967,55 +961,8 @@ export const runGoogleBackup = async ({
   } catch (err) {
     const isAbort = err?.name === 'AbortError';
 
-    // When Google Apps Script takes > 5.5s on Netlify OR requires browser session cookies (302 ServiceLogin),
-    // return 200 OK with clientSyncPayload so the browser session completes the sync and never fails with 422/502!
-    if (!hasCustomFetch) {
-      const bgFileName = createDriveExcelCopy
-        ? replaceSameMonthFile
-          ? `NhaTroThanhTam_SaoLuu_Thang_${String(snapshot.periodMonth).padStart(2, '0')}_${snapshot.periodYear}.xlsx`
-          : `NhaTroThanhTam_BanSao_T${String(snapshot.periodMonth).padStart(2, '0')}_${snapshot.periodYear}.xlsx`
-        : null;
-
-      responseData = {
-        ok: true,
-        simulated: false,
-        backgroundDispatched: isAbort,
-        requiresBrowserAuth: !isAbort,
-        triggerSource,
-        reason,
-        periodMonth: snapshot.periodMonth,
-        periodYear: snapshot.periodYear,
-        spreadsheetId: settings.spreadsheetId,
-        spreadsheetUrl: settings.sheetUrl,
-        webhookUrl: settings.webhookUrl,
-        syncedAt: new Date().toISOString(),
-        totalRowsSynced: snapshot.totalRows,
-        counts: snapshot.counts,
-        driveExcelCreated: Boolean(createDriveExcelCopy),
-        driveFileName: bgFileName,
-        driveDatabaseFileName: 'NhaTroThanhTam_Database.json',
-        driveFileUrl: settings.sheetUrl,
-        driveFolderUrl: settings.driveFolderUrl || DEFAULT_DRIVE_FOLDER_URL,
-        status: 'success',
-        clientSyncPayload: payload,
-      };
-
-      await auditService.logAction({
-        actorId,
-        actorType: actorId ? 'admin' : 'system',
-        action: BACKUP_LOG_ACTION,
-        entityType: 'google_drive_backup',
-        entityId: `period_${snapshot.periodMonth}-${snapshot.periodYear}`,
-        newData: { ...responseData, clientSyncPayload: undefined },
-        ip,
-        userAgent,
-      });
-
-      return responseData;
-    }
-
     const finalMsg = isAbort
-      ? `Quá thời gian chờ (${effectiveTimeoutMs}ms) khi kết nối Google Apps Script.`
+      ? `Quá thời gian chờ (${effectiveTimeoutMs / 1000} giây). Chưa xác nhận Google Sheets hoặc Drive đã nhận dữ liệu.`
       : err.message || 'Không thể đồng bộ lên Google Drive / Sheets.';
 
     await auditService.logAction({
@@ -1026,14 +973,14 @@ export const runGoogleBackup = async ({
       entityId: `period_${snapshot.periodMonth}-${snapshot.periodYear}`,
       newData: {
         ok: false,
-        status: 'error',
+        status: isAbort ? 'unconfirmed' : 'error',
         triggerSource,
         reason,
         periodMonth: snapshot.periodMonth,
         periodYear: snapshot.periodYear,
         spreadsheetId: settings.spreadsheetId,
         spreadsheetUrl: settings.sheetUrl,
-        totalRowsSynced: snapshot.totalRows,
+        totalRowsSynced: 0,
         error: finalMsg,
       },
       ip,
@@ -1041,11 +988,7 @@ export const runGoogleBackup = async ({
     });
 
     const wrapped = new Error(finalMsg);
-    wrapped.status = 422;
-    wrapped.clientSyncPayload = payload;
-    wrapped.webhookUrl = settings.webhookUrl;
-    wrapped.sheetUrl = settings.sheetUrl;
-    wrapped.totalRowsSynced = snapshot.totalRows;
+    wrapped.status = isAbort ? 504 : 422;
     throw wrapped;
   } finally {
     clearTimeout(timer);
@@ -1064,7 +1007,6 @@ export const triggerAutoBackupOnDataChange = async ({
   triggerSource = 'auto_data_change',
   periodMonth = null,
   periodYear = null,
-  isMonthlySnapshotTrigger = false,
   actorId = null,
   fetchImpl = null,
 } = {}) => {
