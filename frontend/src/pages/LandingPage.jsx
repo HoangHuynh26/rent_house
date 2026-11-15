@@ -39,16 +39,6 @@ const roomImageMap = {
 
 const defaultRoomImage = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&auto=format&fit=crop&q=80';
 
-// Demo quick-login phone mapping for seamless testing
-const demoPhonesByRoom = {
-  '1': '0912345678',
-  '2': '0987654321',
-  P1: '0912345678',
-  P2: '0987654321',
-  P101: '0912345678',
-  P102: '0987654321'
-};
-
 // Initial seed rooms: Exactly 3 rooms (Phòng 1, Phòng 2, Phòng 3)
 const defaultSeedRooms = [
   {
@@ -140,7 +130,7 @@ export default function LandingPage() {
       const room = rooms.find(r => r.room_number === '1' || r.room_number === 'Phòng 1') || rooms[0];
       if (room) {
         setSelectedRoom(room);
-        setPhone('0912345678');
+        setPhone('');
         setShowLoginModal(true);
       }
     }
@@ -163,11 +153,7 @@ export default function LandingPage() {
       return;
     }
     setSelectedRoom(room);
-    if (demoPhonesByRoom[room.room_number]) {
-      setPhone(demoPhonesByRoom[room.room_number]);
-    } else {
-      setPhone('');
-    }
+    setPhone('');
     setError('');
     setShowLoginModal(true);
   };
@@ -575,24 +561,6 @@ export default function LandingPage() {
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>/tháng</span>
                         </div>
                       </div>
-
-                      {/* Amenities chips row */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-                        {room.floor && (
-                          <span className="room-feature-tag">
-                            <Layers size={11} /> Tầng {room.floor}
-                          </span>
-                        )}
-                        {room.description?.includes('25m2') && <span className="room-feature-tag">📐 25m²</span>}
-                        {room.description?.includes('22m2') && <span className="room-feature-tag">📐 22m²</span>}
-                        {room.description?.includes('28m2') && <span className="room-feature-tag">📐 28m²</span>}
-                        {room.description?.includes('máy lạnh') && <span className="room-feature-tag">❄️ Máy lạnh</span>}
-                        {room.description?.includes('gác lửng') && <span className="room-feature-tag">🪜 Gác lửng</span>}
-                        {room.description?.includes('ban công') && <span className="room-feature-tag">🌿 Ban công</span>}
-                        {room.description?.includes('WC riêng') && <span className="room-feature-tag">🚿 WC riêng</span>}
-                        <span className="room-feature-tag">⚡ 3.000đ/kWh</span>
-                        <span className="room-feature-tag">💧 12.000đ/m³</span>
-                      </div>
                     </div>
 
                     {/* Click Button Triggering Room-Specific Login Modal */}
@@ -822,7 +790,7 @@ export default function LandingPage() {
                 2. Nhập Số Điện Thoại Thuê Phòng
               </h3>
               <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6', marginBottom: '14px', flex: 1 }}>
-                Cửa sổ xác thực sẽ mở ra. Bạn chỉ cần nhập <b>Số điện thoại</b> đã đăng ký hợp đồng với chủ trọ (hoặc bấm số điện thoại demo có sẵn) để đăng nhập tức thì.
+                Cửa sổ xác thực sẽ mở ra. Bạn chỉ cần nhập <b>Số điện thoại</b> đã đăng ký hợp đồng với chủ trọ để đăng nhập tức thì.
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#059669', fontSize: '12px', fontWeight: '600' }}>
                 <CheckCircle2 size={15} /> Không cần nhớ mật khẩu phức tạp
@@ -943,7 +911,7 @@ export default function LandingPage() {
               </a>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin size={15} color="#38bdf8" />
-                <span>Trục 16, Phường Tân Triệu, TP. Đồng Nai</span>
+                <span>Trục 16, Phường Tân Triều, TP. Đồng Nai</span>
               </div>
             </div>
           </div>
