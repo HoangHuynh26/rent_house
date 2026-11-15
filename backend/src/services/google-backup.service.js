@@ -11,6 +11,9 @@ import * as auditService from './audit.service.js';
 export const DEFAULT_GOOGLE_SHEET_URL =
   'https://docs.google.com/spreadsheets/d/13oK6Jo1zQvKYuEhBU6tsDfNgl84lJjZePkNRYe-rotk/edit?usp=sharing';
 export const DEFAULT_GOOGLE_SHEET_ID = '13oK6Jo1zQvKYuEhBU6tsDfNgl84lJjZePkNRYe-rotk';
+export const DEFAULT_DRIVE_FOLDER_URL =
+  'https://drive.google.com/drive/folders/1sGMaG00KWN1Le0TwP7xZgJqqQN35p0WH?usp=sharing';
+export const DEFAULT_DRIVE_FOLDER_ID = '1sGMaG00KWN1Le0TwP7xZgJqqQN35p0WH';
 export const DEFAULT_APPS_SCRIPT_ID =
   'AKfycbz3gJhQ2khFr8UqoYCcGYGtyIUI6w5fN6ksfwKPjQmHD8F4Jy7qBE4mY9g7Sfuqdiew';
 export const DEFAULT_GOOGLE_BACKUP_WEBHOOK_URL =
@@ -32,12 +35,29 @@ export const extractSpreadsheetId = (input) => {
   return '';
 };
 
+export const extractDriveFolderId = (input) => {
+  if (!input) return '';
+  const str = String(input).trim();
+  const urlMatch = str.match(/\/folders\/([a-zA-Z0-9-_]+)/);
+  if (urlMatch?.[1]) return urlMatch[1];
+  if (/^[a-zA-Z0-9-_]{20,}$/.test(str)) return str;
+  return '';
+};
+
 export const normalizeGoogleSheetUrl = (inputUrl, fallbackId = DEFAULT_GOOGLE_SHEET_ID) => {
   const id = extractSpreadsheetId(inputUrl) || fallbackId;
   if (inputUrl && String(inputUrl).includes('docs.google.com/spreadsheets/d/')) {
     return String(inputUrl).trim();
   }
   return `https://docs.google.com/spreadsheets/d/${id}/edit?usp=sharing`;
+};
+
+export const normalizeDriveFolderUrl = (inputUrl, fallbackId = DEFAULT_DRIVE_FOLDER_ID) => {
+  const id = extractDriveFolderId(inputUrl) || fallbackId;
+  if (inputUrl && String(inputUrl).includes('drive.google.com/drive/folders/')) {
+    return String(inputUrl).trim();
+  }
+  return `https://drive.google.com/drive/folders/${id}?usp=sharing`;
 };
 
 const isTestRuntime = () =>
@@ -138,12 +158,18 @@ export const getBackupSettings = async () => {
   const envSheetUrl = process.env.GOOGLE_SHEET_URL || DEFAULT_GOOGLE_SHEET_URL;
   const envSheetId =
     extractSpreadsheetId(process.env.GOOGLE_SHEET_ID || envSheetUrl) || DEFAULT_GOOGLE_SHEET_ID;
+  const envDriveFolderUrl = process.env.GOOGLE_DRIVE_FOLDER_URL || DEFAULT_DRIVE_FOLDER_URL;
+  const envDriveFolderId =
+    extractDriveFolderId(process.env.GOOGLE_DRIVE_FOLDER_ID || envDriveFolderUrl) ||
+    DEFAULT_DRIVE_FOLDER_ID;
   const envWebhookUrl =
     process.env.GOOGLE_BACKUP_WEBHOOK_URL || DEFAULT_GOOGLE_BACKUP_WEBHOOK_URL;
 
   const baseSettings = {
     sheetUrl: normalizeGoogleSheetUrl(envSheetUrl, envSheetId),
     spreadsheetId: envSheetId,
+    driveFolderUrl: normalizeDriveFolderUrl(envDriveFolderUrl, envDriveFolderId),
+    driveFolderId: envDriveFolderId,
     webhookUrl: envWebhookUrl,
     autoBackupEnabled: process.env.GOOGLE_AUTO_BACKUP_ENABLED !== 'false',
     folderName: BACKUP_FOLDER_NAME,
@@ -177,12 +203,20 @@ export const getBackupSettings = async () => {
       const resolvedId =
         extractSpreadsheetId(latestNewData.sheetUrl || latestNewData.spreadsheetId) ||
         baseSettings.spreadsheetId;
+      const resolvedFolderId =
+        extractDriveFolderId(latestNewData.driveFolderUrl || latestNewData.driveFolderId) ||
+        baseSettings.driveFolderId;
       return {
         sheetUrl: normalizeGoogleSheetUrl(
           latestNewData.sheetUrl || baseSettings.sheetUrl,
           resolvedId
         ),
         spreadsheetId: resolvedId,
+        driveFolderUrl: normalizeDriveFolderUrl(
+          latestNewData.driveFolderUrl || baseSettings.driveFolderUrl,
+          resolvedFolderId
+        ),
+        driveFolderId: resolvedFolderId,
         webhookUrl: String(latestNewData.webhookUrl || baseSettings.webhookUrl).trim(),
         autoBackupEnabled:
           latestNewData.autoBackupEnabled !== undefined
@@ -200,10 +234,11 @@ export const getBackupSettings = async () => {
 };
 
 /**
- * Lưu cấu hình link Google Sheet / Apps Script / bật-tắt tự động từ Admin UI.
+ * Lưu cấu hình link Google Sheet / Google Drive Folder / Apps Script / bật-tắt tự động từ Admin UI.
  */
 export const saveBackupSettings = async ({
   sheetUrl,
+  driveFolderUrl,
   webhookUrl,
   autoBackupEnabled = true,
   actorId = null,
@@ -219,6 +254,12 @@ export const saveBackupSettings = async ({
     err.status = 400;
     throw err;
   }
+
+  const nextDriveFolderInput =
+    driveFolderUrl !== undefined && String(driveFolderUrl).trim()
+      ? String(driveFolderUrl).trim()
+      : current.driveFolderUrl;
+  const extractedFolderId = extractDriveFolderId(nextDriveFolderInput) || DEFAULT_DRIVE_FOLDER_ID;
 
   const nextWebhookInput =
     webhookUrl !== undefined ? String(webhookUrl).trim() : current.webhookUrl;
@@ -236,6 +277,8 @@ export const saveBackupSettings = async ({
   const nextSettings = {
     sheetUrl: normalizeGoogleSheetUrl(nextSheetUrlInput, extractedId || current.spreadsheetId),
     spreadsheetId: extractedId || current.spreadsheetId,
+    driveFolderUrl: normalizeDriveFolderUrl(nextDriveFolderInput, extractedFolderId),
+    driveFolderId: extractedFolderId,
     webhookUrl: nextWebhookInput || current.webhookUrl,
     autoBackupEnabled: Boolean(autoBackupEnabled),
     folderName: BACKUP_FOLDER_NAME,
@@ -638,6 +681,34 @@ export const collectAllDatabaseData = async ({
 
   const totalRows = Object.values(sheets).reduce((sum, s) => sum + s.rows.length, 0);
 
+  const sanitizedContracts = contracts.map(({ admin_signature, tenant_signature, ...rest }) => ({
+    ...rest,
+    has_admin_signature: Boolean(admin_signature),
+    has_tenant_signature: Boolean(tenant_signature),
+  }));
+
+  const databaseDump = {
+    metadata: {
+      system: 'Nhà Trọ Thành Tâm',
+      exportedAt: new Date().toISOString(),
+      exportedAtVn: formatDateTimeVn(new Date()),
+      triggerSource,
+      reason,
+      periodMonth: periodMonth ? Number(periodMonth) : vnNow.month,
+      periodYear: periodYear ? Number(periodYear) : vnNow.year,
+      counts,
+      totalRows,
+    },
+    tables: {
+      rooms,
+      tenants,
+      contracts: sanitizedContracts,
+      electricity_readings: electricityReadings,
+      water_readings: waterReadings,
+      bills,
+    },
+  };
+
   return {
     exportedAt: new Date().toISOString(),
     periodMonth: periodMonth ? Number(periodMonth) : vnNow.month,
@@ -645,6 +716,7 @@ export const collectAllDatabaseData = async ({
     counts,
     totalRows,
     sheets,
+    databaseDump,
   };
 };
 
@@ -746,12 +818,16 @@ export const runGoogleBackup = async ({
     periodMonth: snapshot.periodMonth,
     periodYear: snapshot.periodYear,
     createDriveExcelCopy: Boolean(createDriveExcelCopy),
+    updateDriveDatabaseFile: true,
     replaceSameMonthFile: Boolean(replaceSameMonthFile),
     spreadsheetId: settings.spreadsheetId,
     sheetUrl: settings.sheetUrl,
+    driveFolderId: settings.driveFolderId || DEFAULT_DRIVE_FOLDER_ID,
+    driveFolderUrl: settings.driveFolderUrl || DEFAULT_DRIVE_FOLDER_URL,
     exportedAt: snapshot.exportedAt,
     counts: snapshot.counts,
     sheets: snapshot.sheets,
+    databaseDump: snapshot.databaseDump,
   };
 
   const hasCustomFetch = typeof fetchImpl === 'function';
@@ -773,8 +849,9 @@ export const runGoogleBackup = async ({
           ? `NhaTroThanhTam_SaoLuu_Thang_${String(snapshot.periodMonth).padStart(2, '0')}_${snapshot.periodYear}.xlsx`
           : `NhaTroThanhTam_BanSao_T${String(snapshot.periodMonth).padStart(2, '0')}_${snapshot.periodYear}.xlsx`
         : null,
+      driveDatabaseFileName: 'NhaTroThanhTam_Database.json',
       driveFileUrl: settings.sheetUrl,
-      driveFolderUrl: null,
+      driveFolderUrl: settings.driveFolderUrl || DEFAULT_DRIVE_FOLDER_URL,
       status: 'simulated',
     };
 
@@ -867,7 +944,10 @@ export const runGoogleBackup = async ({
       driveFileId: parsed.driveFileId || null,
       driveFileName: parsed.driveFileName || null,
       driveFileUrl: parsed.driveFileUrl || null,
-      driveFolderUrl: parsed.driveFolderUrl || null,
+      driveDatabaseFileId: parsed.driveDatabaseFileId || null,
+      driveDatabaseFileName: parsed.driveDatabaseFileName || 'NhaTroThanhTam_Database.json',
+      driveDatabaseFileUrl: parsed.driveDatabaseFileUrl || null,
+      driveFolderUrl: parsed.driveFolderUrl || settings.driveFolderUrl || DEFAULT_DRIVE_FOLDER_URL,
       warning: parsed.warning || null,
       status: parsed.warning ? 'warning' : 'success',
     };
@@ -913,7 +993,9 @@ export const runGoogleBackup = async ({
         counts: snapshot.counts,
         driveExcelCreated: Boolean(createDriveExcelCopy),
         driveFileName: bgFileName,
+        driveDatabaseFileName: 'NhaTroThanhTam_Database.json',
         driveFileUrl: settings.sheetUrl,
+        driveFolderUrl: settings.driveFolderUrl || DEFAULT_DRIVE_FOLDER_URL,
         status: 'success',
         clientSyncPayload: payload,
       };
@@ -996,15 +1078,15 @@ export const triggerAutoBackupOnDataChange = async ({
     const targetMonth = Number(periodMonth) || vnNow.month;
     const targetYear = Number(periodYear) || vnNow.year;
 
-    const snapshotExists = await hasPeriodSnapshotBeenCreated(targetMonth, targetYear);
-    const shouldCreateExcel = Boolean(isMonthlySnapshotTrigger) || !snapshotExists;
-
+    // Mỗi khi có dữ liệu mới đều tự động đồng bộ 7 bảng lên Google Sheet
+    // VÀ cập nhật file Excel (.xlsx) + file Database (.json) vào thư mục Google Drive:
+    // https://drive.google.com/drive/folders/1sGMaG00KWN1Le0TwP7xZgJqqQN35p0WH?usp=sharing
     return await runGoogleBackup({
       triggerSource,
       reason,
       periodMonth: targetMonth,
       periodYear: targetYear,
-      createDriveExcelCopy: shouldCreateExcel,
+      createDriveExcelCopy: true,
       replaceSameMonthFile: true,
       actorId,
       timeoutMs: 6000,

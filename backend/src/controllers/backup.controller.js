@@ -54,10 +54,13 @@ export const getPublicSnapshotForAppsScript = async (req, res) => {
         ok: true,
         action: 'sync_and_snapshot',
         triggerSource: 'apps_script_pull',
-        reason: 'Đồng bộ 7 bảng dữ liệu từ hệ thống Nhà Trọ Thành Tâm',
+        reason: 'Đồng bộ 7 bảng dữ liệu và file Database từ hệ thống Nhà Trọ Thành Tâm',
         spreadsheetId: settings.spreadsheetId,
         sheetUrl: settings.sheetUrl,
+        driveFolderId: settings.driveFolderId,
+        driveFolderUrl: settings.driveFolderUrl,
         createDriveExcelCopy: true,
+        updateDriveDatabaseFile: true,
         replaceSameMonthFile: false,
         exportedAt: snapshot.exportedAt,
         periodMonth: snapshot.periodMonth,
@@ -65,8 +68,9 @@ export const getPublicSnapshotForAppsScript = async (req, res) => {
         counts: snapshot.counts,
         totalRows: snapshot.totalRows,
         sheets: snapshot.sheets,
+        databaseDump: snapshot.databaseDump,
       },
-      'Dữ liệu 7 bảng phục vụ đồng bộ Google Sheets & Google Drive.'
+      'Dữ liệu 7 bảng & file Database phục vụ đồng bộ Google Sheets & Google Drive.'
     );
   } catch (err) {
     console.error('[Public Snapshot Backup Error]:', err);
@@ -86,9 +90,10 @@ export const getStatus = async (req, res) => {
 
 export const updateSettings = async (req, res) => {
   try {
-    const { sheetUrl, webhookUrl, autoBackupEnabled } = req.body || {};
+    const { sheetUrl, driveFolderUrl, webhookUrl, autoBackupEnabled } = req.body || {};
     const updated = await googleBackupService.saveBackupSettings({
       sheetUrl,
+      driveFolderUrl,
       webhookUrl,
       autoBackupEnabled,
       actorId: req.admin?.id || null,
@@ -116,12 +121,14 @@ export const syncNow = async (req, res) => {
       replaceSameMonthFile = false,
       reason,
       sheetUrl,
+      driveFolderUrl,
       webhookUrl,
     } = req.body || {};
 
-    if (sheetUrl !== undefined || webhookUrl !== undefined) {
+    if (sheetUrl !== undefined || driveFolderUrl !== undefined || webhookUrl !== undefined) {
       await googleBackupService.saveBackupSettings({
         sheetUrl,
+        driveFolderUrl,
         webhookUrl,
         autoBackupEnabled: (await googleBackupService.getBackupSettings()).autoBackupEnabled,
         actorId: req.admin?.id || null,

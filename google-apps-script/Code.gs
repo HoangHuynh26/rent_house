@@ -2,6 +2,11 @@
  * ============================================================================
  * GOOGLE APPS SCRIPT - SAO LƯU TỰ ĐỘNG & THỦ CÔNG HỆ THỐNG NHÀ TRỌ THÀNH TÂM
  * ============================================================================
+ * 1. Google Sheet đồng bộ 7 bảng:
+ *    https://docs.google.com/spreadsheets/d/13oK6Jo1zQvKYuEhBU6tsDfNgl84lJjZePkNRYe-rotk/edit?usp=sharing
+ * 2. Thư mục Google Drive lưu file Excel (.xlsx) & file Database (.json):
+ *    https://drive.google.com/drive/folders/1sGMaG00KWN1Le0TwP7xZgJqqQN35p0WH?usp=sharing
+ *
  * ĐỒNG BỘ 7 BẢNG DỮ LIỆU CHÍNH (KHÔNG BAO GỒM NHẬT KÝ & THÔNG BÁO):
  *   1. Tong_Hop      (Tổng hợp thống kê hệ thống)
  *   2. Phong_Tro     (Danh sách phòng trọ)
@@ -10,22 +15,11 @@
  *   5. Chi_So_Dien   (Chỉ số công tơ điện)
  *   6. Chi_So_Nuoc   (Chỉ số đồng hồ nước)
  *   7. Hoa_Don       (Hóa đơn thu tiền hàng tháng)
- *
- * CÁCH SỬ DỤNG CỰC KỲ ĐƠN GIẢN:
- * - Cách 1 (Nhanh nhất): Dán code này vào Apps Script -> Nhấn Lưu (Ctrl+S) ->
- *   Nhấn nút "▷ Chạy" (Run) ở thanh công cụ phía trên (với bất kỳ hàm nào đang chọn).
- *   Apps Script sẽ TỰ ĐỘNG kéo toàn bộ 7 bảng dữ liệu từ hệ thống Nhà Trọ Thành Tâm
- *   về điền vào Google Sheet (13oK6Jo1zQvKYuEhBU6tsDfNgl84lJjZePkNRYe-rotk)
- *   và tạo file Excel (.xlsx) trong thư mục Google Drive "Sao_Luu_Nha_Tro_Thanh_Tam"!
- * - Cách 2 (Triển khai Web App để nút bấm trên Web tự động chạy):
- *   Nhấn "Triển khai" -> "Tùy chọn triển khai mới" (hoặc Quản lý -> Chỉnh sửa) ->
- *   + Thực thi dưới dạng (Execute as): "Tôi" (Me)
- *   + Ai có quyền truy cập (Who has access): "Bất kỳ ai" (Anyone)
- *   -> Nhấn "Triển khai" (Deploy).
  * ============================================================================
  */
 
 var DEFAULT_SPREADSHEET_ID = '13oK6Jo1zQvKYuEhBU6tsDfNgl84lJjZePkNRYe-rotk';
+var DEFAULT_DRIVE_FOLDER_ID = '1sGMaG00KWN1Le0TwP7xZgJqqQN35p0WH';
 var BACKUP_FOLDER_NAME = 'Sao_Luu_Nha_Tro_Thanh_Tam';
 var SNAPSHOT_API_URL = 'https://nhatrothanhtam.netlify.app/api/backup/public-snapshot?key=thanhtam_backup_2026';
 
@@ -51,8 +45,9 @@ var DEFAULT_HEADERS = {
 
 /**
  * HÀM SỐ 1 (MẶC ĐỊNH KHI BẤM NÚT "▷ CHẠY" TRÊN THANH CÔNG CỤ APPS SCRIPT):
- * Tự động kéo toàn bộ 7 bảng dữ liệu từ hệ thống Nhà Trọ Thành Tâm về Google Sheet
- * và lưu bản sao file Excel (.xlsx) vào Google Drive.
+ * Tự động kéo toàn bộ 7 bảng dữ liệu + Database từ hệ thống Nhà Trọ Thành Tâm về Google Sheet
+ * và lưu/cập nhật file Excel (.xlsx) + file Database (.json) vào thư mục Google Drive:
+ * https://drive.google.com/drive/folders/1sGMaG00KWN1Le0TwP7xZgJqqQN35p0WH?usp=sharing
  */
 function chaySaoLuuNgay() {
   var result = pullAndSyncFromBackend(DEFAULT_SPREADSHEET_ID, true);
@@ -62,7 +57,7 @@ function chaySaoLuuNgay() {
 
 /**
  * Khi mở link Web App (/exec hoặc /dev) trên trình duyệt hoặc gọi GET:
- * Tự động đồng bộ luôn 7 bảng dữ liệu mới nhất vào Google Sheet & Drive.
+ * Tự động đồng bộ luôn 7 bảng dữ liệu & cập nhật file Database vào Google Drive.
  */
 function doGet(e) {
   var sheetId = (e && e.parameter && e.parameter.spreadsheetId) || DEFAULT_SPREADSHEET_ID;
@@ -86,13 +81,10 @@ function doPost(e) {
       rawContents = String(e.parameter.payload).trim();
     }
 
-    // Nếu người dùng bấm "▷ Chạy" hàm doPost trong Apps Script Editor (e rỗng)
-    // hoặc trình duyệt gửi POST kích hoạt nhanh -> Tự động kéo dữ liệu trực tiếp từ Server!
     if (!rawContents) {
       return jsonOutput(pullAndSyncFromBackend(DEFAULT_SPREADSHEET_ID, true));
     }
 
-    // Hỗ trợ trường hợp form-urlencoded có dạng payload={...}
     if (rawContents.indexOf('payload=') === 0) {
       rawContents = decodeURIComponent(rawContents.substring(8).replace(/\+/g, ' '));
     }
@@ -100,7 +92,6 @@ function doPost(e) {
     var payload = JSON.parse(rawContents);
     return jsonOutput(syncPayloadToSheetAndDrive(payload));
   } catch (err) {
-    // Fallback an toàn: nếu payload không parse được, tự động kéo từ API snapshot
     try {
       return jsonOutput(pullAndSyncFromBackend(DEFAULT_SPREADSHEET_ID, true));
     } catch (fallbackErr) {
@@ -116,16 +107,13 @@ function doPost(e) {
   }
 }
 
-/**
- * Hàm tương thích tên cũ để cấp quyền và đồng bộ ngay 7 bảng.
- */
 function testSetupPermissions() {
   return chaySaoLuuNgay();
 }
 
 /**
- * Tự động gọi API của hệ thống Nhà Trọ Thành Tâm để lấy dữ liệu 7 bảng mới nhất
- * và ghi vào Google Sheet + xuất file Excel (.xlsx) trên Google Drive.
+ * Tự động gọi API của hệ thống Nhà Trọ Thành Tâm để lấy dữ liệu 7 bảng + Database mới nhất
+ * và ghi vào Google Sheet + lưu file Excel (.xlsx) & Database (.json) vào thư mục Google Drive.
  */
 function pullAndSyncFromBackend(targetSheetId, createExcelCopy) {
   var requestedId = extractSpreadsheetId(targetSheetId) || DEFAULT_SPREADSHEET_ID;
@@ -145,7 +133,6 @@ function pullAndSyncFromBackend(targetSheetId, createExcelCopy) {
 
   var payload = (parsed && parsed.data) ? parsed.data : parsed;
   if (code !== 200 || !payload || !payload.sheets) {
-    // Nếu không tải được từ mạng, vẫn khởi tạo sẵn 7 bảng tiêu đề chuẩn trên Google Sheet
     var ss = SpreadsheetApp.openById(requestedId);
     for (var i = 0; i < SHEET_ORDER.length; i++) {
       var tab = SHEET_ORDER[i];
@@ -161,15 +148,19 @@ function pullAndSyncFromBackend(targetSheetId, createExcelCopy) {
   }
 
   payload.spreadsheetId = requestedId;
+  payload.driveFolderId = extractDriveFolderId(payload.driveFolderId || payload.driveFolderUrl) || DEFAULT_DRIVE_FOLDER_ID;
   payload.createDriveExcelCopy = createExcelCopy !== false;
+  payload.updateDriveDatabaseFile = true;
   return syncPayloadToSheetAndDrive(payload);
 }
 
 /**
- * Ghi toàn bộ 7 bảng từ payload vào Google Sheet và tạo file Excel (.xlsx) trong Google Drive.
+ * Ghi toàn bộ 7 bảng từ payload vào Google Sheet và cập nhật file Excel (.xlsx) + file Database (.json)
+ * vào đúng thư mục Google Drive: https://drive.google.com/drive/folders/1sGMaG00KWN1Le0TwP7xZgJqqQN35p0WH?usp=sharing
  */
 function syncPayloadToSheetAndDrive(payload) {
   var requestedId = extractSpreadsheetId(payload.spreadsheetId || payload.sheetUrl) || DEFAULT_SPREADSHEET_ID;
+  var targetFolderId = extractDriveFolderId(payload.driveFolderId || payload.driveFolderUrl) || DEFAULT_DRIVE_FOLDER_ID;
   var ss = SpreadsheetApp.openById(requestedId);
 
   var sheetsPayload = payload.sheets || {};
@@ -189,7 +180,6 @@ function syncPayloadToSheetAndDrive(payload) {
     totalRowsSynced += writtenCount;
   }
 
-  // Xóa các tab cũ không còn dùng nếu có (Thong_Bao, Nhat_Ky_He_Thong)
   var deprecatedTabs = ['Thong_Bao', 'Nhat_Ky_He_Thong'];
   for (var d = 0; d < deprecatedTabs.length; d++) {
     var oldSheet = ss.getSheetByName(deprecatedTabs[d]);
@@ -204,27 +194,33 @@ function syncPayloadToSheetAndDrive(payload) {
 
   var now = new Date();
   var triggerSource = payload.triggerSource || payload.action || 'manual';
-  var reason = payload.reason || 'Sao lưu 7 bảng dữ liệu hệ thống Nhà Trọ Thành Tâm';
+  var reason = payload.reason || 'Sao lưu 7 bảng & Database hệ thống Nhà Trọ Thành Tâm';
   var periodMonth = payload.periodMonth || '';
   var periodYear = payload.periodYear || '';
   var periodLabel = periodMonth && periodYear ? ('T' + pad2(periodMonth) + '/' + periodYear) : 'Toàn bộ hệ thống';
 
-  var shouldCreateExcel = Boolean(payload.createDriveExcelCopy);
   var driveSnapshot = null;
+  var dbFileSnapshot = null;
   var driveWarning = null;
 
-  if (shouldCreateExcel) {
-    try {
-      driveSnapshot = saveExcelSnapshotToDrive(ss, requestedId, {
+  try {
+    var folder = getTargetBackupFolder(targetFolderId);
+
+    // 1. Luôn cập nhật file Database (.json) vào thư mục Google Drive mỗi khi có dữ liệu mới
+    dbFileSnapshot = saveDatabaseJsonToDrive(folder, payload, now);
+
+    // 2. Xuất và cập nhật file Excel (.xlsx) vào thư mục Google Drive
+    if (payload.createDriveExcelCopy !== false) {
+      driveSnapshot = saveExcelSnapshotToDrive(folder, requestedId, {
         action: payload.action || triggerSource,
         periodMonth: periodMonth,
         periodYear: periodYear,
         replaceSameMonthFile: Boolean(payload.replaceSameMonthFile),
         now: now,
       });
-    } catch (driveErr) {
-      driveWarning = 'Đã cập nhật Google Sheet nhưng không thể xuất file .xlsx lên Drive: ' + String(driveErr);
     }
+  } catch (driveErr) {
+    driveWarning = 'Đã cập nhật Google Sheet nhưng gặp cảnh báo khi lưu file vào Drive: ' + String(driveErr);
   }
 
   appendBackupLog(ss, [
@@ -232,10 +228,10 @@ function syncPayloadToSheetAndDrive(payload) {
     triggerSource,
     periodLabel,
     reason,
-    driveWarning ? 'Cảnh báo Drive (.xlsx)' : 'Thành công',
+    driveWarning ? 'Cảnh báo Drive' : 'Thành công',
     totalRowsSynced,
-    driveSnapshot ? driveSnapshot.fileName : '(Chỉ cập nhật Google Sheet)',
-    driveSnapshot ? driveSnapshot.fileUrl : ss.getUrl(),
+    (driveSnapshot ? driveSnapshot.fileName : '') + (dbFileSnapshot ? ' + ' + dbFileSnapshot.fileName : ''),
+    driveSnapshot ? driveSnapshot.folderUrl : ('https://drive.google.com/drive/folders/' + targetFolderId),
   ]);
 
   SpreadsheetApp.flush();
@@ -253,9 +249,132 @@ function syncPayloadToSheetAndDrive(payload) {
     driveFileId: driveSnapshot ? driveSnapshot.fileId : null,
     driveFileName: driveSnapshot ? driveSnapshot.fileName : null,
     driveFileUrl: driveSnapshot ? driveSnapshot.fileUrl : null,
-    driveFolderUrl: driveSnapshot ? driveSnapshot.folderUrl : null,
+    driveDatabaseFileId: dbFileSnapshot ? dbFileSnapshot.fileId : null,
+    driveDatabaseFileName: dbFileSnapshot ? dbFileSnapshot.fileName : null,
+    driveDatabaseFileUrl: dbFileSnapshot ? dbFileSnapshot.fileUrl : null,
+    driveFolderId: targetFolderId,
+    driveFolderUrl: driveSnapshot
+      ? driveSnapshot.folderUrl
+      : (dbFileSnapshot ? dbFileSnapshot.folderUrl : ('https://drive.google.com/drive/folders/' + targetFolderId)),
     warning: driveWarning,
   };
+}
+
+/**
+ * Lưu / cập nhật file Database (NhaTroThanhTam_Database.json) vào thư mục Google Drive:
+ * https://drive.google.com/drive/folders/1sGMaG00KWN1Le0TwP7xZgJqqQN35p0WH?usp=sharing
+ */
+function saveDatabaseJsonToDrive(folder, payload, now) {
+  var dbFileName = 'NhaTroThanhTam_Database.json';
+  var dbObject = payload.databaseDump || {
+    metadata: {
+      system: 'Nhà Trọ Thành Tâm',
+      syncedAtVn: formatVnTimestamp(now),
+      triggerSource: payload.triggerSource || 'auto',
+      reason: payload.reason || 'Cập nhật database tự động',
+      periodMonth: payload.periodMonth || null,
+      periodYear: payload.periodYear || null,
+      counts: payload.counts || {},
+    },
+    sheets: payload.sheets || {},
+  };
+
+  var jsonString = JSON.stringify(dbObject, null, 2);
+
+  // Xóa bản cũ cùng tên để luôn giữ phiên bản Database mới nhất trong thư mục Drive
+  var existingFiles = folder.getFilesByName(dbFileName);
+  while (existingFiles.hasNext()) {
+    var oldFile = existingFiles.next();
+    oldFile.setTrashed(true);
+  }
+
+  var blob = Utilities.newBlob(jsonString, 'application/json', dbFileName);
+  var createdFile = folder.createFile(blob);
+
+  return {
+    fileId: createdFile.getId(),
+    fileName: createdFile.getName(),
+    fileUrl: createdFile.getUrl(),
+    folderId: folder.getId(),
+    folderUrl: folder.getUrl(),
+  };
+}
+
+/**
+ * Xuất Google Sheet hiện tại thành file Excel (.xlsx) và lưu vào thư mục Google Drive:
+ * - Luôn cập nhật file `NhaTroThanhTam_Database.xlsx` (bản Excel Database mới nhất)
+ * - Đồng thời cập nhật file Excel kỳ tháng `NhaTroThanhTam_SaoLuu_Thang_MM_YYYY.xlsx`
+ */
+function saveExcelSnapshotToDrive(folder, spreadsheetId, options) {
+  var now = options.now || new Date();
+  var fileName = buildExcelFileName(options, now);
+  var latestDbExcelName = 'NhaTroThanhTam_Database.xlsx';
+
+  var exportUrl = 'https://docs.google.com/spreadsheets/d/' + spreadsheetId + '/export?format=xlsx';
+  var response = UrlFetchApp.fetch(exportUrl, {
+    headers: {
+      Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
+    },
+    muteHttpExceptions: true,
+  });
+
+  var statusCode = response.getResponseCode();
+  if (statusCode !== 200) {
+    throw new Error('Google Export XLSX trả về mã HTTP ' + statusCode);
+  }
+
+  // 1. Cập nhật file Excel Database mới nhất (NhaTroThanhTam_Database.xlsx)
+  var existingDbExcel = folder.getFilesByName(latestDbExcelName);
+  while (existingDbExcel.hasNext()) {
+    existingDbExcel.next().setTrashed(true);
+  }
+  var dbExcelBlob = response
+    .getBlob()
+    .copyBlob()
+    .setName(latestDbExcelName)
+    .setContentType('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  folder.createFile(dbExcelBlob);
+
+  // 2. Lưu/cập nhật file Excel theo kỳ tháng hoặc bản sao
+  if (options.replaceSameMonthFile) {
+    var existingFiles = folder.getFilesByName(fileName);
+    while (existingFiles.hasNext()) {
+      var oldFile = existingFiles.next();
+      oldFile.setTrashed(true);
+    }
+  }
+
+  var blob = response
+    .getBlob()
+    .setName(fileName)
+    .setContentType('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+  var createdFile = folder.createFile(blob);
+
+  return {
+    fileId: createdFile.getId(),
+    fileName: createdFile.getName(),
+    fileUrl: createdFile.getUrl(),
+    folderId: folder.getId(),
+    folderUrl: folder.getUrl(),
+  };
+}
+
+/**
+ * Mở đúng thư mục Google Drive theo ID: 1sGMaG00KWN1Le0TwP7xZgJqqQN35p0WH
+ * Nếu tài khoản chưa có quyền truy cập ID đó thì fallback tạo/mở thư mục Sao_Luu_Nha_Tro_Thanh_Tam.
+ */
+function getTargetBackupFolder(folderId) {
+  var targetId = folderId || DEFAULT_DRIVE_FOLDER_ID;
+  try {
+    return DriveApp.getFolderById(targetId);
+  } catch (err) {
+    var folders = DriveApp.getFoldersByName(BACKUP_FOLDER_NAME);
+    if (folders.hasNext()) {
+      return folders.next();
+    }
+    return DriveApp.createFolder(BACKUP_FOLDER_NAME);
+  }
 }
 
 /**
@@ -287,7 +406,6 @@ function writeTableToSheet(ss, sheetName, headers, rows) {
   var range = sheet.getRange(1, 1, normalizedRows.length, colCount);
   range.setValues(normalizedRows);
 
-  // Định dạng dòng tiêu đề
   var headerRange = sheet.getRange(1, 1, 1, colCount);
   headerRange
     .setBackground('#0F4C81')
@@ -299,9 +417,7 @@ function writeTableToSheet(ss, sheetName, headers, rows) {
 
   try {
     sheet.autoResizeColumns(1, Math.min(colCount, 15));
-  } catch (resizeErr) {
-    // Bỏ qua nếu autoResizeColumns bị giới hạn
-  }
+  } catch (resizeErr) {}
 
   return rows.length;
 }
@@ -319,8 +435,8 @@ function appendBackupLog(ss, logRow) {
     'Lý do sao lưu',
     'Trạng thái',
     'Tổng số dòng đồng bộ',
-    'Tên file Excel (.xlsx) Drive',
-    'Link file / Sheet',
+    'File Excel & Database trên Drive',
+    'Link thư mục Google Drive',
   ];
 
   if (!sheet) {
@@ -337,59 +453,6 @@ function appendBackupLog(ss, logRow) {
   }
 
   sheet.appendRow(logRow.map(normalizeCell));
-}
-
-/**
- * Xuất Google Sheet hiện tại thành file Excel (.xlsx) và lưu vào thư mục Google Drive.
- */
-function saveExcelSnapshotToDrive(ss, spreadsheetId, options) {
-  var folder = getOrCreateBackupFolder();
-  var now = options.now || new Date();
-  var fileName = buildExcelFileName(options, now);
-
-  var exportUrl = 'https://docs.google.com/spreadsheets/d/' + spreadsheetId + '/export?format=xlsx';
-  var response = UrlFetchApp.fetch(exportUrl, {
-    headers: {
-      Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
-    },
-    muteHttpExceptions: true,
-  });
-
-  var statusCode = response.getResponseCode();
-  if (statusCode !== 200) {
-    throw new Error('Google Export XLSX trả về mã HTTP ' + statusCode);
-  }
-
-  if (options.replaceSameMonthFile) {
-    var existingFiles = folder.getFilesByName(fileName);
-    while (existingFiles.hasNext()) {
-      var oldFile = existingFiles.next();
-      oldFile.setTrashed(true);
-    }
-  }
-
-  var blob = response
-    .getBlob()
-    .setName(fileName)
-    .setContentType('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-
-  var createdFile = folder.createFile(blob);
-
-  return {
-    fileId: createdFile.getId(),
-    fileName: createdFile.getName(),
-    fileUrl: createdFile.getUrl(),
-    folderId: folder.getId(),
-    folderUrl: folder.getUrl(),
-  };
-}
-
-function getOrCreateBackupFolder() {
-  var folders = DriveApp.getFoldersByName(BACKUP_FOLDER_NAME);
-  if (folders.hasNext()) {
-    return folders.next();
-  }
-  return DriveApp.createFolder(BACKUP_FOLDER_NAME);
 }
 
 function buildExcelFileName(options, now) {
@@ -419,6 +482,15 @@ function extractSpreadsheetId(input) {
   if (!input) return '';
   var str = String(input).trim();
   var match = str.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (match && match[1]) return match[1];
+  if (/^[a-zA-Z0-9-_]{20,}$/.test(str)) return str;
+  return '';
+}
+
+function extractDriveFolderId(input) {
+  if (!input) return '';
+  var str = String(input).trim();
+  var match = str.match(/\/folders\/([a-zA-Z0-9-_]+)/);
   if (match && match[1]) return match[1];
   if (/^[a-zA-Z0-9-_]{20,}$/.test(str)) return str;
   return '';

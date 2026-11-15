@@ -18,6 +18,8 @@ import api from '../../services/api';
 
 const DEFAULT_SHEET_URL =
   'https://docs.google.com/spreadsheets/d/13oK6Jo1zQvKYuEhBU6tsDfNgl84lJjZePkNRYe-rotk/edit?usp=sharing';
+const DEFAULT_DRIVE_FOLDER_URL =
+  'https://drive.google.com/drive/folders/1sGMaG00KWN1Le0TwP7xZgJqqQN35p0WH?usp=sharing';
 const DEFAULT_WEBHOOK_URL =
   'https://script.google.com/macros/s/AKfycbz3gJhQ2khFr8UqoYCcGYGtyIUI6w5fN6ksfwKPjQmHD8F4Jy7qBE4mY9g7Sfuqdiew/exec';
 
@@ -35,6 +37,7 @@ export default function AdminBackup() {
   const [history, setHistory] = useState([]);
 
   const [sheetUrl, setSheetUrl] = useState(DEFAULT_SHEET_URL);
+  const [driveFolderUrl, setDriveFolderUrl] = useState(DEFAULT_DRIVE_FOLDER_URL);
   const [webhookUrl, setWebhookUrl] = useState(DEFAULT_WEBHOOK_URL);
   const [autoBackupEnabled, setAutoBackupEnabled] = useState(true);
 
@@ -56,6 +59,7 @@ export default function AdminBackup() {
       setHistory(data.history || []);
       if (data.settings) {
         setSheetUrl(data.settings.sheetUrl || DEFAULT_SHEET_URL);
+        setDriveFolderUrl(data.settings.driveFolderUrl || DEFAULT_DRIVE_FOLDER_URL);
         setWebhookUrl(data.settings.webhookUrl || DEFAULT_WEBHOOK_URL);
         setAutoBackupEnabled(data.settings.autoBackupEnabled !== false);
       }
@@ -80,11 +84,13 @@ export default function AdminBackup() {
       setBanner(null);
       const res = await api.put('/backup/settings', {
         sheetUrl,
+        driveFolderUrl,
         webhookUrl,
         autoBackupEnabled,
       });
       if (res?.data) {
         setSheetUrl(res.data.sheetUrl || sheetUrl);
+        setDriveFolderUrl(res.data.driveFolderUrl || driveFolderUrl);
         setWebhookUrl(res.data.webhookUrl || webhookUrl);
         setAutoBackupEnabled(res.data.autoBackupEnabled !== false);
       }
@@ -112,10 +118,11 @@ export default function AdminBackup() {
         createDriveExcelCopy: true,
         replaceSameMonthFile,
         sheetUrl,
+        driveFolderUrl,
         webhookUrl,
         reason: replaceSameMonthFile
-          ? `Admin cập nhật bản Excel tháng ${periodMonth}/${periodYear} trên Google Drive`
-          : `Admin chủ động lưu bản sao Excel dự phòng (T${periodMonth}/${periodYear})`,
+          ? `Admin cập nhật bản Excel & Database tháng ${periodMonth}/${periodYear} trên Google Drive`
+          : `Admin chủ động lưu bản sao Excel & Database dự phòng (T${periodMonth}/${periodYear})`,
       });
 
       const result = res?.data || {};
@@ -338,6 +345,29 @@ export default function AdminBackup() {
             <ExternalLink size={14} />
           </a>
 
+          <a
+            href={driveFolderUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '7px',
+              padding: '11px 16px',
+              background: 'rgba(255, 255, 255, 0.14)',
+              color: '#ffffff',
+              border: '1px solid rgba(255, 255, 255, 0.28)',
+              borderRadius: '12px',
+              fontSize: '13px',
+              fontWeight: '600',
+              textDecoration: 'none',
+            }}
+          >
+            <HardDrive size={16} />
+            Mở Thư Mục Drive
+            <ExternalLink size={14} />
+          </a>
+
           <button
             type="button"
             onClick={handleDownloadOfflineExcel}
@@ -506,6 +536,27 @@ export default function AdminBackup() {
               value={sheetUrl}
               onChange={(e) => setSheetUrl(e.target.value)}
               placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '10px',
+                border: '1px solid #cbd5e1',
+                fontSize: '13px',
+                color: '#0f172a',
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+              Link Thư Mục Google Drive lưu file Excel & Database
+            </label>
+            <input
+              type="url"
+              required
+              value={driveFolderUrl}
+              onChange={(e) => setDriveFolderUrl(e.target.value)}
+              placeholder="https://drive.google.com/drive/folders/..."
               style={{
                 width: '100%',
                 padding: '10px 12px',
