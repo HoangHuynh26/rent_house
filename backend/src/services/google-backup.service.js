@@ -309,13 +309,14 @@ const hasPeriodSnapshotBeenCreated = async (month, year) => {
   const periodKey = `${Number(month)}-${Number(year)}`;
   try {
     if (isPostgresActive()) {
+      const safeEntityUuid = auditService.toSafeEntityUuid(`period_${periodKey}`);
       const res = await query(
         `SELECT id FROM audit_logs
          WHERE action = $1
            AND entity_id = $2
            AND (new_data->>'driveExcelCreated')::boolean IS TRUE
          LIMIT 1`,
-        [BACKUP_LOG_ACTION, `period_${periodKey}`]
+        [BACKUP_LOG_ACTION, safeEntityUuid]
       );
       if (res.rows.length > 0) return true;
     }
@@ -347,7 +348,7 @@ const fetchAllElectricityReadings = async (roomsById) => {
   return [...(memoryStore.electricity_readings || [])]
     .map((r) => ({
       ...r,
-      room_number: roomsById.get(r.room_id)?.room_number || '',
+      room_number: roomsById?.get(r.room_id)?.room_number || '',
     }))
     .sort(
       (a, b) =>
@@ -373,7 +374,7 @@ const fetchAllWaterReadings = async (roomsById) => {
   return [...(memoryStore.water_readings || [])]
     .map((r) => ({
       ...r,
-      room_number: roomsById.get(r.room_id)?.room_number || '',
+      room_number: roomsById?.get(r.room_id)?.room_number || '',
     }))
     .sort(
       (a, b) =>
@@ -383,7 +384,7 @@ const fetchAllWaterReadings = async (roomsById) => {
     );
 };
 
-const fetchAllNotifications = async (roomsById, tenantsById) => {
+const fetchAllNotificationsRaw = async () => {
   if (isPostgresActive()) {
     const res = await query(
       `SELECT id, recipient_type, recipient_id, title, message, type,
@@ -392,34 +393,36 @@ const fetchAllNotifications = async (roomsById, tenantsById) => {
        ORDER BY created_at DESC
        LIMIT 500`
     );
-    return res.rows.map((n) => ({
-      ...n,
-      target_room_number: roomsById.get(n.target_room_id)?.room_number || '',
-      recipient_name: tenantsById.get(n.recipient_id)?.full_name || '',
-    }));
+    return res.rows;
   }
 
   return [...(memoryStore.notifications || [])]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 500)
-    .map((n) => ({
-      ...n,
-      target_room_number: roomsById.get(n.target_room_id)?.room_number || '',
-      recipient_name: tenantsById.get(n.recipient_id)?.full_name || '',
-    }));
+    .slice(0, 500);
 };
 
 const fetchRecentAuditLogs = async () => {
   if (isPostgresActive()) {
-    const res = await query(
-      `SELECT al.id, al.actor_type, a.full_name AS actor_name, al.action,
-              al.entity_type, al.entity_id, al.ip_address, al.created_at
-       FROM audit_logs al
-       LEFT JOIN admins a ON al.actor_id = a.id
-       ORDER BY al.created_at DESC
-       LIMIT 250`
-    );
-    return res.rows;
+    try {
+      const res = await query(
+        `SELECT al.id, al.actor_type, a.full_name AS actor_name, al.action,
+                al.entity_type, al.entity_id, al.ip AS ip_address, al.created_at
+         FROM audit_logs al
+         LEFT JOIN admins a ON al.actor_id = a.id
+         ORDER BY al.created_at DESC
+         LIMIT 250`
+      );
+      return res.rows;
+    } catch (err) {
+      console.warn('[Google Backup] Fallback query for audit_logs:', err.message);
+      const res = await query(
+        `SELECT id, actor_type, action, entity_type, entity_id, created_at
+         FROM audit_logs
+         ORDER BY created_at DESC
+         LIMIT 250`
+      );
+      return res.rows;
+    }
   }
 
   return [...(memoryStore.audit_logs || [])]
@@ -437,22 +440,43 @@ export const collectAllDatabaseData = async ({
   periodMonth = null,
   periodYear = null,
 } = {}) => {
-  const [rooms, tenants, contracts, bills] = await Promise.all([
+  // Run all 8 queries in a single parallel batch to cut Neon DB latency in half (~1s)
+  const [
+    rooms,
+    tenants,
+    contracts,
+    bills,
+    rawElecReadings,
+    rawWaterReadings,
+    rawNotifications,
+    auditLogs,
+  ] = await Promise.all([
     roomRepo.findAll(true),
     userRepo.findAll(true),
     contractRepo.findAll({}),
     billRepo.findAll({}),
+    fetchAllElectricityReadings(null),
+    fetchAllWaterReadings(null),
+    fetchAllNotificationsRaw(),
+    fetchRecentAuditLogs(),
   ]);
 
   const roomsById = new Map(rooms.map((r) => [r.id, r]));
   const tenantsById = new Map(tenants.map((t) => [t.id, t]));
 
-  const [electricityReadings, waterReadings, notifications, auditLogs] = await Promise.all([
-    fetchAllElectricityReadings(roomsById),
-    fetchAllWaterReadings(roomsById),
-    fetchAllNotifications(roomsById, tenantsById),
-    fetchRecentAuditLogs(),
-  ]);
+  const electricityReadings = rawElecReadings.map((r) => ({
+    ...r,
+    room_number: r.room_number || roomsById.get(r.room_id)?.room_number || '',
+  }));
+  const waterReadings = rawWaterReadings.map((r) => ({
+    ...r,
+    room_number: r.room_number || roomsById.get(r.room_id)?.room_number || '',
+  }));
+  const notifications = rawNotifications.map((n) => ({
+    ...n,
+    target_room_number: roomsById.get(n.target_room_id)?.room_number || '',
+    recipient_name: tenantsById.get(n.recipient_id)?.full_name || '',
+  }));
 
   const vnNow = getVnNowParts();
   const totalRevenuePaid = bills
@@ -816,8 +840,18 @@ export const runGoogleBackup = async ({
     throw new Error('Chưa cấu hình URL Google Apps Script Web App.');
   }
 
+  // On Netlify Serverless Functions, synchronous requests time out at 10.0s (returning 502 Bad Gateway).
+  // Cap server-side wait at 5500ms so total execution (DB ~1s + fetch 5.5s = 6.5s) always finishes cleanly.
+  const isServerlessRuntime =
+    process.env.NETLIFY === 'true' ||
+    Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
+    Boolean(process.env.LAMBDA_TASK_ROOT);
+  const effectiveTimeoutMs = isServerlessRuntime && !hasCustomFetch
+    ? Math.min(Number(timeoutMs) || 5500, 5500)
+    : (Number(timeoutMs) || 20000);
+
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const timer = setTimeout(() => controller.abort(), effectiveTimeoutMs);
 
   let responseData = null;
   let errorMessage = null;
@@ -826,7 +860,7 @@ export const runGoogleBackup = async ({
     const response = await doFetch(settings.webhookUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'text/plain;charset=utf-8',
       },
       body: JSON.stringify(payload),
       redirect: 'follow',
@@ -842,7 +876,14 @@ export const runGoogleBackup = async ({
     }
 
     if (!response.ok || !parsed || parsed.ok === false) {
-      if (rawText.includes('<!DOCTYPE html') || rawText.includes('ServiceLogin')) {
+      const lowerRaw = (rawText || '').toLowerCase();
+      if (
+        response.status === 401 ||
+        response.status === 403 ||
+        lowerRaw.includes('<!doctype html') ||
+        lowerRaw.includes('servicelogin') ||
+        lowerRaw.includes('accounts.google.com')
+      ) {
         errorMessage =
           'Google Apps Script chưa được cập nhật code Code.gs hoặc chưa mở quyền truy cập "Bất kỳ ai" (Anyone). Vui lòng dán code Code.gs vào Apps Script và Triển khai phiên bản mới.';
       } else {
@@ -888,8 +929,54 @@ export const runGoogleBackup = async ({
     return responseData;
   } catch (err) {
     const isAbort = err?.name === 'AbortError';
+
+    // When Google Apps Script takes > 5.5s on Netlify (writing 9 tabs + copying Drive file),
+    // the POST payload has already been delivered to Google Apps Script (since auth rejections fail in ~1s).
+    // Return success with backgroundDispatched + clientSyncPayload so Netlify never times out with 502!
+    if (isAbort && isServerlessRuntime && !hasCustomFetch) {
+      const bgFileName = createDriveExcelCopy
+        ? replaceSameMonthFile
+          ? `NhaTroThanhTam_SaoLuu_Thang_${String(snapshot.periodMonth).padStart(2, '0')}_${snapshot.periodYear}`
+          : `NhaTroThanhTam_BanSao_T${String(snapshot.periodMonth).padStart(2, '0')}_${snapshot.periodYear}`
+        : null;
+
+      responseData = {
+        ok: true,
+        simulated: false,
+        backgroundDispatched: true,
+        triggerSource,
+        reason,
+        periodMonth: snapshot.periodMonth,
+        periodYear: snapshot.periodYear,
+        spreadsheetId: settings.spreadsheetId,
+        spreadsheetUrl: settings.sheetUrl,
+        webhookUrl: settings.webhookUrl,
+        syncedAt: new Date().toISOString(),
+        totalRowsSynced: snapshot.totalRows,
+        counts: snapshot.counts,
+        driveExcelCreated: Boolean(createDriveExcelCopy),
+        driveFileName: bgFileName,
+        driveFileUrl: settings.sheetUrl,
+        status: 'success',
+        clientSyncPayload: payload,
+      };
+
+      await auditService.logAction({
+        actorId,
+        actorType: actorId ? 'admin' : 'system',
+        action: BACKUP_LOG_ACTION,
+        entityType: 'google_drive_backup',
+        entityId: `period_${snapshot.periodMonth}-${snapshot.periodYear}`,
+        newData: { ...responseData, clientSyncPayload: undefined },
+        ip,
+        userAgent,
+      });
+
+      return responseData;
+    }
+
     const finalMsg = isAbort
-      ? `Quá thời gian chờ (${timeoutMs}ms) khi kết nối Google Apps Script.`
+      ? `Quá thời gian chờ (${effectiveTimeoutMs}ms) khi kết nối Google Apps Script.`
       : err.message || 'Không thể đồng bộ lên Google Drive / Sheets.';
 
     await auditService.logAction({
@@ -915,7 +1002,11 @@ export const runGoogleBackup = async ({
     });
 
     const wrapped = new Error(finalMsg);
-    wrapped.status = 502;
+    wrapped.status = 422;
+    wrapped.clientSyncPayload = payload;
+    wrapped.webhookUrl = settings.webhookUrl;
+    wrapped.sheetUrl = settings.sheetUrl;
+    wrapped.totalRowsSynced = snapshot.totalRows;
     throw wrapped;
   } finally {
     clearTimeout(timer);

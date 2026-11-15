@@ -80,7 +80,15 @@ export const syncNow = async (req, res) => {
       res,
       err.message || 'Không thể sao lưu dữ liệu lên Google Drive.',
       err.status === 400 ? 'BAD_REQUEST' : 'BACKUP_SYNC_ERROR',
-      err.status || 502
+      err.status === 502 ? 422 : (err.status || 422),
+      err.clientSyncPayload
+        ? {
+            clientSyncPayload: err.clientSyncPayload,
+            webhookUrl: err.webhookUrl,
+            sheetUrl: err.sheetUrl,
+            totalRowsSynced: err.totalRowsSynced,
+          }
+        : null
     );
   }
 };

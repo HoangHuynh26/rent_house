@@ -32,6 +32,20 @@ export default function GoogleDriveBackupButton({
       });
 
       const data = res?.data || {};
+      if (data.clientSyncPayload && data.webhookUrl) {
+        try {
+          await fetch(data.webhookUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            credentials: 'include',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(data.clientSyncPayload),
+          });
+        } catch (browserErr) {
+          console.warn('[Browser Apps Script Sync Fallback]:', browserErr);
+        }
+      }
+
       setLastResult({
         ok: true,
         url: data.driveFileUrl || data.spreadsheetUrl || DEFAULT_SHEET_URL,
@@ -39,6 +53,19 @@ export default function GoogleDriveBackupButton({
       });
       alert(res?.message || 'Đã lưu bản sao dữ liệu Excel lên Google Drive thành công!');
     } catch (err) {
+      if (err?.details?.clientSyncPayload && err?.details?.webhookUrl) {
+        try {
+          await fetch(err.details.webhookUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            credentials: 'include',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(err.details.clientSyncPayload),
+          });
+        } catch (browserErr) {
+          console.warn('[Browser Apps Script Sync Fallback]:', browserErr);
+        }
+      }
       alert(err?.message || 'Không thể lưu bản sao lên Google Drive. Vui lòng kiểm tra cấu hình trong mục Sao lưu Google Drive.');
     } finally {
       setSyncing(false);

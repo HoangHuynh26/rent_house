@@ -124,6 +124,7 @@ function createCustomError(error) {
   const customError = new Error(message);
   customError.code = res?.code || error.code || 'NETWORK_ERROR';
   customError.status = error.response?.status;
+  customError.details = res?.details || null;
   return customError;
 }
 

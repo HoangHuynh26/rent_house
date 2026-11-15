@@ -119,6 +119,20 @@ export default function AdminBackup() {
       });
 
       const result = res?.data || {};
+      if (result.clientSyncPayload && (result.webhookUrl || webhookUrl)) {
+        try {
+          await fetch(result.webhookUrl || webhookUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            credentials: 'include',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(result.clientSyncPayload),
+          });
+        } catch (browserErr) {
+          console.warn('[Browser Apps Script Sync Fallback]:', browserErr);
+        }
+      }
+
       setBanner({
         type: result.warning ? 'warning' : 'success',
         text: res?.message || 'Đã sao lưu toàn bộ dữ liệu lên Google Drive thành công!',
@@ -128,9 +142,26 @@ export default function AdminBackup() {
       });
       await fetchStatus();
     } catch (err) {
+      const fallbackDetails = err?.details;
+      if (fallbackDetails?.clientSyncPayload && (fallbackDetails.webhookUrl || webhookUrl)) {
+        try {
+          await fetch(fallbackDetails.webhookUrl || webhookUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            credentials: 'include',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(fallbackDetails.clientSyncPayload),
+          });
+        } catch (browserErr) {
+          console.warn('[Browser Apps Script Sync Fallback]:', browserErr);
+        }
+      }
+
       setBanner({
         type: 'error',
-        text: err?.message || 'Không thể sao lưu lên Google Drive. Vui lòng kiểm tra mã Code.gs trong Apps Script.',
+        text:
+          err?.message ||
+          'Không thể sao lưu lên Google Drive. Vui lòng kiểm tra mã Code.gs và quyền "Bất kỳ ai (Anyone)" trong Apps Script.',
       });
       await fetchStatus();
     } finally {
