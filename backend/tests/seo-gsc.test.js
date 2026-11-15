@@ -48,6 +48,9 @@ test('Public branding logos, favicons, OG image, and Google Search Console verif
   const icoBuf = await fs.readFile(path.join(publicDir, 'favicon.ico'));
   assert.strictEqual(icoBuf[0] === 0 && icoBuf[1] === 0 && icoBuf[2] === 1 && icoBuf[3] === 0, true);
 
+  const logoSvg = await fs.readFile(path.join(publicDir, 'logo.svg'), 'utf8');
+  assert.ok(logoSvg.includes('<svg') && logoSvg.includes('Left T') && logoSvg.includes('Right T'), 'logo.svg must contain TT monogram');
+
   const sitemapXml = await fs.readFile(path.join(publicDir, 'sitemap.xml'), 'utf8');
   assert.ok(sitemapXml.includes('<urlset'));
   assert.ok(!sitemapXml.includes('#rooms'), 'sitemap.xml must not use fragment URLs ignored by Google');

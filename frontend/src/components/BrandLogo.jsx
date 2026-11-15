@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Home } from 'lucide-react';
 
+/**
+ * BrandLogo — Hiển thị logo chính thức chữ "TT" của Nhà Trọ Thanh Tâm (/logo.png)
+ * Có fallback chữ "TT" sắc nét nếu file ảnh chưa tải kịp.
+ */
 export default function BrandLogo({
-  size = 40,
-  rounded = 10,
-  alt = 'Logo Nhà Trọ Thanh Tâm',
-  style = {},
+  size = 44,
+  rounded = 12,
+  alt = 'Logo TT Nhà Trọ Thanh Tâm',
   className = '',
+  style = {}
 }) {
   const [imgError, setImgError] = useState(false);
 
@@ -15,40 +18,47 @@ export default function BrandLogo({
       <div
         className={className}
         style={{
-          width: size,
-          height: size,
-          borderRadius: rounded,
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-          color: '#ffffff',
+          width: `${size}px`,
+          height: `${size}px`,
+          borderRadius: `${rounded}px`,
+          background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e3a8a 100%)',
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
+          color: '#ffffff',
+          fontWeight: 900,
+          fontSize: `${Math.round(size * 0.44)}px`,
+          letterSpacing: '-0.03em',
+          fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
+          boxShadow: '0 4px 12px rgba(30, 58, 138, 0.22)',
           flexShrink: 0,
-          ...style,
+          userSelect: 'none',
+          ...style
         }}
+        aria-label={alt}
       >
-        <Home size={Math.round(size * 0.54)} />
+        TT
       </div>
     );
   }
 
   return (
     <img
-      src="/logo.png"
+      src="/logo.png?v=tt"
       alt={alt}
       width={size}
       height={size}
-      onError={() => setImgError(true)}
       className={className}
+      onError={() => setImgError(true)}
       style={{
-        width: size,
-        height: size,
-        borderRadius: rounded,
-        objectFit: 'cover',
+        width: `${size}px`,
+        height: `${size}px`,
+        borderRadius: `${rounded}px`,
+        objectFit: 'contain',
         display: 'block',
         flexShrink: 0,
-        boxShadow: '0 4px 12px rgba(15, 23, 42, 0.22)',
-        ...style,
+        filter: 'drop-shadow(0 3px 8px rgba(30, 58, 138, 0.18))',
+        ...style
       }}
     />
   );

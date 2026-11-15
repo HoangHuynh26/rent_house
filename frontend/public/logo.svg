@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="ttBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a" />
+      <stop offset="55%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+    <radialGradient id="ttGlow" cx="25%" cy="20%" r="65%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.32" />
+      <stop offset="100%" stop-color="#1e3a8a" stop-opacity="0" />
+    </radialGradient>
+    <filter id="ttShadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.28" />
+    </filter>
+  </defs>
+
+  <!-- Rounded Square Badge -->
+  <rect x="8" y="8" width="496" height="496" rx="112" ry="112" fill="url(#ttBgGrad)" />
+  <rect x="8" y="8" width="496" height="496" rx="112" ry="112" fill="url(#ttGlow)" />
+  <rect x="12" y="12" width="488" height="488" rx="108" ry="108" fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="6" />
+
+  <!-- Bold "TT" Monogram -->
+  <g fill="#ffffff" filter="url(#ttShadow)">
+    <!-- Left T -->
+    <rect x="82" y="142" width="162" height="50" rx="12" ry="12" />
+    <rect x="137" y="142" width="52" height="234" rx="12" ry="12" />
+    <!-- Right T -->
+    <rect x="268" y="142" width="162" height="50" rx="12" ry="12" />
+    <rect x="323" y="142" width="52" height="234" rx="12" ry="12" />
+  </g>
+</svg>

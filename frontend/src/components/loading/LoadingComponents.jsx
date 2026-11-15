@@ -1,5 +1,6 @@
 import React from 'react';
 import { Home, Shield, Zap, Droplet, FileText, CheckCircle2, Lock } from 'lucide-react';
+import BrandLogo from '../BrandLogo';
 
 /**
  * Lightweight SVG Spinner
@@ -55,23 +56,15 @@ export const AppLoadingScreen = ({ variant = 'tenant', message }) => {
       {/* Brand Icon with Pulsing Glow */}
       <div
         style={{
-          width: '76px',
-          height: '76px',
-          borderRadius: '24px',
-          background: isAdmin
-            ? 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)'
-            : 'linear-gradient(135deg, #064e3b 0%, #059669 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           marginBottom: '24px',
+          borderRadius: '22px',
           boxShadow: isAdmin
             ? '0 12px 30px rgba(37, 99, 235, 0.35)'
             : '0 12px 30px rgba(5, 150, 105, 0.35)',
           animation: glowAnimation
         }}
       >
-        {isAdmin ? <Shield size={38} color="#ffffff" /> : <Home size={38} color="#ffffff" />}
+        <BrandLogo size={76} rounded={22} />
       </div>
 
       {/* Brand Title */}
