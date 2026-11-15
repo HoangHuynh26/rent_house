@@ -23,7 +23,8 @@ import usePageSEO from '../../utils/usePageSEO';
 export default function TenantWater() {
   usePageSEO({
     title: 'Theo Dõi Tiền Nước & Đồng Hồ Nước Thực Tế',
-    description: 'Tra cứu chỉ số đồng hồ nước, số m3 tiêu thụ, hình ảnh chụp đồng hồ nước thực tế và thành tiền nước theo từng tháng.'
+    description: 'Tra cứu chỉ số đồng hồ nước, số m3 tiêu thụ, hình ảnh chụp đồng hồ nước thực tế và thành tiền nước theo từng tháng.',
+    noIndex: true
   });
 
   const [searchParams, setSearchParams] = useSearchParams();

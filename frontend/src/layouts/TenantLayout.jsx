@@ -4,6 +4,7 @@ import { Home, Zap, Droplet, History, FileText, LogOut, User, DoorOpen, Bell } f
 import { useAuth } from '../contexts/AuthContext';
 import { useTenantRoom } from '../contexts/TenantRoomContext';
 import TenantNotificationPopup from '../components/notification/TenantNotificationPopup';
+import BrandLogo from '../components/BrandLogo';
 
 export default function TenantLayout() {
   const { tenant, logoutTenant } = useAuth();
@@ -382,17 +383,7 @@ export default function TenantLayout() {
           }}>
             {/* Brand & Room info */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                background: '#2563eb',
-                padding: '8px',
-                borderRadius: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <Home size={22} color="#ffffff" />
-              </div>
+              <BrandLogo size={40} rounded={10} />
               <div>
                 <div style={{ fontSize: '11px', color: '#93c5fd', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Nhà Trọ Thanh Tâm

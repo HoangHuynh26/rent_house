@@ -106,7 +106,9 @@ const KpiTicker = ({ icon: Icon, label, value, subtitle, iconBg, iconColor, valu
 export default function AdminDashboard() {
   usePageSEO({
     title: 'Bảng Điều Khiển Quản Trị Hệ Thống',
-    description: 'Báo cáo doanh thu, tình trạng lấp đầy phòng, chỉ số điện nước toàn bộ nhà trọ Thanh Tâm.'
+    description: 'Báo cáo doanh thu, tình trạng lấp đầy phòng, chỉ số điện nước toàn bộ nhà trọ Thanh Tâm.',
+    noIndex: true,
+    useRemoteConfig: false
   });
 
   const [stats, setStats] = useState(null);

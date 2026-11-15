@@ -2,8 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, ArrowRight, Home, LogIn } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import usePageSEO from '../../utils/usePageSEO';
+import BrandLogo from '../../components/BrandLogo';
 
 export default function TenantLogin() {
+  usePageSEO({
+    title: 'Cổng Cư Dân - Tra Cứu Tiền Trọ & Điện Nước',
+    description: 'Đăng nhập cổng cư dân Nhà Trọ Thanh Tâm bằng số điện thoại để xem chỉ số công tơ điện nước và hóa đơn hàng tháng.',
+    noIndex: true,
+    useRemoteConfig: false
+  });
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,18 +57,8 @@ export default function TenantLogin() {
       }}>
         {/* Header Icon */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{
-            width: '64px',
-            height: '64px',
-            background: '#eff6ff',
-            color: '#1e3a8a',
-            borderRadius: '20px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '12px'
-          }}>
-            <Home size={34} />
+          <div style={{ display: 'inline-flex', justifyContent: 'center', marginBottom: '12px' }}>
+            <BrandLogo size={64} rounded={16} />
           </div>
           <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>Nhà Trọ Thanh Tâm</h1>
           <p style={{ fontSize: '15px', color: '#64748b', marginTop: '4px' }}>

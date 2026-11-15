@@ -24,6 +24,7 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../utils/formatters';
 import usePageSEO from '../utils/usePageSEO';
+import BrandLogo from '../components/BrandLogo';
 
 const roomImageMap = {
   '1': 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&auto=format&fit=crop&q=80',
@@ -125,7 +126,8 @@ export default function LandingPage() {
   usePageSEO({
     title: 'Cho Thuê Phòng Trọ Tiện Nghi, Giá Tốt & Minh Bạch',
     description: 'Hệ thống phòng trọ Nhà Trọ Thanh Tâm: Cho thuê phòng trọ cao cấp, gác lửng, máy lạnh, camera an ninh 24/7, tra cứu chỉ số điện nước minh bạch bằng hình ảnh công tơ thực tế.',
-    keywords: 'nhà trọ thanh tâm, thuê phòng trọ, phòng trọ giá rẻ, phòng trọ có gác lửng, phòng trọ máy lạnh, tra cứu tiền trọ, hóa đơn điện nước phòng trọ'
+    keywords: 'nhà trọ thanh tâm, thuê phòng trọ, phòng trọ giá rẻ, phòng trọ tân triệu, phòng trọ đồng nai, phòng trọ có gác lửng, phòng trọ máy lạnh, tra cứu tiền trọ',
+    useRemoteConfig: true
   });
 
   useEffect(() => {
@@ -210,7 +212,7 @@ export default function LandingPage() {
           {/* Logo & Brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="landing-brand-logo">
-              <Home size={22} />
+              <BrandLogo size={44} rounded={11} style={{ width: '100%', height: '100%', boxShadow: 'none' }} />
             </div>
             <div>
               <div className="landing-brand-name">
@@ -279,7 +281,7 @@ export default function LandingPage() {
           }}>
             <Sparkles size={13} /> DANH MỤC PHÒNG CHO THUÊ
           </div>
-          <h2 style={{
+          <h1 style={{
             fontSize: 'clamp(20px, 4.5vw, 28px)',
             fontWeight: '900',
             color: '#0f172a',
@@ -287,7 +289,7 @@ export default function LandingPage() {
             marginBottom: '6px'
           }}>
             Khám Phá Phòng Trọ Tiện Nghi
-          </h2>
+          </h1>
           <p style={{
             fontSize: 'clamp(12px, 2.5vw, 14px)',
             color: '#64748b',
@@ -924,9 +926,7 @@ export default function LandingPage() {
         <div className="landing-footer-grid" style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-              <div style={{ background: '#2563eb', padding: '8px', borderRadius: '10px' }}>
-                <Home size={22} color="#ffffff" />
-              </div>
+              <BrandLogo size={40} rounded={10} />
               <div style={{ fontSize: '18px', fontWeight: '900' }}>NHÀ TRỌ THANH TÂM</div>
             </div>
             <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.6', maxWidth: '380px' }}>

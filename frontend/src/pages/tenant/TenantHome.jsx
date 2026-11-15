@@ -10,7 +10,9 @@ import usePageSEO from '../../utils/usePageSEO';
 export const TenantHome = () => {
   usePageSEO({
     title: 'Tổng Quan Phòng Trọ - Cổng Cư Dân',
-    description: 'Bảng điều khiển cư dân Nhà Trọ Thanh Tâm: Tra cứu số điện, số nước, hóa đơn tiền phòng và trạng thái thanh toán.'
+    description: 'Bảng điều khiển cư dân Nhà Trọ Thanh Tâm: Tra cứu số điện, số nước, hóa đơn tiền phòng và trạng thái thanh toán.',
+    noIndex: true,
+    useRemoteConfig: false
   });
 
   const [data, setData] = useState(null);

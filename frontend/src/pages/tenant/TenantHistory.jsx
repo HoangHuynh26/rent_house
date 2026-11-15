@@ -29,7 +29,8 @@ import usePageSEO from '../../utils/usePageSEO';
 export default function TenantHistory() {
   usePageSEO({
     title: 'Lịch Sử Hóa Đơn & Biên Lai Thu Tiền',
-    description: 'Tra cứu toàn bộ lịch sử hóa đơn tiền phòng, chỉ số điện nước các tháng và biên lai thu tiền chi tiết.'
+    description: 'Tra cứu toàn bộ lịch sử hóa đơn tiền phòng, chỉ số điện nước các tháng và biên lai thu tiền chi tiết.',
+    noIndex: true
   });
 
   const [elecHistory, setElecHistory] = useState([]);
