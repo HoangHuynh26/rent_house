@@ -26,6 +26,7 @@ import AdminBills from './pages/admin/AdminBills';
 import AdminContracts from './pages/admin/AdminContracts';
 import AdminAudit from './pages/admin/AdminAudit';
 import AdminNotifications from './pages/admin/AdminNotifications';
+import AdminBackup from './pages/admin/AdminBackup';
 
 // Landing Page
 import LandingPage from './pages/LandingPage';
@@ -96,6 +97,7 @@ export default function App() {
             <Route path="contracts" element={<AdminContracts />} />
             <Route path="notifications" element={<AdminNotifications />} />
             <Route path="audit" element={<AdminAudit />} />
+            <Route path="backup" element={<AdminBackup />} />
           </Route>
 
           {/* Catch-all to Landing Page */}

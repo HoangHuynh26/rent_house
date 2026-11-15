@@ -5,9 +5,14 @@ import { computeSHA256 } from '../utils/crypto.util.js';
 
 // Netlify Functions only allow writes under /tmp.  Local/Docker deployments keep
 // the existing project-relative uploads directory unless UPLOAD_DIR is supplied.
+const IS_SERVERLESS =
+  process.env.NETLIFY === 'true' ||
+  Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
+  Boolean(process.env.LAMBDA_TASK_ROOT);
+
 export const UPLOAD_DIR = process.env.UPLOAD_DIR
   ? path.resolve(process.env.UPLOAD_DIR)
-  : (process.env.NETLIFY === 'true' ? '/tmp/uploads' : path.resolve(process.cwd(), 'uploads'));
+  : (IS_SERVERLESS ? '/tmp/uploads' : path.resolve(process.cwd(), 'uploads'));
 export const METERS_DIR = path.join(UPLOAD_DIR, 'meters');
 export const CONTRACTS_DIR = path.join(UPLOAD_DIR, 'contracts');
 

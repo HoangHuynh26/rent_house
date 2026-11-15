@@ -1,6 +1,6 @@
-# Hướng Dẫn Cấu Hình Triển Khai Toàn Diện Trên Netlify (Option C: Netlify Functions + Neon PostgreSQL)
+# Hướng Dẫn Triển Khai Toàn Bộ Frontend & Backend Trên Netlify (Netlify Functions + Neon PostgreSQL)
 
-Hệ thống Nhà Trọ Thanh Tâm chạy toàn bộ Frontend React (Vite) và Backend Express API trực tiếp trên **Netlify** thông qua **Netlify Serverless Functions**, kết nối cơ sở dữ liệu đám mây **Neon PostgreSQL**.
+Hệ thống Nhà Trọ Thanh Tâm chạy toàn bộ Frontend React (Vite) và Backend Express API trực tiếp trên **Netlify** thông qua **Netlify Serverless Functions** (`backend/netlify/functions/api.mjs` và cron tự động lập hóa đơn `monthly-billing.mjs`), kết nối cơ sở dữ liệu đám mây **Neon PostgreSQL**. Mọi ảnh công tơ được lưu nhị phân trực tiếp trong Neon PostgreSQL (`meter_images`) nên không phụ thuộc bộ nhớ tạm serverless.
 
 ---
 
@@ -25,7 +25,13 @@ Hệ thống Nhà Trọ Thanh Tâm chạy toàn bộ Frontend React (Vite) và B
 
 ---
 
-## 2. Kích hoạt Deploy lại trên Netlify
+## 2. Cấu hình Build & Deploy trên Netlify
+
+Kiểm tra **Build settings** trong Netlify Site configuration để deploy đồng bộ cả Frontend lẫn Backend Functions từ [`netlify.toml`](netlify.toml):
+- **Base directory**: để trống (thư mục gốc repo `.`)
+- **Build command**: `npm run build`
+- **Publish directory**: `frontend/dist`
+- **Functions directory**: `backend/netlify/functions` (tự động đọc từ `netlify.toml`)
 
 Sau khi lưu các biến môi trường:
 1. Vào tab **Deploys** trên Netlify.

@@ -410,8 +410,6 @@ export const memoryStore = {
     }
   ],
   audit_logs: [],
-  ai_predictions: [],
-  ai_training_samples: [],
   active_otps: new Map() // phone -> { otp, expiresAt }
 };
 

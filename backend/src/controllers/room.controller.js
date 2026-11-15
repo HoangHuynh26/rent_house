@@ -4,6 +4,7 @@ import * as billRepo from '../repositories/bill.repo.js';
 import * as readingRepo from '../repositories/reading.repo.js';
 import { successResponse, errorResponse } from '../utils/response.util.js';
 import * as auditService from '../services/audit.service.js';
+import * as googleBackupService from '../services/google-backup.service.js';
 
 export const getRooms = async (req, res) => {
   try {
@@ -86,6 +87,12 @@ export const createRoom = async (req, res) => {
       userAgent: req.get('User-Agent')
     });
 
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'room_create',
+      reason: `Thêm phòng mới ${room?.room_number || ''}`,
+      actorId: req.admin?.id || null,
+    });
+
     return successResponse(res, room, 'Tạo phòng mới thành công.', 201);
   } catch (err) {
     console.error('[Create Room Error]:', err);
@@ -115,6 +122,12 @@ export const updateRoom = async (req, res) => {
       userAgent: req.get('User-Agent')
     });
 
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'room_update',
+      reason: `Cập nhật phòng ${updated?.room_number || oldRoom?.room_number || id}`,
+      actorId: req.admin?.id || null,
+    });
+
     return successResponse(res, updated, 'Cập nhật phòng thành công.');
   } catch (err) {
     console.error('[Update Room Error]:', err);
@@ -141,6 +154,12 @@ export const deleteRoom = async (req, res) => {
       oldData: oldRoom,
       ip: req.ip,
       userAgent: req.get('User-Agent')
+    });
+
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'room_delete',
+      reason: `Xóa phòng ${oldRoom?.room_number || id}`,
+      actorId: req.admin?.id || null,
     });
 
     return successResponse(res, null, 'Đã xóa phòng (lưu trữ lịch sử).');

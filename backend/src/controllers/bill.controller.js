@@ -8,6 +8,7 @@ import * as meterImageRepo from '../repositories/meter-image.repo.js';
 import { successResponse, errorResponse } from '../utils/response.util.js';
 import { formatVND } from '../utils/currency.util.js';
 import * as auditService from '../services/audit.service.js';
+import * as googleBackupService from '../services/google-backup.service.js';
 import * as autoBillingService from '../services/auto-billing.service.js';
 import * as notificationDelivery from '../services/notification-delivery.service.js';
 
@@ -168,6 +169,15 @@ export const generateMonthlyBills = async (req, res) => {
       userAgent: req.get('User-Agent')
     });
 
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'monthly_bills_generate',
+      reason: `Lập hóa đơn Tháng ${billingMonth}/${billingYear} (${generated.length} hóa đơn)`,
+      periodMonth: billingMonth,
+      periodYear: billingYear,
+      isMonthlySnapshotTrigger: true,
+      actorId: req.admin?.id || null,
+    });
+
     return successResponse(res, {
       generated_count: generated.length,
       skipped_count: skipped.length,
@@ -255,6 +265,15 @@ export const updateBillStatus = async (req, res) => {
       userAgent: req.get('User-Agent')
     });
 
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'bill_status_update',
+      reason: `Cập nhật thanh toán hóa đơn ${updated?.room_number ? `Phòng ${updated.room_number} ` : ''}Tháng ${updated?.billing_month || ''}/${updated?.billing_year || ''} (${status})`,
+      periodMonth: updated?.billing_month || null,
+      periodYear: updated?.billing_year || null,
+      isMonthlySnapshotTrigger: true,
+      actorId: req.admin?.id || null,
+    });
+
     return successResponse(res, updated, 'Cập nhật trạng thái hóa đơn thành công.');
   } catch (err) {
     console.error('[Update Bill Status Error]:', err);
@@ -281,6 +300,15 @@ export const deleteBill = async (req, res) => {
       oldData: existing,
       ip: req.ip,
       userAgent: req.get('User-Agent')
+    });
+
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'bill_delete',
+      reason: `Xóa hóa đơn ${existing?.room_number ? `Phòng ${existing.room_number} ` : ''}Tháng ${existing?.billing_month || ''}/${existing?.billing_year || ''}`,
+      periodMonth: existing?.billing_month || null,
+      periodYear: existing?.billing_year || null,
+      isMonthlySnapshotTrigger: true,
+      actorId: req.admin?.id || null,
     });
 
     return successResponse(res, deleted, 'Đã xóa hóa đơn thành công.');

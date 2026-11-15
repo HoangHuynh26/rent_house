@@ -3,7 +3,6 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Home, Zap, Droplet, History, FileText, LogOut, User, DoorOpen, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTenantRoom } from '../contexts/TenantRoomContext';
-import AiChatbotWidget from '../components/chat/AiChatbotWidget';
 import TenantNotificationPopup from '../components/notification/TenantNotificationPopup';
 
 export default function TenantLayout() {
@@ -540,9 +539,6 @@ export default function TenantLayout() {
         bellTrigger={openBellModal}
         onBellClose={() => setOpenBellModal(false)}
       />
-
-      {/* Global AI Chatbot Assistant */}
-      <AiChatbotWidget roomId={activeRoomId} />
     </div>
   );
 }

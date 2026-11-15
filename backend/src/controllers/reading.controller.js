@@ -1,14 +1,9 @@
-import fs from 'fs';
-import path from 'path';
 import * as readingRepo from '../repositories/reading.repo.js';
 import * as roomRepo from '../repositories/room.repo.js';
 import * as contractRepo from '../repositories/contract.repo.js';
-import * as meterImageRepo from '../repositories/meter-image.repo.js';
-import * as meterLearningService from '../services/meter-learning.service.js';
-import { METERS_DIR } from '../services/storage.service.js';
 import { successResponse, errorResponse } from '../utils/response.util.js';
 import * as auditService from '../services/audit.service.js';
-import { isPostgresActive, query, memoryStore } from '../config/db.js';
+import * as googleBackupService from '../services/google-backup.service.js';
 
 // ============================================================================
 // ELECTRICITY READINGS
@@ -40,9 +35,6 @@ export const createElectricityReading = async (req, res) => {
       current_value,
       unit_price,
       image_url,
-      ai_detected_value,
-      ai_confidence,
-      image_quality_score,
       is_meter_reset
     } = req.body;
 
@@ -81,9 +73,6 @@ export const createElectricityReading = async (req, res) => {
       current_value,
       unit_price: finalPrice,
       image_url,
-      ai_detected_value,
-      ai_confidence,
-      image_quality_score,
       verification_status: 'pending',
       is_meter_reset
     });
@@ -97,6 +86,15 @@ export const createElectricityReading = async (req, res) => {
       newData: reading,
       ip: req.ip,
       userAgent: req.get('User-Agent')
+    });
+
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'electricity_reading_create',
+      reason: `Ghi nhận chỉ số điện tháng ${reading?.reading_month || ''}/${reading?.reading_year || ''}`,
+      periodMonth: reading?.reading_month || null,
+      periodYear: reading?.reading_year || null,
+      isMonthlySnapshotTrigger: true,
+      actorId: req.admin?.id || null,
     });
 
     return successResponse(res, reading, 'Tạo bản ghi chỉ số điện thành công.', 201);
@@ -123,61 +121,6 @@ export const verifyElectricityReading = async (req, res) => {
       return errorResponse(res, 'Không tìm thấy bản ghi chỉ số điện.', 'NOT_FOUND', 404);
     }
 
-    // Save to AI training dataset if meter_image_id exists
-    if (verified.meter_image_id) {
-      try {
-        const isCorrect = verified.ai_detected_value && Number(verified.ai_detected_value) === Number(verified.current_value);
-        if (isPostgresActive()) {
-          const imgExists = await query('SELECT id FROM meter_images WHERE id = $1', [verified.meter_image_id]);
-          if (imgExists.rows.length > 0) {
-            await query(
-              `INSERT INTO ai_training_samples (id, image_id, expected_value, verified_value, prediction_value, is_correct, dataset_version, created_at)
-               VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'v1.0', CURRENT_TIMESTAMP)`,
-              [verified.meter_image_id, verified.current_value, verified.current_value, verified.ai_detected_value, isCorrect]
-            );
-          }
-        } else {
-          memoryStore.ai_training_samples.push({
-            id: Date.now().toString(),
-            image_id: verified.meter_image_id,
-            expected_value: verified.current_value,
-            verified_value: verified.current_value,
-            prediction_value: verified.ai_detected_value,
-            is_correct: isCorrect,
-            dataset_version: 'v1.0',
-            created_at: new Date()
-          });
-        }
-
-        // Dynamically feed sample into active Self-Learning Knowledge Base
-        const imgRecord = await meterImageRepo.getImageDataById(verified.meter_image_id);
-        if (imgRecord) {
-          let imgBuf = null;
-          if (imgRecord.image_data) {
-            imgBuf = Buffer.isBuffer(imgRecord.image_data) ? imgRecord.image_data : Buffer.from(imgRecord.image_data);
-          } else if (imgRecord.image_base64) {
-            const rawB64 = imgRecord.image_base64.includes(',') ? imgRecord.image_base64.split(',')[1] : imgRecord.image_base64;
-            imgBuf = Buffer.from(rawB64, 'base64');
-          } else if (imgRecord.storage_key) {
-            const p = path.join(METERS_DIR, imgRecord.storage_key);
-            if (fs.existsSync(p)) imgBuf = fs.readFileSync(p);
-          }
-          if (imgBuf) {
-            await meterLearningService.recordLearningSample(imgBuf, {
-              white_digits: String(verified.current_value),
-              red_digit: '0',
-              value: Number(verified.current_value),
-              full_display: `${verified.current_value}.0`,
-              reading_type: 'electricity',
-              meter_model: 'Đồng hồ xác minh thực tế'
-            }, null, 'admin_verification');
-          }
-        }
-      } catch (aiErr) {
-        console.warn('[AI Training Sample Save Warning]:', aiErr.message);
-      }
-    }
-
     await auditService.logAction({
       actorId: req.admin?.id,
       actorType: 'admin',
@@ -187,6 +130,15 @@ export const verifyElectricityReading = async (req, res) => {
       newData: verified,
       ip: req.ip,
       userAgent: req.get('User-Agent')
+    });
+
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'electricity_reading_verify',
+      reason: `Phê duyệt chỉ số điện tháng ${verified?.reading_month || ''}/${verified?.reading_year || ''}`,
+      periodMonth: verified?.reading_month || null,
+      periodYear: verified?.reading_year || null,
+      isMonthlySnapshotTrigger: true,
+      actorId: req.admin?.id || null,
     });
 
     return successResponse(res, verified, 'Phê duyệt chỉ số điện thành công.');
@@ -262,9 +214,6 @@ export const createWaterReading = async (req, res) => {
       current_value,
       unit_price,
       image_url,
-      ai_detected_value,
-      ai_confidence,
-      image_quality_score,
       is_meter_reset
     } = req.body;
 
@@ -301,9 +250,6 @@ export const createWaterReading = async (req, res) => {
       current_value,
       unit_price: finalPrice,
       image_url,
-      ai_detected_value,
-      ai_confidence,
-      image_quality_score,
       verification_status: 'pending',
       is_meter_reset
     });
@@ -317,6 +263,15 @@ export const createWaterReading = async (req, res) => {
       newData: reading,
       ip: req.ip,
       userAgent: req.get('User-Agent')
+    });
+
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'water_reading_create',
+      reason: `Ghi nhận chỉ số nước tháng ${reading?.reading_month || ''}/${reading?.reading_year || ''}`,
+      periodMonth: reading?.reading_month || null,
+      periodYear: reading?.reading_year || null,
+      isMonthlySnapshotTrigger: true,
+      actorId: req.admin?.id || null,
     });
 
     return successResponse(res, reading, 'Tạo bản ghi chỉ số nước thành công.', 201);
@@ -343,60 +298,6 @@ export const verifyWaterReading = async (req, res) => {
       return errorResponse(res, 'Không tìm thấy bản ghi chỉ số nước.', 'NOT_FOUND', 404);
     }
 
-    if (verified.meter_image_id) {
-      try {
-        const isCorrect = verified.ai_detected_value && Number(verified.ai_detected_value) === Number(verified.current_value);
-        if (isPostgresActive()) {
-          const imgExists = await query('SELECT id FROM meter_images WHERE id = $1', [verified.meter_image_id]);
-          if (imgExists.rows.length > 0) {
-            await query(
-              `INSERT INTO ai_training_samples (id, image_id, expected_value, verified_value, prediction_value, is_correct, dataset_version, created_at)
-               VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'v1.0', CURRENT_TIMESTAMP)`,
-              [verified.meter_image_id, verified.current_value, verified.current_value, verified.ai_detected_value, isCorrect]
-            );
-          }
-        } else {
-          memoryStore.ai_training_samples.push({
-            id: Date.now().toString(),
-            image_id: verified.meter_image_id,
-            expected_value: verified.current_value,
-            verified_value: verified.current_value,
-            prediction_value: verified.ai_detected_value,
-            is_correct: isCorrect,
-            dataset_version: 'v1.0',
-            created_at: new Date()
-          });
-        }
-
-        // Dynamically feed sample into active Self-Learning Knowledge Base
-        const imgRecord = await meterImageRepo.getImageDataById(verified.meter_image_id);
-        if (imgRecord) {
-          let imgBuf = null;
-          if (imgRecord.image_data) {
-            imgBuf = Buffer.isBuffer(imgRecord.image_data) ? imgRecord.image_data : Buffer.from(imgRecord.image_data);
-          } else if (imgRecord.image_base64) {
-            const rawB64 = imgRecord.image_base64.includes(',') ? imgRecord.image_base64.split(',')[1] : imgRecord.image_base64;
-            imgBuf = Buffer.from(rawB64, 'base64');
-          } else if (imgRecord.storage_key) {
-            const p = path.join(METERS_DIR, imgRecord.storage_key);
-            if (fs.existsSync(p)) imgBuf = fs.readFileSync(p);
-          }
-          if (imgBuf) {
-            await meterLearningService.recordLearningSample(imgBuf, {
-              white_digits: String(verified.current_value),
-              red_digit: '0',
-              value: Number(verified.current_value),
-              full_display: String(verified.current_value),
-              reading_type: 'water',
-              meter_model: 'Đồng hồ nước thực tế'
-            }, null, 'admin_verification');
-          }
-        }
-      } catch (aiErr) {
-        console.warn('[AI Training Sample Save Warning]:', aiErr.message);
-      }
-    }
-
     await auditService.logAction({
       actorId: req.admin?.id,
       actorType: 'admin',
@@ -406,6 +307,15 @@ export const verifyWaterReading = async (req, res) => {
       newData: verified,
       ip: req.ip,
       userAgent: req.get('User-Agent')
+    });
+
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'water_reading_verify',
+      reason: `Phê duyệt chỉ số nước tháng ${verified?.reading_month || ''}/${verified?.reading_year || ''}`,
+      periodMonth: verified?.reading_month || null,
+      periodYear: verified?.reading_year || null,
+      isMonthlySnapshotTrigger: true,
+      actorId: req.admin?.id || null,
     });
 
     return successResponse(res, verified, 'Phê duyệt chỉ số nước thành công.');
@@ -418,7 +328,7 @@ export const verifyWaterReading = async (req, res) => {
 export const attachElectricityImage = async (req, res) => {
   try {
     const { id } = req.params;
-    const { meter_image_id, image_url, ai_detected_value, ai_confidence, image_quality_score } = req.body;
+    const { meter_image_id, image_url } = req.body;
 
     if (!meter_image_id && !image_url) {
       return errorResponse(res, 'Vui lòng cung cấp meter_image_id hoặc image_url.', 'BAD_REQUEST', 400);
@@ -426,10 +336,7 @@ export const attachElectricityImage = async (req, res) => {
 
     const updated = await readingRepo.attachElectricityReadingImage(id, {
       meter_image_id,
-      image_url,
-      ai_detected_value,
-      ai_confidence,
-      image_quality_score
+      image_url
     });
 
     if (!updated) {
@@ -457,7 +364,7 @@ export const attachElectricityImage = async (req, res) => {
 export const attachWaterImage = async (req, res) => {
   try {
     const { id } = req.params;
-    const { meter_image_id, image_url, ai_detected_value, ai_confidence, image_quality_score } = req.body;
+    const { meter_image_id, image_url } = req.body;
 
     if (!meter_image_id && !image_url) {
       return errorResponse(res, 'Vui lòng cung cấp meter_image_id hoặc image_url.', 'BAD_REQUEST', 400);
@@ -465,10 +372,7 @@ export const attachWaterImage = async (req, res) => {
 
     const updated = await readingRepo.attachWaterReadingImage(id, {
       meter_image_id,
-      image_url,
-      ai_detected_value,
-      ai_confidence,
-      image_quality_score
+      image_url
     });
 
     if (!updated) {

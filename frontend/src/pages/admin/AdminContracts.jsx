@@ -1611,7 +1611,7 @@ export default function AdminContracts() {
                       <ul style={{ margin: '6px 0 0 20px', padding: 0 }}>
                         <li>Tiền thuê phòng: <strong>{formatCurrency(printingContract.rent_amount)} / tháng</strong> (cố định trong thời hạn thuê).</li>
                         <li>Tiền đặt cọc bảo đảm: <strong>{formatCurrency(printingContract.deposit_amount)}</strong> (Bên A sẽ hoàn trả 100% cho Bên B khi chấm dứt hợp đồng và bàn giao lại phòng trọ đầy đủ trang thiết bị).</li>
-                        <li>Tiền điện sinh hoạt: <strong>{formatCurrency(printingContract.electricity_price || 3000)} / kWh</strong> (có công tơ điện riêng, chụp ảnh đối soát thực tế và phân tích AI hàng tháng).</li>
+                        <li>Tiền điện sinh hoạt: <strong>{formatCurrency(printingContract.electricity_price || 3000)} / kWh</strong> (có công tơ điện riêng, chụp ảnh đối soát thực tế hàng tháng).</li>
                         <li>Tiền nước sinh hoạt: <strong>{formatCurrency(printingContract.water_price || 12000)} / m³</strong> (có đồng hồ nước riêng, chụp ảnh đối soát thực tế hàng tháng).</li>
                         <li>Hình thức thanh toán: Khách thuê có thể linh hoạt nộp bằng <strong>Tiền mặt</strong> hoặc <strong>Chuyển khoản ngân hàng</strong>.</li>
                       </ul>

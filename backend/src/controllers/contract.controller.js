@@ -5,6 +5,7 @@ import * as pdfService from '../services/pdf.service.js';
 import * as notificationRepo from '../repositories/notification.repo.js';
 import { successResponse, errorResponse } from '../utils/response.util.js';
 import * as auditService from '../services/audit.service.js';
+import * as googleBackupService from '../services/google-backup.service.js';
 import { isPostgresActive, query } from '../config/db.js';
 
 // Synchronize price updates to current readings & bills of the room
@@ -172,6 +173,12 @@ export const createContract = async (req, res) => {
       userAgent: req.get('User-Agent')
     });
 
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'contract_create',
+      reason: `Tạo hợp đồng mới ${contractNumber} (Phòng ${room.room_number})`,
+      actorId: req.admin?.id || null,
+    });
+
     return successResponse(res, contract, 'Tạo hợp đồng thành công.', 201);
   } catch (err) {
     console.error('[Create Contract Error]:', err);
@@ -212,6 +219,12 @@ export const updateDraftContract = async (req, res) => {
       newData: updated,
       ip: req.ip,
       userAgent: req.get('User-Agent')
+    });
+
+    await googleBackupService.triggerAutoBackupOnDataChange({
+      triggerSource: 'contract_update',
+      reason: `Cập nhật hợp đồng ${contract.contract_number || id}`,
+      actorId: req.admin?.id || null,
     });
 
     return successResponse(res, updated, 'Cập nhật hợp đồng thành công.');
@@ -285,6 +298,12 @@ export const adminSignContract = async (req, res) => {
         userAgent: req.get('User-Agent')
       });
 
+      await googleBackupService.triggerAutoBackupOnDataChange({
+        triggerSource: 'contract_admin_sign_final',
+        reason: `Hoàn tất ký kết hợp đồng phòng ${room?.room_number || contract.room_number || id}`,
+        actorId: req.admin?.id || null,
+      });
+
       return successResponse(res, {
         ...updated,
         document_hash: pdfResult.documentHash,
@@ -305,6 +324,12 @@ export const adminSignContract = async (req, res) => {
         message: `Chủ nhà đã ký hợp đồng phòng ${room?.room_number || contract.room_number}. Vui lòng kiểm tra và ký xác nhận.`,
         type: 'contract',
         metadata: { contract_id: id }
+      });
+
+      await googleBackupService.triggerAutoBackupOnDataChange({
+        triggerSource: 'contract_admin_sign_pending',
+        reason: `Chủ nhà đã ký hợp đồng phòng ${room?.room_number || contract.room_number || id}`,
+        actorId: req.admin?.id || null,
       });
 
       return successResponse(res, updated, 'Chủ nhà đã ký hợp đồng. Chờ người thuê ký để hoàn tất và khóa hợp đồng.');

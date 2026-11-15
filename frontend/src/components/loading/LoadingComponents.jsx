@@ -116,7 +116,7 @@ export const AppLoadingScreen = ({ variant = 'tenant', message }) => {
 };
 
 /**
- * Action Modal Overlay (for saves, AI OCR analysis, bill generation, contract signing)
+ * Action Modal Overlay (for saves, image uploads, bill generation, contract signing)
  */
 export const ActionLoadingOverlay = ({
   title = 'Đang xử lý...',

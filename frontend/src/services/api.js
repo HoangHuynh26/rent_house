@@ -5,7 +5,7 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1500;
 const TIMEOUT_MS = 15000;
 
-export const PRODUCTION_API_URL = 'https://rent-house-3jm7.onrender.com/api';
+export const PRODUCTION_API_URL = 'https://nhatrothanhtam.netlify.app/api';
 
 /**
  * Dynamically resolves the API base URL based on runtime environment (Capacitor Native, PWA, or Web)

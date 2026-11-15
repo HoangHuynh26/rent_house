@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Camera, Zap, ZapOff, Upload, Cpu, CheckCircle2, AlertTriangle, 
-  Droplet, Eye, Check, X, ShieldAlert, RefreshCw, Image, FileText, 
-  Sparkles, ChevronDown, ChevronUp, AlertCircle, BrainCircuit, Cloud, 
-  Settings, Database, Sliders, Calendar, Filter, RotateCcw, ChevronLeft, ChevronRight, Trash2
+import {
+  Camera, Zap, ZapOff, Upload, CheckCircle2, AlertTriangle,
+  Droplet, Eye, Check, X, RefreshCw, Image, FileText,
+  ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
+  Calendar, Filter, RotateCcw, Trash2
 } from 'lucide-react';
 import api, { getFullApiUrl } from '../../services/api';
 import { formatCurrency, formatNumber, parseNumber, formatDateTime } from '../../utils/formatters';
@@ -14,23 +14,17 @@ export default function AdminMeters() {
   const [readingType, setReadingType] = useState('electricity'); // 'electricity' | 'water'
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
-  
+
   // History table filters
   const [historyMonth, setHistoryMonth] = useState('all');
   const [historyYear, setHistoryYear] = useState('all');
-  
-  // Image & AI state
+
+  // Image upload state
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analysisLatency, setAnalysisLatency] = useState(null);
-  const [aiResult, setAiResult] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadedImageId, setUploadedImageId] = useState(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
-
-  // Quality & Low Detail tracking
-  const [consecutiveLowDetailCount, setConsecutiveLowDetailCount] = useState(0);
-  const [manualEntryMode, setManualEntryMode] = useState(false);
 
   // Camera & Flash state
   const [cameraActive, setCameraActive] = useState(false);
@@ -39,7 +33,7 @@ export default function AdminMeters() {
   const [torchSupported, setTorchSupported] = useState(false);
   const [showGalleryUpload, setShowGalleryUpload] = useState(false);
 
-  // Manual verification inputs
+  // Manual reading inputs (entered by admin)
   const [previousValue, setPreviousValue] = useState(1250);
   const [officialValue, setOfficialValue] = useState('');
   const [isMeterReset, setIsMeterReset] = useState(false);
@@ -57,23 +51,6 @@ export default function AdminMeters() {
   const [attachPreviewUrl, setAttachPreviewUrl] = useState(null);
   const [attaching, setAttaching] = useState(false);
 
-  // Model Self-Learning & Cloud AI Vision API States
-  const [learningStats, setLearningStats] = useState(null);
-  const [showLearningModal, setShowLearningModal] = useState(false);
-  const [aiConfig, setAiConfig] = useState({
-    enabled: true,
-    provider: 'gemini',
-    geminiModel: 'gemini-1.5-flash',
-    openaiModel: 'gpt-4o-mini',
-    hasGeminiKey: false,
-    hasOpenaiKey: false,
-    geminiApiKey: '',
-    openaiApiKey: '',
-    confidenceThreshold: 0.75
-  });
-  const [retraining, setRetraining] = useState(false);
-  const [configSaving, setConfigSaving] = useState(false);
-
   // Refs
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -85,59 +62,20 @@ export default function AdminMeters() {
 
   useEffect(() => {
     fetchRooms();
-    fetchLearningStats();
-    fetchAiConfig();
   }, []);
-
-  const fetchLearningStats = async () => {
-    try {
-      const res = await api.get('/meter-images/learning/stats');
-      setLearningStats(res.data);
-    } catch (e) {
-      console.warn('Could not fetch learning stats:', e);
-    }
-  };
-
-  const fetchAiConfig = async () => {
-    try {
-      const res = await api.get('/meter-images/ai-config');
-      setAiConfig(prev => ({ ...prev, ...res.data }));
-    } catch (e) {
-      console.warn('Could not fetch AI config:', e);
-    }
-  };
-
-  const handleSaveAiConfig = async () => {
-    setConfigSaving(true);
-    try {
-      const res = await api.post('/meter-images/ai-config', aiConfig);
-      setAiConfig(prev => ({ ...prev, ...res.data }));
-      setSuccessMsg('Đã lưu cấu hình AI API Fallback thành công!');
-    } catch (e) {
-      alert('Lỗi khi lưu cấu hình AI: ' + e.message);
-    } finally {
-      setConfigSaving(false);
-    }
-  };
-
-  const handleRetrainModel = async () => {
-    setRetraining(true);
-    try {
-      const res = await api.post('/meter-images/learning/retrain');
-      setSuccessMsg(`Huấn luyện hoàn tất! Đã nạp ${res.data.importedCount || 0} mẫu mới, tổng số mẫu: ${res.data.totalLearned || 0}.`);
-      fetchLearningStats();
-    } catch (e) {
-      alert('Lỗi khi huấn luyện: ' + e.message);
-    } finally {
-      setRetraining(false);
-    }
-  };
 
   useEffect(() => {
     if (selectedRoomId) {
       fetchHistory();
     }
   }, [selectedRoomId, readingType]);
+
+  // Attach media stream to <video> once the viewfinder element mounts
+  useEffect(() => {
+    if (cameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [cameraActive]);
 
   // Cleanup camera stream when component unmounts
   useEffect(() => {
@@ -386,71 +324,50 @@ export default function AdminMeters() {
       // Stop live stream after photo taken to save battery & device heat
       stopCamera();
 
-      // Trigger ultra-fast upload & AI analysis immediately
-      handleFastUploadAndAnalyze(capturedFile);
+      // Trigger photo upload immediately while admin reads & writes the meter number
+      handleUploadPhoto(capturedFile);
     }, 'image/jpeg', 0.92);
   };
 
+  const handleClearPhoto = () => {
+    setFile(null);
+    setPreviewUrl(null);
+    setUploadedImageId(null);
+    setUploadedImageUrl(null);
+  };
+
   // ==========================================================================
-  // ULTRA-FAST SINGLE-STEP UPLOAD & AI ANALYSIS (<100MS)
+  // METER PHOTO UPLOAD (PERSISTED TO DATABASE)
   // ==========================================================================
 
-  const handleFastUploadAndAnalyze = async (fileToProcess) => {
+  const handleUploadPhoto = async (fileToProcess) => {
     const targetFile = fileToProcess || file;
     if (!targetFile || !selectedRoomId) {
       alert('Vui lòng chọn phòng và tệp ảnh đồng hồ.');
       return;
     }
 
-    setAnalyzing(true);
-    setAiResult(null);
+    setUploadingPhoto(true);
     setSuccessMsg('');
-    const t0 = performance.now();
 
     try {
       const formData = new FormData();
       formData.append('meter', targetFile);
       formData.append('room_id', selectedRoomId);
       formData.append('reading_type', readingType);
-      formData.append('auto_analyze', 'true'); // Single atomic request
-      formData.append('previous_value', previousValue);
 
       const uploadRes = await api.post('/meter-images/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      const latency = Math.round(performance.now() - t0);
-      setAnalysisLatency(latency);
-
       const responseData = uploadRes.data;
       setUploadedImageId(responseData.id);
       setUploadedImageUrl(getFullApiUrl(responseData.image_url || `/api/meter-images/${responseData.id}/image`));
-
-      const ai = responseData.ai_result;
-      if (ai) {
-        setAiResult(ai);
-        // RULE APPLIED: For electricity, ai.value is already the white-box integer (red digit excluded)
-        setOfficialValue(ai.value.toString());
-        if (ai.value === 0 && previousValue > 0) {
-          setIsMeterReset(true);
-        }
-
-        // Low-detail check: if blurry, dark, glare, or confidence < 0.70
-        const lacksDetail = !ai.is_valid || ai.is_blurry || ai.is_dark || ai.has_glare || ai.confidence < 0.70;
-        if (lacksDetail) {
-          setConsecutiveLowDetailCount(prev => prev + 1);
-        } else {
-          // Clear counter on high-quality clear reading
-          setConsecutiveLowDetailCount(0);
-        }
-      }
     } catch (err) {
-      console.error('[Upload & Analyze Error]:', err);
-      // Increment low-detail / failure count on network or parsing error
-      setConsecutiveLowDetailCount(prev => prev + 1);
-      alert(err.message || 'Lỗi khi tải hoặc phân tích ảnh đồng hồ.');
+      console.error('[Upload Photo Error]:', err);
+      alert(err.message || 'Lỗi khi tải ảnh đồng hồ.');
     } finally {
-      setAnalyzing(false);
+      setUploadingPhoto(false);
     }
   };
 
@@ -460,13 +377,12 @@ export default function AdminMeters() {
       setFile(selected);
       setPreviewUrl(URL.createObjectURL(selected));
       stopCamera();
-      // Auto analyze uploaded file
-      handleFastUploadAndAnalyze(selected);
+      handleUploadPhoto(selected);
     }
   };
 
   // ==========================================================================
-  // APPROVE READING (SUPPORTS BOTH AI-VERIFIED & MANUAL-WITHOUT-IMAGE)
+  // APPROVE READING (ADMIN ENTERS NUMBER WITH OPTIONAL METER PHOTO)
   // ==========================================================================
 
   const handleApproveReading = async () => {
@@ -492,7 +408,7 @@ export default function AdminMeters() {
     setSubmitting(true);
     try {
       const persistentImageUrl = uploadedImageUrl || (uploadedImageId ? `/api/meter-images/${uploadedImageId}/image` : null);
-      
+
       const payload = {
         room_id: selectedRoomId,
         tenant_id: selectedRoom?.current_tenant_id || null,
@@ -503,9 +419,6 @@ export default function AdminMeters() {
         current_value: currNum,
         unit_price: activeUnitPrice,
         image_url: persistentImageUrl,
-        ai_detected_value: aiResult?.value ? parseNumber(aiResult.value) : null,
-        ai_confidence: aiResult?.confidence || null,
-        image_quality_score: aiResult?.image_quality || null,
         is_meter_reset: effectiveIsReset
       };
 
@@ -525,16 +438,13 @@ export default function AdminMeters() {
       });
 
       const imageNote = persistentImageUrl ? 'kèm ảnh đồng hồ' : '(Chưa có ảnh - có thể bổ sung sau)';
-      setSuccessMsg(`Đã phê duyệt và lưu chỉ số ${readingType === 'electricity' ? 'Điện' : 'Nước'} kỳ Tháng ${month}/${year} thành công ${imageNote}!`);
-      
-      // Reset state for next reading
+      setSuccessMsg(`Đã lưu và phê duyệt chỉ số ${readingType === 'electricity' ? 'Điện' : 'Nước'} kỳ Tháng ${month}/${year} thành công ${imageNote}!`);
+
+      // Reset photo state for next reading
       setFile(null);
       setPreviewUrl(null);
-      setAiResult(null);
       setUploadedImageId(null);
       setUploadedImageUrl(null);
-      setConsecutiveLowDetailCount(0);
-      setManualEntryMode(false);
       fetchHistory();
     } catch (err) {
       alert(err.message || 'Lỗi lưu chỉ số.');
@@ -575,7 +485,6 @@ export default function AdminMeters() {
       formData.append('room_id', targetReading.room_id);
       formData.append('reading_type', readingType);
       formData.append('reading_id', targetReading.id);
-      formData.append('auto_analyze', 'true');
 
       await api.post('/meter-images/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -621,58 +530,11 @@ export default function AdminMeters() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>
-              Đo Điện Nước & AI OCR Siêu Tốc
+              Chụp Ảnh &amp; Ghi Chỉ Số Điện Nước
             </h1>
             <p style={{ fontSize: '14px', color: '#64748b' }}>
-              Chụp ảnh đồng hồ trực tiếp với đèn Flash • Phân tích tức thì dưới 100ms • Loại bỏ số đỏ trên công tơ điện
+              Chủ nhà chụp ảnh đồng hồ trực tiếp (hỗ trợ đèn Flash) và tự nhập chỉ số đối chiếu minh bạch
             </p>
-          </div>
-
-          {/* Quick Stats or Status Badge & Model Learning Trigger */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => {
-                fetchLearningStats();
-                fetchAiConfig();
-                setShowLearningModal(true);
-              }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '7px 14px',
-                background: '#f3e8ff',
-                border: '1px solid #d8b4fe',
-                borderRadius: '20px',
-                fontSize: '13px',
-                fontWeight: '700',
-                color: '#7e22ce',
-                cursor: 'pointer',
-                transition: 'all 0.15s'
-              }}
-            >
-              <BrainCircuit size={16} color="#9333ea" />
-              <span>Mô hình Tự học & AI API ({learningStats?.total_learned_samples || 0} mẫu)</span>
-            </button>
-
-            {analysisLatency && (
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                background: '#ecfdf5',
-                border: '1px solid #6ee7b7',
-                borderRadius: '20px',
-                fontSize: '13px',
-                fontWeight: '700',
-                color: '#065f46'
-              }}>
-                <Sparkles size={16} color="#059669" />
-                <span>AI Siêu Tốc: {analysisLatency}ms</span>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -681,77 +543,6 @@ export default function AdminMeters() {
         <div style={{ padding: '16px', background: '#dcfce7', border: '1px solid #86efac', borderRadius: '14px', color: '#15803d', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <CheckCircle2 size={24} />
           <span style={{ fontWeight: '700', fontSize: '15px' }}>{successMsg}</span>
-        </div>
-      )}
-
-      {/* 3-OCCASION LOW DETAIL ADVISORY BANNER */}
-      {consecutiveLowDetailCount >= 3 && (
-        <div style={{
-          padding: '18px 20px',
-          background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
-          border: '2px solid #fdba74',
-          borderRadius: '16px',
-          boxShadow: '0 4px 12px rgba(234, 88, 12, 0.12)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-            <AlertCircle size={26} color="#ea580c" style={{ flexShrink: 0, marginTop: '2px' }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '16px', fontWeight: '800', color: '#9a3412', marginBottom: '4px' }}>
-                Ảnh chụp thiếu chi tiết trên 3 lần liên tiếp ({consecutiveLowDetailCount} lần không đạt)
-              </div>
-              <p style={{ fontSize: '14px', color: '#7c2d12', lineHeight: '1.5', marginBottom: '14px' }}>
-                Ảnh đồng hồ bị mờ, thiếu sáng hoặc lóa đèn khiến AI không đọc được số với độ tin cậy cao. 
-                Bạn có thể <strong>Nhập số thủ công ngay</strong> để chốt chỉ số tính tiền kịp thời và bổ sung ảnh sau; 
-                hoặc <strong>Tiếp tục chụp ảnh</strong> nếu muốn thử lại với góc chụp hoặc bật đèn Flash tốt hơn.
-              </p>
-
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setManualEntryMode(true);
-                    if (!officialValue) setOfficialValue(String(previousValue + (readingType === 'electricity' ? 120 : 8)));
-                  }}
-                  style={{
-                    padding: '10px 18px',
-                    background: '#ea580c',
-                    color: '#ffffff',
-                    borderRadius: '10px',
-                    fontWeight: '700',
-                    fontSize: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <FileText size={18} />
-                  Nhập số thủ công ngay (Bổ sung ảnh sau)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    startCamera();
-                  }}
-                  style={{
-                    padding: '10px 18px',
-                    background: '#ffffff',
-                    border: '2px solid #ea580c',
-                    color: '#ea580c',
-                    borderRadius: '10px',
-                    fontWeight: '700',
-                    fontSize: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <Camera size={18} />
-                  Tiếp tục chụp ảnh (Bật Flash)
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
@@ -1017,30 +808,16 @@ export default function AdminMeters() {
                     return null;
                   })()}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setManualEntryMode(prev => !prev);
-                    stopCamera();
-                  }}
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    borderRadius: '8px',
-                    background: manualEntryMode ? '#ea580c' : '#e0f2fe',
-                    color: manualEntryMode ? '#fff' : '#0284c7',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <FileText size={14} />
-                  {manualEntryMode ? 'Đang bật nhập tay (Tắt)' : '➕ Nhập số đo kỳ cũ / thủ công'}
-                </button>
+                <span style={{
+                  padding: '4px 10px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  borderRadius: '8px',
+                  background: '#e0f2fe',
+                  color: '#0284c7'
+                }}>
+                  ✍️ Chủ nhà tự nhập số
+                </span>
               </div>
 
               {/* Old and New reading input fields */}
@@ -1090,7 +867,7 @@ export default function AdminMeters() {
                       step="any"
                       value={officialValue}
                       onChange={(e) => setOfficialValue(e.target.value)}
-                      placeholder={readingType === 'electricity' ? 'VD: 1380.5' : 'VD: 70.25'}
+                      placeholder={readingType === 'electricity' ? 'VD: 1380' : 'VD: 70'}
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -1107,7 +884,7 @@ export default function AdminMeters() {
                     </span>
                   </div>
                   <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>
-                    Nhập trực tiếp hoặc chụp ảnh đồng hồ để AI nhận diện.
+                    Chủ nhà xem mặt đồng hồ từ ảnh chụp (hoặc thực tế) rồi nhập số vào đây.
                   </div>
                 </div>
               </div>
@@ -1326,8 +1103,8 @@ export default function AdminMeters() {
 
                   <button
                     type="button"
-                    onClick={() => handleFastUploadAndAnalyze()}
-                    disabled={analyzing}
+                    onClick={() => handleUploadPhoto()}
+                    disabled={uploadingPhoto}
                     style={{
                       padding: '8px 16px',
                       background: '#2563eb',
@@ -1339,7 +1116,25 @@ export default function AdminMeters() {
                       gap: '6px'
                     }}
                   >
-                    <Cpu size={14} /> Phân tích lại với AI
+                    <Upload size={14} /> {uploadingPhoto ? 'Đang tải...' : 'Tải ảnh lại'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleClearPhoto}
+                    disabled={uploadingPhoto}
+                    style={{
+                      padding: '8px 14px',
+                      background: '#dc2626',
+                      color: '#ffffff',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <X size={14} /> Xóa ảnh
                   </button>
                 </div>
               </div>
@@ -1390,7 +1185,7 @@ export default function AdminMeters() {
                   <span>Mở Camera hệ thống chụp ảnh với đèn Flash</span>
                 </button>
 
-                {/* Deprioritized Secondary Option: Upload Existing Images */}
+                {/* Secondary Option: Upload Existing Images */}
                 <div style={{ marginTop: '6px', borderTop: '1px dashed #e2e8f0', paddingTop: '10px' }}>
                   <button
                     type="button"
@@ -1438,381 +1233,210 @@ export default function AdminMeters() {
               </div>
             )}
 
-            {/* Direct manual toggle button if admin wants to bypass camera */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-              <span style={{ fontSize: '12px', color: '#64748b' }}>
-                {readingType === 'electricity' 
-                  ? '💡 Lưu ý: Loại bỏ số trong ô đỏ ở cuối (phần thập phân).'
-                  : '💡 Lưu ý: Lấy nét rõ chữ số để AI đọc chuẩn xác.'}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setManualEntryMode(!manualEntryMode);
-                  if (!officialValue) setOfficialValue(String(previousValue));
-                }}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#2563eb',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  textDecoration: 'underline',
-                  cursor: 'pointer'
-                }}
-              >
-                {manualEntryMode ? 'Đóng nhập tay' : 'Nhập tay số liệu'}
-              </button>
+            <div style={{ marginTop: '4px', fontSize: '12px', color: '#64748b' }}>
+              {readingType === 'electricity'
+                ? '💡 Lưu ý: Bật Flash nếu tủ điện tối; khi ghi số chỉ lấy các chữ số trong ô trắng (bỏ qua ô đỏ cuối).'
+                : '💡 Lưu ý: Chụp rõ mặt số đồng hồ nước để khách thuê dễ đối chiếu (hoặc nhập số ngay rồi bổ sung ảnh sau).'}
             </div>
           </div>
         </div>
 
-        {/* Right Column: AI Analysis Result, Red Digit Exclusion Breakdown & Approval */}
+        {/* Right Column: Photo Preview & Admin Manual Entry Approval */}
         <div style={{ background: '#ffffff', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <CheckCircle2 size={22} color="#059669" />
-              2. Kết quả AI & Duyệt chỉ số
+              2. Ảnh đồng hồ &amp; Nhập chỉ số
             </h2>
 
-            {analyzing && (
+            {uploadingPhoto && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#2563eb', fontWeight: '700' }}>
                 <RefreshCw size={16} className="spin-smooth" />
-                <span>AI đang đọc số...</span>
+                <span>Đang tải ảnh lên...</span>
               </div>
             )}
           </div>
 
-          {aiResult ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Quality & Detail Badges */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Captured / Uploaded Photo Review */}
+            {previewUrl || uploadedImageUrl ? (
               <div style={{
-                padding: '14px',
-                background: aiResult.is_valid ? '#f0fdf4' : '#fef2f2',
-                border: `1px solid ${aiResult.is_valid ? '#86efac' : '#fca5a5'}`,
-                borderRadius: '12px'
+                background: '#0f172a',
+                borderRadius: '14px',
+                padding: '12px',
+                textAlign: 'center',
+                border: '1px solid #334155'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: '800', color: aiResult.is_valid ? '#166534' : '#991b1b' }}>
-                    Chất lượng chi tiết ảnh: {Math.round((aiResult.image_quality || 0.8) * 100)}%
+                <img
+                  src={previewUrl || uploadedImageUrl}
+                  alt="Ảnh đồng hồ vừa chụp"
+                  style={{ maxHeight: '260px', maxWidth: '100%', borderRadius: '10px', objectFit: 'contain', margin: '0 auto' }}
+                />
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    background: uploadedImageId ? '#dcfce7' : '#fef3c7',
+                    color: uploadedImageId ? '#15803d' : '#b45309'
+                  }}>
+                    {uploadingPhoto
+                      ? '⏳ Đang lưu ảnh lên máy chủ...'
+                      : uploadedImageId
+                        ? '✓ Đã lưu ảnh công tơ lên hệ thống'
+                        : 'Ảnh xem trước'}
                   </span>
-                  <span style={{ fontSize: '12px', fontWeight: '700', padding: '2px 8px', borderRadius: '12px', background: aiResult.is_valid ? '#dcfce7' : '#fee2e2', color: aiResult.is_valid ? '#15803d' : '#991b1b' }}>
-                    {aiResult.is_valid ? '✓ Đạt chuẩn nhận diện' : '⚠️ Thiếu chi tiết / Mờ'}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '12px', padding: '3px 8px', borderRadius: '6px', background: aiResult.is_blurry ? '#fee2e2' : '#e2e8f0', color: aiResult.is_blurry ? '#991b1b' : '#334155' }}>
-                    {aiResult.is_blurry ? '⚠️ Ảnh mờ / rung tay' : '✓ Độ nét tốt'}
-                  </span>
-                  <span style={{ fontSize: '12px', padding: '3px 8px', borderRadius: '6px', background: aiResult.is_dark ? '#fee2e2' : '#e2e8f0', color: aiResult.is_dark ? '#991b1b' : '#334155' }}>
-                    {aiResult.is_dark ? '⚠️ Ảnh tối (Cần Flash)' : '✓ Đủ sáng'}
-                  </span>
-                  <span style={{ fontSize: '12px', padding: '3px 8px', borderRadius: '6px', background: aiResult.has_glare ? '#fee2e2' : '#e2e8f0', color: aiResult.has_glare ? '#991b1b' : '#334155' }}>
-                    {aiResult.has_glare ? '⚠️ Lóa đèn mặt kính' : '✓ Không chói'}
-                  </span>
-                </div>
-
-                {aiResult.warnings?.length > 0 && (
-                  <div style={{ marginTop: '10px', fontSize: '12px', color: '#b91c1c' }}>
-                    {aiResult.warnings.map((w, idx) => (
-                      <div key={idx}>• {w}</div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* ELECTRICITY VARIABLE-LENGTH DIAL & RED DIGIT EXCLUSION VISUALIZER */}
-              {readingType === 'electricity' ? (
-                <div style={{ background: '#0f172a', borderRadius: '16px', padding: '18px', textAlign: 'center', color: '#fff' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      {aiResult.meter_model || 'Mặt số đồng hồ điện nhận diện được'}
-                    </span>
-                    <span style={{ fontSize: '11px', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 8px', borderRadius: '10px' }}>
-                      {aiResult.format_description || `${(aiResult.white_digits || '').length + 1} chữ số`}
-                    </span>
-                  </div>
-
-                  {/* Recognition Source Badge */}
-                  <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
-                    {aiResult.source === 'learned_model' ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '20px', background: 'rgba(168, 85, 247, 0.25)', border: '1px solid #a855f7', color: '#d8b4fe', fontSize: '12px', fontWeight: '700' }}>
-                        <BrainCircuit size={14} color="#c084fc" />
-                        Trí Tuệ Nhân Tạo Tự Học (Đã thích ứng môi trường)
-                      </span>
-                    ) : aiResult.source === 'cloud_ai' ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '20px', background: 'rgba(59, 130, 246, 0.25)', border: '1px solid #3b82f6', color: '#93c5fd', fontSize: '12px', fontWeight: '700' }}>
-                        <Cloud size={14} color="#60a5fa" />
-                        Dự phòng Cloud AI Vision (Google Gemini / OpenAI)
-                      </span>
-                    ) : (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '20px', background: 'rgba(16, 185, 129, 0.25)', border: '1px solid #10b981', color: '#6ee7b7', fontSize: '12px', fontWeight: '700' }}>
-                        <Zap size={14} color="#34d399" />
-                        Nhận diện Siêu Tốc (Dưới 20ms)
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Stylized physical meter dial blocks supporting arbitrary length */}
-                  <div className="meter-dial-container" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
-                    {/* White digits for integer kWh */}
-                    {(aiResult.white_digits || String(aiResult.value)).split('').map((char, i) => (
-                      <div key={`w-${i}`} className="meter-digit-box white" title={`Ô trắng #${i+1}: Tính tiền`}>
-                        {char}
-                      </div>
-                    ))}
-
-                    {/* Red digit representing decimal 0.1 kWh (excluded) */}
-                    <div className="meter-digit-box red" title="Ô đỏ: Phần thập phân (Được loại trừ)">
-                      {aiResult.red_digit || '0'}
-                    </div>
-                  </div>
-
-                  {/* Clear explanatory rule badge */}
-                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '13px', color: '#38bdf8', fontWeight: '700' }}>
-                    <CheckCircle2 size={16} color="#38bdf8" />
-                    <span>Đã loại bỏ số {aiResult.red_digit || '0'} trong ô đỏ • Chỉ số tính tiền: {aiResult.value} kWh</span>
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                    (Quy chuẩn đo đếm: Ô màu đỏ ở cuối biểu thị 0.1 kWh thập phân và tự động được loại trừ khi lập hóa đơn)
-                  </div>
-                </div>
-              ) : (
-                /* Water Meter Detection Box */
-                <div style={{ background: '#eff6ff', border: '2px solid #bfdbfe', borderRadius: '14px', padding: '16px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '13px', color: '#1e40af', fontWeight: '700' }}>CHỈ SỐ NƯỚC AI NHẬN DIỆN ĐƯỢC:</div>
-                  <div style={{ fontSize: '32px', fontWeight: '900', color: '#1e3a8a', marginTop: '4px' }}>
-                    {aiResult.value} <span style={{ fontSize: '16px' }}>m³</span>
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
-                    Độ tin cậy: <strong>{Math.round((aiResult.confidence || 0.94) * 100)}%</strong>
-                  </div>
-                </div>
-              )}
-
-              {/* COMPREHENSIVE ENVIRONMENTAL & INSTALLATION AUDIT CARD */}
-              {aiResult.environment && (
-                <div style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '14px',
-                  padding: '16px'
-                }}>
-                  <div style={{ fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Sparkles size={16} color="#2563eb" />
-                    <span>Phân tích môi trường & Bối cảnh ảnh (Environmental Context AI)</span>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '12px' }}>
-                    {/* Lighting & Flash */}
-                    <div style={{ background: '#ffffff', padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                      <div style={{ color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>💡 Ánh sáng & Flash</div>
-                      <div style={{ fontWeight: '700', color: aiResult.environment.lighting?.is_dark ? '#b91c1c' : '#0f172a' }}>
-                        {aiResult.environment.lighting?.status} ({aiResult.environment.lighting?.ambient_score}/255)
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                        {aiResult.environment.lighting?.flash_state}
-                      </div>
-                    </div>
-
-                    {/* Glass & Reflection */}
-                    <div style={{ background: '#ffffff', padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                      <div style={{ color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>🔍 Mặt kính & Phản xạ lóa</div>
-                      <div style={{ fontWeight: '700', color: aiResult.environment.reflection_and_glare?.has_glare ? '#b91c1c' : '#0f172a' }}>
-                        {aiResult.environment.reflection_and_glare?.glare_status}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                        {aiResult.environment.reflection_and_glare?.glass_condition}
-                      </div>
-                    </div>
-
-                    {/* Enclosure & Cabinet */}
-                    <div style={{ background: '#ffffff', padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                      <div style={{ color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>🗄️ Bối cảnh tủ điện & Lắp đặt</div>
-                      <div style={{ fontWeight: '700', color: '#0f172a' }}>
-                        {aiResult.environment.installation_context?.cabinet_type}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                        {aiResult.environment.installation_context?.wiring_environment}
-                      </div>
-                    </div>
-
-                    {/* Safety & Lead Seal */}
-                    <div style={{ background: '#ffffff', padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                      <div style={{ color: '#64748b', fontWeight: '600', marginBottom: '2px' }}>🛡️ Tem kiểm định & Niêm phong</div>
-                      <div style={{ fontWeight: '700', color: '#15803d' }}>
-                        ✓ {aiResult.environment.installation_context?.tamper_seal_inspection}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                        {aiResult.environment.perspective_and_angle?.perspective}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Human In the Loop Verification Input */}
-              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '700', color: '#0f172a', marginBottom: '6px' }}>
-                  Chỉ số chính thức sau khi đối chiếu:
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="number"
-                    step="any"
-                    value={officialValue}
-                    onChange={(e) => setOfficialValue(e.target.value)}
+                  <button
+                    type="button"
+                    onClick={handleClearPhoto}
                     style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '22px',
-                      fontWeight: '800',
-                      color: '#0f172a',
-                      borderRadius: '10px',
-                      border: '2px solid #2563eb',
-                      background: '#f8fafc'
+                      padding: '5px 10px',
+                      background: '#334155',
+                      color: '#f8fafc',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
                     }}
-                  />
-                  <span style={{ position: 'absolute', right: '16px', top: '14px', fontSize: '16px', fontWeight: '800', color: '#64748b' }}>
-                    {readingType === 'electricity' ? 'kWh' : 'm³'}
-                  </span>
-                </div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                  Chủ nhà có thể chỉnh sửa nếu AI đọc sai số hoặc ảnh bị mờ.
+                  >
+                    Bỏ ảnh này
+                  </button>
                 </div>
               </div>
-
-              {/* Meter Reset Checkbox - Only show when current reading is less than previous */}
-              {officialValue !== '' && parseNumber(officialValue) < parseNumber(previousValue) && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fef3c7' }}>
-                  <input
-                    type="checkbox"
-                    id="meterReset"
-                    checked={isMeterReset}
-                    onChange={(e) => setIsMeterReset(e.target.checked)}
-                  />
-                  <label htmlFor="meterReset" style={{ fontSize: '13px', color: '#b45309', fontWeight: '600', cursor: 'pointer' }}>
-                    Chỉ số mới ({formatNumber(parseNumber(officialValue))}) nhỏ hơn cũ ({formatNumber(parseNumber(previousValue))}): Xác nhận đồng hồ quay vòng về 0 hoặc đã thay mới.
-                  </label>
+            ) : (
+              <div style={{
+                padding: '22px 16px',
+                background: '#f8fafc',
+                border: '2px dashed #cbd5e1',
+                borderRadius: '14px',
+                textAlign: 'center',
+                color: '#64748b'
+              }}>
+                <Image size={34} style={{ margin: '0 auto 8px', opacity: 0.55 }} />
+                <div style={{ fontSize: '14px', fontWeight: '700', color: '#334155' }}>
+                  Chưa có ảnh công tơ cho lần nhập này
                 </div>
-              )}
-
-              {/* Approve Button */}
-              <button
-                type="button"
-                disabled={submitting}
-                onClick={handleApproveReading}
-                style={{
-                  padding: '16px',
-                  background: '#059669',
-                  color: '#ffffff',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: '800',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  marginTop: '10px',
-                  boxShadow: '0 4px 6px -1px rgba(5, 150, 105, 0.3)'
-                }}
-              >
-                <Check size={20} />
-                {submitting ? 'Đang lưu...' : 'Phê duyệt & Lưu vào sổ chỉ số'}
-              </button>
-            </div>
-          ) : manualEntryMode ? (
-            /* MANUAL ENTRY PANEL (ACTIVATED AUTOMATICALLY AT 3+ LOW DETAIL ATTEMPTS OR MANUALLY) */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ padding: '14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px' }}>
-                <div style={{ fontSize: '14px', fontWeight: '800', color: '#1e40af', marginBottom: '4px' }}>
-                  ✍️ Chế độ Nhập số thủ công (Bổ sung ảnh sau)
-                </div>
-                <div style={{ fontSize: '13px', color: '#1e3a8a', lineHeight: '1.4' }}>
-                  Nhập trực tiếp số đo thực tế để hoàn thành chốt kỳ tính tiền mà không cần chờ ảnh. Bạn có thể bổ sung ảnh vào bản ghi này bất cứ lúc nào.
+                <div style={{ fontSize: '12px', marginTop: '4px', lineHeight: '1.5' }}>
+                  Bạn có thể bấm chụp/chọn ảnh ở cột bên trái để lưu chứng từ đối chiếu, hoặc nhập thẳng chỉ số bên dưới rồi bổ sung ảnh sau.
                 </div>
               </div>
+            )}
 
-              <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '700', color: '#0f172a', marginBottom: '6px' }}>
-                  Nhập chỉ số {readingType === 'electricity' ? 'Điện (kWh)' : 'Nước (m³)'} mới:
+            {/* Reading Guide Banner */}
+            {readingType === 'electricity' ? (
+              <div style={{
+                background: '#f8fafc',
+                border: '1px solid #cbd5e1',
+                borderRadius: '12px',
+                padding: '12px 14px'
+              }}>
+                <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>
+                  📌 Cách đọc mặt số công tơ điện cơ:
+                </div>
+                <div className="meter-dial-container" style={{ padding: '10px 12px', gap: '4px', justifyContent: 'center' }}>
+                  {['0', '1', '2', '5', '0'].map((d, i) => (
+                    <div key={i} className="meter-digit-box white" style={{ width: '28px', height: '38px', fontSize: '18px' }}>{d}</div>
+                  ))}
+                  <div className="meter-digit-box red" style={{ width: '28px', height: '38px', fontSize: '18px' }}>4</div>
+                </div>
+                <div style={{ fontSize: '12px', color: '#475569', marginTop: '8px', textAlign: 'center' }}>
+                  Chỉ nhập các chữ số <strong>Ô TRẮNG</strong> (VD: <strong>1250</strong> kWh) — <strong>bỏ qua số Ô ĐỎ</strong> ở cuối cùng.
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                background: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: '12px',
+                padding: '12px 14px',
+                fontSize: '13px',
+                color: '#1e40af'
+              }}>
+                🚰 <strong>Lưu ý ghi số nước:</strong> Đối chiếu mặt số đồng hồ nước thực tế và nhập chính xác số <strong>m³</strong> (hỗ trợ cả số thập phân nếu cần).
+              </div>
+            )}
+
+            {/* Admin Manual Entry Official Input */}
+            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                  Chỉ số {readingType === 'electricity' ? 'Điện (kWh)' : 'Nước (m³)'} chính thức (Chủ nhà nhập):
                 </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="number"
-                    step="any"
-                    value={officialValue}
-                    placeholder={readingType === 'electricity' ? 'VD: 1380.5' : 'VD: 70.25'}
-                    onChange={(e) => setOfficialValue(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      fontSize: '22px',
-                      fontWeight: '800',
-                      color: '#0f172a',
-                      borderRadius: '10px',
-                      border: '2px solid #ea580c',
-                      background: '#fff'
-                    }}
-                  />
-                  <span style={{ position: 'absolute', right: '16px', top: '16px', fontSize: '16px', fontWeight: '800', color: '#64748b' }}>
-                    {readingType === 'electricity' ? 'kWh' : 'm³'}
-                  </span>
-                </div>
-                {readingType === 'electricity' && (
-                  <div style={{ fontSize: '12px', color: '#b45309', fontWeight: '600', marginTop: '4px' }}>
-                    ⚠️ Nhớ chỉ nhập các chữ số trong ô trắng. Bỏ qua chữ số ô màu đỏ ở cuối.
-                  </div>
-                )}
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
+                  Kỳ trước: <strong>{formatNumber(parseNumber(previousValue))}</strong>
+                </span>
               </div>
-
-              {officialValue !== '' && parseNumber(officialValue) < parseNumber(previousValue) && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fef3c7' }}>
-                  <input
-                    type="checkbox"
-                    id="meterResetManual"
-                    checked={isMeterReset}
-                    onChange={(e) => setIsMeterReset(e.target.checked)}
-                  />
-                  <label htmlFor="meterResetManual" style={{ fontSize: '13px', color: '#b45309', fontWeight: '600', cursor: 'pointer' }}>
-                    Chỉ số mới ({formatNumber(parseNumber(officialValue))}) nhỏ hơn cũ ({formatNumber(parseNumber(previousValue))}): Xác nhận đồng hồ quay vòng về 0 hoặc đã thay mới.
-                  </label>
-                </div>
-              )}
-
-              <button
-                type="button"
-                disabled={submitting || !officialValue}
-                onClick={handleApproveReading}
-                style={{
-                  padding: '16px',
-                  background: '#ea580c',
-                  color: '#ffffff',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: '800',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  marginTop: '10px'
-                }}
-              >
-                <Check size={20} />
-                {submitting ? 'Đang lưu...' : 'Lưu chỉ số thủ công (Bổ sung ảnh sau)'}
-              </button>
-            </div>
-          ) : (
-            <div style={{ padding: '60px 20px', textAlign: 'center', color: '#94a3b8' }}>
-              <Cpu size={48} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
-              <div style={{ fontWeight: '700', color: '#64748b' }}>Chưa có ảnh phân tích</div>
-              <div style={{ fontSize: '13px', marginTop: '4px' }}>
-                Bấm "Chụp trực tiếp" ở cột bên trái hoặc "Nhập tay số liệu" để bắt đầu.
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="number"
+                  step="any"
+                  value={officialValue}
+                  placeholder={readingType === 'electricity' ? 'VD: 1380' : 'VD: 70'}
+                  onChange={(e) => setOfficialValue(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '14px 60px 14px 16px',
+                    fontSize: '24px',
+                    fontWeight: '800',
+                    color: '#0f172a',
+                    borderRadius: '10px',
+                    border: '2px solid #2563eb',
+                    background: '#ffffff'
+                  }}
+                />
+                <span style={{ position: 'absolute', right: '16px', top: '17px', fontSize: '16px', fontWeight: '800', color: '#64748b' }}>
+                  {readingType === 'electricity' ? 'kWh' : 'm³'}
+                </span>
               </div>
             </div>
-          )}
+
+            {/* Meter Reset Checkbox - Only show when current reading is less than previous */}
+            {officialValue !== '' && parseNumber(officialValue) < parseNumber(previousValue) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fef3c7' }}>
+                <input
+                  type="checkbox"
+                  id="meterReset"
+                  checked={isMeterReset}
+                  onChange={(e) => setIsMeterReset(e.target.checked)}
+                />
+                <label htmlFor="meterReset" style={{ fontSize: '13px', color: '#b45309', fontWeight: '600', cursor: 'pointer' }}>
+                  Chỉ số mới ({formatNumber(parseNumber(officialValue))}) nhỏ hơn cũ ({formatNumber(parseNumber(previousValue))}): Xác nhận đồng hồ quay vòng về 0 hoặc đã thay mới.
+                </label>
+              </div>
+            )}
+
+            {/* Approve Button */}
+            <button
+              type="button"
+              disabled={submitting || uploadingPhoto || officialValue === ''}
+              onClick={handleApproveReading}
+              style={{
+                padding: '16px',
+                background: (submitting || uploadingPhoto || officialValue === '') ? '#94a3b8' : '#059669',
+                color: '#ffffff',
+                borderRadius: '12px',
+                fontSize: '16px',
+                fontWeight: '800',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                marginTop: '4px',
+                cursor: (submitting || uploadingPhoto || officialValue === '') ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 6px -1px rgba(5, 150, 105, 0.3)'
+              }}
+            >
+              <Check size={20} />
+              {submitting
+                ? 'Đang lưu...'
+                : uploadingPhoto
+                  ? 'Đang tải ảnh...'
+                  : uploadedImageId
+                    ? 'Lưu ảnh & Phê duyệt chỉ số'
+                    : 'Phê duyệt & Lưu vào sổ chỉ số'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -2241,272 +1865,6 @@ export default function AdminMeters() {
                 }}
               >
                 <Check size={18} /> {attaching ? 'Đang tải...' : 'Xác nhận bổ sung ảnh'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* MODEL SELF-LEARNING & CLOUD AI VISION FALLBACK MODAL */}
-      {showLearningModal && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)',
-          backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', zIndex: 1000, padding: '16px'
-        }}>
-          <div style={{
-            background: '#ffffff', borderRadius: '20px', maxWidth: '680px', width: '100%',
-            maxHeight: '90vh', overflowY: 'auto', padding: '28px', border: '1px solid #e2e8f0',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ padding: '8px', background: '#ede9fe', borderRadius: '12px', color: '#7c3aed' }}>
-                  <BrainCircuit size={24} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
-                    Mô Hình Học Máy Tự Học & AI API Dự Phòng
-                  </h3>
-                  <p style={{ fontSize: '13px', color: '#64748b' }}>
-                    Tự động ghi nhớ mẫu đồng hồ từ thực tế và kích hoạt Cloud AI Vision khi cần
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowLearningModal(false)}
-                style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '6px', cursor: 'pointer' }}
-              >
-                <X size={18} color="#64748b" />
-              </button>
-            </div>
-
-            {/* Metric KPI Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '22px' }}>
-              <div style={{ padding: '14px', background: '#f8fafc', borderRadius: '14px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Mẫu Đồng Hồ Đã Học</div>
-                <div style={{ fontSize: '24px', fontWeight: '900', color: '#7c3aed' }}>
-                  {learningStats?.total_learned_samples || 0}
-                </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                  {learningStats?.electricity_samples || 0} điện • {learningStats?.water_samples || 0} nước
-                </div>
-              </div>
-
-              <div style={{ padding: '14px', background: '#f8fafc', borderRadius: '14px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Chống Chịu Khắc Nghiệt</div>
-                <div style={{ fontSize: '24px', fontWeight: '900', color: '#059669' }}>
-                  {learningStats?.environment_resilience_rate || 95}%
-                </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                  {learningStats?.harsh_environment_samples || 0} mẫu tối/lóa/mờ
-                </div>
-              </div>
-
-              <div style={{ padding: '14px', background: '#f8fafc', borderRadius: '14px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>Độ Chính Xác Khớp</div>
-                <div style={{ fontSize: '24px', fontWeight: '900', color: '#2563eb' }}>
-                  {Math.round((learningStats?.model_accuracy_score || 0.99) * 100)}%
-                </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                  Hamming Hash sub-15ms
-                </div>
-              </div>
-            </div>
-
-            {/* Re-train Section */}
-            <div style={{ padding: '16px', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '14px', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#5b21b6', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Database size={16} /> Huấn luyện lại mô hình (Re-index)
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#6d28d9', marginTop: '2px' }}>
-                    Đọc lại toàn bộ ảnh và chỉ số đã được chủ nhà duyệt để tối ưu hóa bộ nhớ nhận diện.
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={retraining}
-                  onClick={handleRetrainModel}
-                  style={{
-                    padding: '8px 16px',
-                    background: '#7c3aed',
-                    color: '#fff',
-                    borderRadius: '10px',
-                    fontSize: '13px',
-                    fontWeight: '700',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <RefreshCw size={14} className={retraining ? 'spin-smooth' : ''} />
-                  {retraining ? 'Đang huấn luyện...' : 'Huấn luyện lại ngay'}
-                </button>
-              </div>
-            </div>
-
-            {/* CLOUD AI VISION FALLBACK CONFIGURATION */}
-            <div style={{ padding: '18px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', marginBottom: '20px' }}>
-              <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Cloud size={18} color="#2563eb" />
-                Cấu hình Dự phòng Cloud AI Vision (Google Gemini / OpenAI)
-              </div>
-              <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>
-                Khi mô hình nội bộ gặp ảnh chụp trong điều kiện quá khắc nghiệt (độ tin cậy &lt; 75%), hệ thống sẽ tự động gọi AI API này để đọc số chuẩn xác, sau đó lưu lại vào bộ nhớ tự học để lần sau không tốn chi phí gọi API nữa.
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={aiConfig.enabled}
-                    onChange={(e) => setAiConfig({ ...aiConfig, enabled: e.target.checked })}
-                  />
-                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>
-                    Kích hoạt Cloud AI Vision API Fallback khi ảnh khó nhận diện
-                  </span>
-                </label>
-
-                {aiConfig.enabled && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Nhà cung cấp AI:</label>
-                      <select
-                        value={aiConfig.provider}
-                        onChange={(e) => setAiConfig({ ...aiConfig, provider: e.target.value })}
-                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                      >
-                        <option value="gemini">Google Gemini Vision (Khuyên dùng - Nhanh & Rẻ)</option>
-                        <option value="openai">OpenAI GPT-4o-mini Vision</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Mô hình AI:</label>
-                      <select
-                        value={aiConfig.provider === 'gemini' ? aiConfig.geminiModel : aiConfig.openaiModel}
-                        onChange={(e) => {
-                          if (aiConfig.provider === 'gemini') setAiConfig({ ...aiConfig, geminiModel: e.target.value });
-                          else setAiConfig({ ...aiConfig, openaiModel: e.target.value });
-                        }}
-                        style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                      >
-                        {aiConfig.provider === 'gemini' ? (
-                          <>
-                            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Siêu tốc)</option>
-                            <option value="gemini-2.0-flash">Gemini 2.0 Flash (Thế hệ mới nhất)</option>
-                            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Độ chính xác cao nhất)</option>
-                          </>
-                        ) : (
-                          <>
-                            <option value="gpt-4o-mini">GPT-4o-mini</option>
-                            <option value="gpt-4o">GPT-4o</option>
-                          </>
-                        )}
-                      </select>
-                    </div>
-
-                    <div style={{ gridColumn: 'span 2' }}>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
-                        {aiConfig.provider === 'gemini' ? 'Google Gemini API Key:' : 'OpenAI API Key:'}
-                      </label>
-                      <input
-                        type="password"
-                        placeholder={aiConfig.provider === 'gemini' 
-                          ? (aiConfig.hasGeminiKey ? '•••••••••••••••• (Đã lưu trong hệ thống)' : 'Nhập Gemini API Key (AIzaSy...)') 
-                          : (aiConfig.hasOpenaiKey ? '•••••••••••••••• (Đã lưu trong hệ thống)' : 'Nhập OpenAI API Key (sk-...)')}
-                        value={aiConfig.provider === 'gemini' ? aiConfig.geminiApiKey : aiConfig.openaiApiKey}
-                        onChange={(e) => {
-                          if (aiConfig.provider === 'gemini') setAiConfig({ ...aiConfig, geminiApiKey: e.target.value });
-                          else setAiConfig({ ...aiConfig, openaiApiKey: e.target.value });
-                        }}
-                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                      />
-                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>
-                        Khóa API được mã hóa và lưu trữ an toàn trên máy chủ.
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-                  <button
-                    type="button"
-                    disabled={configSaving}
-                    onClick={handleSaveAiConfig}
-                    style={{
-                      padding: '8px 16px',
-                      background: '#2563eb',
-                      color: '#ffffff',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      fontWeight: '700',
-                      border: 'none',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {configSaving ? 'Đang lưu...' : 'Lưu Cấu Hình AI'}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* RECENT LEARNED SAMPLES */}
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
-                Các mẫu đồng hồ đã tự động học gần đây:
-              </div>
-              <div style={{ maxHeight: '160px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
-                {learningStats?.recent_learned?.length > 0 ? (
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                    <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}>
-                        <th style={{ padding: '8px 10px' }}>Mẫu</th>
-                        <th style={{ padding: '8px 10px' }}>Số SX</th>
-                        <th style={{ padding: '8px 10px' }}>Chỉ số</th>
-                        <th style={{ padding: '8px 10px' }}>Môi trường</th>
-                        <th style={{ padding: '8px 10px' }}>Nguồn học</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {learningStats.recent_learned.map((item, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '8px 10px', fontWeight: '600' }}>{item.model || 'EMIC CV140'}</td>
-                          <td style={{ padding: '8px 10px', color: '#64748b' }}>{item.serial || 'N/A'}</td>
-                          <td style={{ padding: '8px 10px', fontWeight: '700', color: '#0f172a' }}>{item.display}</td>
-                          <td style={{ padding: '8px 10px' }}>
-                            <span style={{ padding: '2px 6px', borderRadius: '6px', fontSize: '11px', background: item.environment?.includes('harsh') ? '#fee2e2' : '#f0fdf4', color: item.environment?.includes('harsh') ? '#991b1b' : '#166534' }}>
-                              {item.environment || 'Tiêu chuẩn'}
-                            </span>
-                          </td>
-                          <td style={{ padding: '8px 10px', color: '#64748b' }}>
-                            {item.source === 'human_verification' ? 'Chủ nhà duyệt' : (item.source === 'cloud_ai' ? 'Cloud AI' : 'Hệ thống')}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div style={{ padding: '16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
-                    Chưa có mẫu nào được ghi nhớ. Khi duyệt chỉ số, AI sẽ tự động học!
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                onClick={() => setShowLearningModal(false)}
-                style={{ padding: '10px 20px', background: '#0f172a', color: '#fff', borderRadius: '10px', fontSize: '13px', fontWeight: '700', border: 'none', cursor: 'pointer' }}
-              >
-                Đóng
               </button>
             </div>
           </div>

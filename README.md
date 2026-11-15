@@ -1,6 +1,6 @@
 # 🏠 Rental House Management System (Hệ Thống Quản Lý Nhà Trọ)
 
-Hệ thống quản lý nhà trọ, phòng trọ, khách thuê, chỉ số điện nước, phân tích ảnh đồng hồ bằng trí tuệ nhân tạo (AI OCR cục bộ), lập hóa đơn tự động và ký kết hợp đồng điện tử bất biến bảo mật cao.
+Hệ thống quản lý nhà trọ, phòng trọ, khách thuê, chụp ảnh & ghi chỉ số điện nước minh bạch, lập hóa đơn tự động và ký kết hợp đồng điện tử bất biến bảo mật cao, triển khai trọn bộ Frontend & Backend Serverless trên Netlify.
 
 ---
 
@@ -17,20 +17,17 @@ Hệ thống quản lý nhà trọ, phòng trọ, khách thuê, chỉ số đi�
 ### 2. Dành Cho Quản Trị Viên / Chủ Nhà (Admin Dashboard)
 - **Quản lý phòng trọ**: Theo dõi tình trạng phòng (còn trống, đang thuê, bảo trì), giá thuê, lịch sử khách thuê (xóa mềm bảo toàn dữ liệu).
 - **Quản lý khách thuê**: Đăng ký, phân phòng, lưu trữ thông tin liên hệ.
-- **Đo điện nước & AI OCR tự động**:
-  - Tải ảnh đồng hồ điện/nước lên hệ thống.
-  - Phân tích chất lượng ảnh: Tự động cảnh báo ảnh mờ (Laplacian variance), ảnh quá tối, ảnh chói sáng hoặc sai độ phân giải.
-  - Tự động nhận diện chữ số chỉ số trên mặt đồng hồ với độ tin cậy (confidence score).
-  - Cảnh báo bất thường nếu chỉ số mới thấp hơn chỉ số cũ hoặc tăng vọt đột biến.
-  - **Quy trình duyệt Human-In-The-Loop**: Chủ nhà đối chiếu ảnh thực tế và số AI đọc được song song, phê duyệt 1 chạm hoặc điều chỉnh số liệu trước khi chính thức ghi nhận.
-  - Tự động ghi nhận mẫu dữ liệu chuẩn vào tập dữ liệu huấn luyện AI (`ai_training_samples`).
+- **Chụp ảnh công tơ & Ghi chỉ số điện nước thủ công (Admin)**:
+  - Chụp ảnh trực tiếp từ camera thiết bị (hỗ trợ đèn Flash) hoặc tải ảnh từ thư viện; hỗ trợ tạo chỉ số trước rồi bổ sung ảnh sau.
+  - Quản trị viên tự đối chiếu ảnh mặt đồng hồ thực tế và nhập chỉ số cũ / chỉ số mới (đối với công tơ điện cơ chỉ nhập 5 chữ số ô trắng, bỏ qua chữ số ô đỏ thập phân).
+  - Tự động tính mức tiêu thụ (hỗ trợ trừ tự động Phòng 2 & Phòng 3 cho đồng hồ nước tổng Phòng 1), cảnh báo bất thường khi chỉ số mới nhỏ hơn chỉ số cũ (trừ trường hợp quay vòng/thay đồng hồ).
 - **Lập hóa đơn tự động & Thông báo đa kênh (SMS OTP & Email Resend)**:
   - Tự động tập hợp tiền phòng + tiền điện + tiền nước + phí dịch vụ cho các phòng đang thuê.
   - Tự động gửi thông báo trực tiếp qua **SMS OTP** và **Email Resend** kèm bảng kê chi tiết cho khách thuê ngay khi lập.
   - Chốt đơn giá tại thời điểm lập (snapshot pricing) để hóa đơn lịch sử không bao giờ bị sai lệch.
 - **Tối ưu hóa Giao diện Di động (Mobile-First Card UI)**:
   - Danh sách hóa đơn, danh sách phòng trọ và hợp đồng tự động chuyển sang giao diện thẻ card thông minh trên màn hình nhỏ ($\le 768\text{px}$).
-  - Không cần cuộn ngang, nút bấm lớn thuận tiện thao tác một tay, có khoảng đệm đáy tránh che khuất bởi chatbot AI.
+  - Không cần cuộn ngang, nút bấm lớn thuận tiện thao tác một tay.
   - Thanh điều hướng đáy kính lỏng Apple (Liquid Glass Dock) phong cách tối giản.
 - **Tối ưu hóa SEO & Khả năng Tìm kiếm**:
   - Tích hợp chuẩn Schema.org JSON-LD (ApartmentComplex), OpenGraph, Twitter Card, Sitemap.xml, Robots.txt và Dynamic Page SEO Hook.
@@ -53,9 +50,9 @@ Hệ thống quản lý nhà trọ, phòng trọ, khách thuê, chỉ số đi�
 |---|---|
 | **Frontend** | React 18, Vite 6, React Router 6, Axios, Recharts, Lucide React, High-Contrast Accessible CSS |
 | **Mobile App (Android & iOS)** | Capacitor 8, Android Studio / Gradle, Xcode (Swift Package Manager), PWA Standalone |
-| **Backend** | Node.js (v20+), Express.js, `pg` (PostgreSQL Client), Argon2 / bcryptjs, Cookie-Parser, Helmet, Multer, PDFKit |
+| **Backend & Serverless** | Node.js (v20+), Express.js, Netlify Functions (`serverless-http`), `pg`, Argon2 / bcryptjs, Cookie-Parser, Helmet, Multer, PDFKit |
 | **Database** | Neon Serverless PostgreSQL 16+ (Normalized, UUIDs, Triggers, Indexes, Constraints) |
-| **AI OCR Service** | Python 3.11+, FastAPI, OpenCV, NumPy, Pillow (100% Self-Hosted, Không phụ thuộc bên ngoài) |
+| **Hosting & Deploy** | Netlify Full-Stack (Vite Static CDN + Netlify Serverless Functions + Scheduled Billing Cron) |
 | **Containerization** | Docker, Docker Compose |
 
 ---
@@ -81,15 +78,6 @@ npm run dev
 ```
 Giao diện người dùng sẽ chạy tại: `http://localhost:5173`
 
-#### 3. Khởi động AI Microservice (Tùy chọn)
-```bash
-cd ai-service
-pip install -r requirements.txt
-python -m uvicorn app.main:app --port 8000 --reload
-```
-Dịch vụ AI cục bộ sẽ chạy tại: `http://localhost:8000`
-*(Lưu ý: Nếu không bật AI Service, Backend tự động kích hoạt bộ xử lý thị giác máy tính dự phòng để ứng dụng không bao giờ bị gián đoạn).*
-
 ---
 
 ### Cách 2: Chạy toàn bộ hệ thống bằng Docker Compose
@@ -97,10 +85,12 @@ Dịch vụ AI cục bộ sẽ chạy tại: `http://localhost:8000`
 ```bash
 docker-compose up --build
 ```
-- Frontend: `http://localhost:80`
+- Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:5000`
-- AI Microservice: `http://localhost:8000`
 - Database: Kết nối trực tiếp máy chủ đám mây **Neon PostgreSQL** (không cần container PostgreSQL cục bộ)
+
+### Cách 3: Triển khai Full-Stack trên Netlify (Frontend + Backend Functions)
+Xem hướng dẫn chi tiết tại [`NETLIFY.md`](./NETLIFY.md). Mọi yêu cầu `/api/*`, `/uploads/*` và `/health` được điều hướng thẳng vào `backend/netlify/functions/api.mjs` qua [`netlify.toml`](./netlify.toml).
 
 ---
 

@@ -205,39 +205,15 @@ export default function LandingPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#0f172a' }}>
       {/* 1. TOP NAVBAR */}
-      <nav style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        background: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid #e2e8f0',
-        padding: '16px 24px'
-      }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
+      <nav className="landing-nav">
+        <div className="landing-nav-container">
           {/* Logo & Brand */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '44px',
-              height: '44px',
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-              color: '#ffffff',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)'
-            }}>
-              <Home size={24} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="landing-brand-logo">
+              <Home size={22} />
             </div>
             <div>
-              <div style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.3px' }}>
+              <div className="landing-brand-name">
                 NHÀ TRỌ THANH TÂM
               </div>
             </div>
@@ -260,45 +236,25 @@ export default function LandingPage() {
           </div>
 
           {/* Action Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {/* Navigation action buttons: direct to rooms catalog or admin */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {tenant ? (
               <button
                 onClick={() => navigate('/tenant/home')}
-                style={{
-                  padding: '10px 18px',
-                  background: '#15803d',
-                  color: '#ffffff',
-                  borderRadius: '10px',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
+                className="landing-nav-action-btn"
+                style={{ background: '#15803d' }}
               >
                 <UserCheck size={16} />
-                Tiếp tục xem phòng {tenant.room_number}
+                <span className="landing-nav-btn-desktop">Tiếp tục xem phòng {tenant.room_number}</span>
+                <span className="landing-nav-btn-mobile">Phòng {tenant.room_number}</span>
               </button>
             ) : (
               <a
                 href="#rooms"
-                style={{
-                  padding: '10px 18px',
-                  background: '#1e3a8a',
-                  color: '#ffffff',
-                  borderRadius: '10px',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 6px rgba(30, 58, 138, 0.25)'
-                }}
+                className="landing-nav-action-btn"
               >
                 <DoorOpen size={16} />
-                Chọn Phòng Để Xem
+                <span className="landing-nav-btn-desktop">Chọn Phòng Để Xem</span>
+                <span className="landing-nav-btn-mobile">Chọn phòng</span>
               </a>
             )}
           </div>
@@ -306,86 +262,101 @@ export default function LandingPage() {
       </nav>
 
       {/* 3. ROOMS CATALOG SECTION (#rooms) */}
-      <section id="rooms" style={{ padding: '80px 24px', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+      <section id="rooms" className="landing-section">
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: '#eff6ff',
+            color: '#2563eb',
+            padding: '4px 12px',
+            borderRadius: '16px',
+            fontSize: '12px',
+            fontWeight: '800',
+            letterSpacing: '0.4px',
+            marginBottom: '8px'
+          }}>
+            <Sparkles size={13} /> DANH MỤC PHÒNG CHO THUÊ
+          </div>
+          <h2 style={{
+            fontSize: 'clamp(20px, 4.5vw, 28px)',
+            fontWeight: '900',
+            color: '#0f172a',
+            letterSpacing: '-0.4px',
+            marginBottom: '6px'
+          }}>
+            Khám Phá Phòng Trọ Tiện Nghi
+          </h2>
+          <p style={{
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
+            color: '#64748b',
+            maxWidth: '520px',
+            margin: '0 auto',
+            lineHeight: '1.5'
+          }}>
+            Chọn phòng để xem chi tiết tiền phòng, chỉ số điện nước & hóa đơn minh bạch
+          </p>
 
           {/* Filter Pills with Animated Sliding Indicator */}
-          <div
-            ref={filterContainerRef}
-            style={{
-              position: 'relative',
-              display: 'inline-flex',
-              background: '#e2e8f0',
-              padding: '4px',
-              borderRadius: '14px',
-              gap: '4px',
-              marginTop: '24px',
-              boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.08)',
-              userSelect: 'none'
-            }}
-          >
-            {/* Animated Sliding Pill */}
+          <div className="landing-filter-wrapper">
             <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                top: '4px',
-                left: 0,
-                height: 'calc(100% - 8px)',
-                width: `${pillIndicator.width}px`,
-                transform: `translateX(${pillIndicator.left}px)`,
-                background: 'linear-gradient(135deg, #1e3a8a 0%, #172554 100%)',
-                borderRadius: '10px',
-                boxShadow: '0 3px 10px rgba(30, 58, 138, 0.35), 0 1px 2px rgba(0, 0, 0, 0.1)',
-                transition: isFirstFilterRender.current
-                  ? 'opacity 0.2s ease'
-                  : 'transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), width 0.35s cubic-bezier(0.25, 1, 0.5, 1)',
-                opacity: pillIndicator.ready ? 1 : 0,
-                pointerEvents: 'none',
-                zIndex: 1
-              }}
-            />
+              ref={filterContainerRef}
+              className="landing-filter-container"
+            >
+              {/* Animated Sliding Pill */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  top: '4px',
+                  left: 0,
+                  height: 'calc(100% - 8px)',
+                  width: `${pillIndicator.width}px`,
+                  transform: `translateX(${pillIndicator.left}px)`,
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #172554 100%)',
+                  borderRadius: '10px',
+                  boxShadow: '0 3px 10px rgba(30, 58, 138, 0.35), 0 1px 2px rgba(0, 0, 0, 0.1)',
+                  transition: isFirstFilterRender.current
+                    ? 'opacity 0.2s ease'
+                    : 'transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), width 0.35s cubic-bezier(0.25, 1, 0.5, 1)',
+                  opacity: pillIndicator.ready ? 1 : 0,
+                  pointerEvents: 'none',
+                  zIndex: 1
+                }}
+              />
 
-            {[
-              { id: 'all', label: `Tất cả (${rooms.length} phòng)` },
-              { id: 'available', label: `Phòng còn trống (${availableCount})` },
-              { id: 'occupied', label: `Phòng đang thuê (${occupiedCount})` }
-            ].map((f) => {
-              const isActive = activeFilter === f.id;
-              return (
-                <button
-                  key={f.id}
-                  ref={(el) => (filterButtonsRef.current[f.id] = el)}
-                  onClick={() => setActiveFilter(f.id)}
-                  style={{
-                    position: 'relative',
-                    zIndex: 2,
-                    padding: '8px 16px',
-                    borderRadius: '10px',
-                    background: 'transparent',
-                    color: isActive ? '#ffffff' : '#475569',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'color 0.25s ease, transform 0.12s ease',
-                    outline: 'none',
-                    whiteSpace: 'nowrap'
-                  }}
-                  onMouseDown={(e) => {
-                    e.currentTarget.style.transform = 'scale(0.96)';
-                  }}
-                  onMouseUp={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
-                >
-                  {f.label}
-                </button>
-              );
-            })}
+              {[
+                { id: 'all', desktop: `Tất cả (${rooms.length} phòng)`, mobile: `Tất cả (${rooms.length})` },
+                { id: 'available', desktop: `Phòng còn trống (${availableCount})`, mobile: `Còn trống (${availableCount})` },
+                { id: 'occupied', desktop: `Phòng đang thuê (${occupiedCount})`, mobile: `Đang thuê (${occupiedCount})` }
+              ].map((f) => {
+                const isActive = activeFilter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    ref={(el) => (filterButtonsRef.current[f.id] = el)}
+                    onClick={() => setActiveFilter(f.id)}
+                    className="landing-filter-btn"
+                    style={{
+                      color: isActive ? '#ffffff' : '#475569'
+                    }}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.transform = 'scale(0.96)';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                  >
+                    <span className="filter-btn-desktop">{f.desktop}</span>
+                    <span className="filter-btn-mobile">{f.mobile}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -515,7 +486,7 @@ export default function LandingPage() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+          <div className="landing-rooms-grid">
             <style>{`
               @keyframes roomCardSlideUp {
                 0% {
@@ -552,7 +523,7 @@ export default function LandingPage() {
                     animationDelay: `${index * 150}ms`
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-8px)';
+                    e.currentTarget.style.transform = 'translateY(-6px)';
                     e.currentTarget.style.borderColor = '#2563eb';
                     e.currentTarget.style.boxShadow = '0 16px 32px rgba(37, 99, 235, 0.16)';
                   }}
@@ -563,7 +534,7 @@ export default function LandingPage() {
                   }}
                 >
                   {/* Room Thumbnail with status badge */}
-                  <div style={{ position: 'relative', height: '190px', overflow: 'hidden', background: '#f1f5f9' }}>
+                  <div style={{ position: 'relative', height: '200px', overflow: 'hidden', background: '#f1f5f9' }}>
                     <img
                       src={imgUrl}
                       loading="lazy"
@@ -583,23 +554,42 @@ export default function LandingPage() {
                       padding: '4px 12px',
                       borderRadius: '20px',
                       fontSize: '12px',
-                      fontWeight: '800'
+                      fontWeight: '800',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)'
                     }}>
                       {isOccupied ? 'Đang thuê' : 'Còn trống'}
                     </div>
                   </div>
 
                   {/* Card Body */}
-                  <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
-                        <h3 style={{ fontSize: '22px', fontWeight: '900', color: '#0f172a' }}>
+                        <h3 style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a' }}>
                           {formattedRoomName}
                         </h3>
                         <div style={{ fontSize: '18px', fontWeight: '900', color: '#1e3a8a' }}>
                           {formatCurrency(room.monthly_rent)}
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>/tháng</span>
                         </div>
+                      </div>
+
+                      {/* Amenities chips row */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+                        {room.floor && (
+                          <span className="room-feature-tag">
+                            <Layers size={11} /> Tầng {room.floor}
+                          </span>
+                        )}
+                        {room.description?.includes('25m2') && <span className="room-feature-tag">📐 25m²</span>}
+                        {room.description?.includes('22m2') && <span className="room-feature-tag">📐 22m²</span>}
+                        {room.description?.includes('28m2') && <span className="room-feature-tag">📐 28m²</span>}
+                        {room.description?.includes('máy lạnh') && <span className="room-feature-tag">❄️ Máy lạnh</span>}
+                        {room.description?.includes('gác lửng') && <span className="room-feature-tag">🪜 Gác lửng</span>}
+                        {room.description?.includes('ban công') && <span className="room-feature-tag">🌿 Ban công</span>}
+                        {room.description?.includes('WC riêng') && <span className="room-feature-tag">🚿 WC riêng</span>}
+                        <span className="room-feature-tag">⚡ 3.000đ/kWh</span>
+                        <span className="room-feature-tag">💧 12.000đ/m³</span>
                       </div>
                     </div>
 
@@ -612,22 +602,24 @@ export default function LandingPage() {
                       }}
                       style={{
                         width: '100%',
-                        padding: '14px',
+                        padding: '13px',
                         background: isOccupied ? '#1e3a8a' : '#059669',
                         color: '#ffffff',
                         borderRadius: '12px',
-                        fontSize: '15px',
+                        fontSize: '14px',
                         fontWeight: '800',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '8px',
-                        minHeight: '48px',
-                        cursor: 'pointer'
+                        minHeight: '46px',
+                        cursor: 'pointer',
+                        border: 'none',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
                       }}
                     >
                       <DoorOpen size={18} />
-                      {isOccupied ? 'Xem Thông Tin Chi Tiết' : 'Xem Chi Tiết & Đặt Thuê'}
+                      <span>{isOccupied ? 'Xem Thông Tin Chi Tiết' : 'Xem Chi Tiết & Đặt Thuê'}</span>
                     </button>
                   </div>
                 </div>
@@ -639,11 +631,31 @@ export default function LandingPage() {
 
 
       {/* 5. TRANSPARENT PRICING & RULES (#rules) */}
-      <section id="rules" style={{ padding: '80px 24px', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{ fontSize: '14px', color: '#2563eb', fontWeight: '800', textTransform: 'uppercase' }}>
-            BẢNG GIÁ DỊCH VỤ NIÊM YẾT CÔNG KHAI
+      <section id="rules" className="landing-section">
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: '#eff6ff',
+            color: '#2563eb',
+            padding: '4px 12px',
+            borderRadius: '16px',
+            fontSize: '11px',
+            fontWeight: '800',
+            letterSpacing: '0.4px',
+            marginBottom: '6px'
+          }}>
+            <ShieldCheck size={13} /> NIÊM YẾT CÔNG KHAI
           </div>
+          <h2 style={{
+            fontSize: 'clamp(20px, 4vw, 26px)',
+            fontWeight: '900',
+            color: '#0f172a',
+            letterSpacing: '-0.4px'
+          }}>
+            Bảng Giá Dịch Vụ & Tiện Ích Minh Bạch
+          </h2>
         </div>
 
         <div style={{
@@ -653,60 +665,67 @@ export default function LandingPage() {
           borderRadius: '20px',
           border: '2px solid #e2e8f0',
           overflow: 'hidden',
-          boxShadow: '0 4px 10px rgba(0,0,0,0.04)'
+          boxShadow: '0 4px 14px rgba(0,0,0,0.04)'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #f1f5f9', fontSize: '16px' }}>
-            <span style={{ fontWeight: '600', color: '#334155' }}>⚡ Tiền điện sinh hoạt:</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #f1f5f9', fontSize: '15px' }}>
+            <span style={{ fontWeight: '600', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Zap size={18} color="#d97706" /> Tiền điện sinh hoạt:
+            </span>
             <span style={{ fontWeight: '800', color: '#d97706' }}>3,000 đ / kWh</span>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #f1f5f9', fontSize: '16px' }}>
-            <span style={{ fontWeight: '600', color: '#334155' }}>💧 Tiền nước sinh hoạt:</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #f1f5f9', fontSize: '15px' }}>
+            <span style={{ fontWeight: '600', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Droplet size={18} color="#0284c7" /> Tiền nước sinh hoạt:
+            </span>
             <span style={{ fontWeight: '800', color: '#0284c7' }}>12,000 đ / m³</span>
           </div>
         </div>
       </section>
 
       {/* 5.1 HƯỚNG DẪN TRA CỨU GIÁ PHÒNG & HÓA ĐƠN CHI TIẾT (#guide) */}
-      <section id="guide" style={{ padding: '40px 24px 80px', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '44px' }}>
-                  
-          <h2 style={{ fontSize: '30px', fontWeight: '900', color: '#0f172a', marginBottom: '12px', letterSpacing: '-0.5px' }}>
-            3 Bước Đơn Giản Để Vào Xem Giá Tiền Phòng & Hóa Đơn
+      <section id="guide" className="landing-section">
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: '#eff6ff',
+            color: '#2563eb',
+            padding: '4px 12px',
+            borderRadius: '16px',
+            fontSize: '11px',
+            fontWeight: '800',
+            letterSpacing: '0.4px',
+            marginBottom: '6px'
+          }}>
+            <Sparkles size={13} /> TIỆN LỢI & NHANH CHÓNG
+          </div>
+          <h2 style={{ fontSize: 'clamp(20px, 4vw, 26px)', fontWeight: '900', color: '#0f172a', marginBottom: '8px', letterSpacing: '-0.4px' }}>
+            3 Bước Đơn Giản Để Tra Cứu Tiền Phòng & Hóa Đơn
           </h2>
+          <p style={{ fontSize: 'clamp(12px, 2.5vw, 14px)', color: '#64748b', maxWidth: '540px', margin: '0 auto' }}>
+            Không cần tài khoản phức tạp, chỉ cần chọn phòng và nhập số điện thoại để xem tức thì
+          </p>
         </div>
 
         {/* 3 Step Cards Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '28px'
-        }}>
+        <div className="landing-guide-grid">
           {/* STEP 1 CARD */}
           <div
             style={{
               background: '#ffffff',
-              borderRadius: '24px',
+              borderRadius: '20px',
               border: '2px solid #e2e8f0',
               overflow: 'hidden',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.04)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
               display: 'flex',
               flexDirection: 'column',
               transition: 'all 0.25s ease-in-out'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-6px)';
-              e.currentTarget.style.borderColor = '#2563eb';
-              e.currentTarget.style.boxShadow = '0 16px 32px rgba(37, 99, 235, 0.12)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = '#e2e8f0';
-              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.04)';
-            }}
           >
             {/* Step Image */}
-            <div style={{ position: 'relative', height: '210px', overflow: 'hidden', background: '#f8fafc' }}>
+            <div style={{ position: 'relative', height: '180px', overflow: 'hidden', background: '#f8fafc' }}>
               <img
                 src="/images/guide/step1.png"
                 loading="lazy"
@@ -716,13 +735,13 @@ export default function LandingPage() {
               />
               <div style={{
                 position: 'absolute',
-                top: '14px',
-                left: '14px',
+                top: '12px',
+                left: '12px',
                 background: '#1e3a8a',
                 color: '#ffffff',
-                padding: '6px 14px',
-                borderRadius: '12px',
-                fontSize: '12px',
+                padding: '5px 12px',
+                borderRadius: '10px',
+                fontSize: '11px',
                 fontWeight: '800',
                 letterSpacing: '0.5px',
                 boxShadow: '0 4px 10px rgba(30, 58, 138, 0.3)'
@@ -732,11 +751,11 @@ export default function LandingPage() {
             </div>
 
             {/* Step Info */}
-            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '10px' }}>
+            <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
                 1. Chọn Số Phòng Cần Xem
               </h3>
-              <p style={{ fontSize: '14px', color: '#64748b', lineHeight: '1.6', marginBottom: '16px', flex: 1 }}>
+              <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6', marginBottom: '14px', flex: 1 }}>
                 Tại mục <b>Danh Mục Phòng Trọ</b>, bạn chọn trực tiếp vào phòng bạn đang thuê (hoặc phòng muốn tham khảo giá) như <i>Phòng 1, Phòng 2, Phòng 3</i>.
               </p>
               <a
@@ -746,12 +765,12 @@ export default function LandingPage() {
                   alignItems: 'center',
                   gap: '6px',
                   color: '#2563eb',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   fontWeight: '700',
                   textDecoration: 'none'
                 }}
               >
-                Đến danh mục phòng ngay <ArrowRight size={15} />
+                Đến danh mục phòng ngay <ArrowRight size={14} />
               </a>
             </div>
           </div>
@@ -760,27 +779,17 @@ export default function LandingPage() {
           <div
             style={{
               background: '#ffffff',
-              borderRadius: '24px',
+              borderRadius: '20px',
               border: '2px solid #e2e8f0',
               overflow: 'hidden',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.04)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
               display: 'flex',
               flexDirection: 'column',
               transition: 'all 0.25s ease-in-out'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-6px)';
-              e.currentTarget.style.borderColor = '#2563eb';
-              e.currentTarget.style.boxShadow = '0 16px 32px rgba(37, 99, 235, 0.12)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = '#e2e8f0';
-              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.04)';
-            }}
           >
             {/* Step Image */}
-            <div style={{ position: 'relative', height: '210px', overflow: 'hidden', background: '#f8fafc' }}>
+            <div style={{ position: 'relative', height: '180px', overflow: 'hidden', background: '#f8fafc' }}>
               <img
                 src="/images/guide/step2.png"
                 loading="lazy"
@@ -790,13 +799,13 @@ export default function LandingPage() {
               />
               <div style={{
                 position: 'absolute',
-                top: '14px',
-                left: '14px',
+                top: '12px',
+                left: '12px',
                 background: '#2563eb',
                 color: '#ffffff',
-                padding: '6px 14px',
-                borderRadius: '12px',
-                fontSize: '12px',
+                padding: '5px 12px',
+                borderRadius: '10px',
+                fontSize: '11px',
                 fontWeight: '800',
                 letterSpacing: '0.5px',
                 boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)'
@@ -806,15 +815,15 @@ export default function LandingPage() {
             </div>
 
             {/* Step Info */}
-            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '10px' }}>
+            <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
                 2. Nhập Số Điện Thoại Thuê Phòng
               </h3>
-              <p style={{ fontSize: '14px', color: '#64748b', lineHeight: '1.6', marginBottom: '16px', flex: 1 }}>
+              <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6', marginBottom: '14px', flex: 1 }}>
                 Cửa sổ xác thực sẽ mở ra. Bạn chỉ cần nhập <b>Số điện thoại</b> đã đăng ký hợp đồng với chủ trọ (hoặc bấm số điện thoại demo có sẵn) để đăng nhập tức thì.
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#059669', fontSize: '13px', fontWeight: '600' }}>
-                <CheckCircle2 size={16} /> Xác thực nhanh, không cần nhớ mật khẩu
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#059669', fontSize: '12px', fontWeight: '600' }}>
+                <CheckCircle2 size={15} /> Không cần nhớ mật khẩu phức tạp
               </div>
             </div>
           </div>
@@ -823,27 +832,17 @@ export default function LandingPage() {
           <div
             style={{
               background: '#ffffff',
-              borderRadius: '24px',
+              borderRadius: '20px',
               border: '2px solid #e2e8f0',
               overflow: 'hidden',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.04)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
               display: 'flex',
               flexDirection: 'column',
               transition: 'all 0.25s ease-in-out'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-6px)';
-              e.currentTarget.style.borderColor = '#2563eb';
-              e.currentTarget.style.boxShadow = '0 16px 32px rgba(37, 99, 235, 0.12)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = '#e2e8f0';
-              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.04)';
-            }}
           >
             {/* Step Image */}
-            <div style={{ position: 'relative', height: '210px', overflow: 'hidden', background: '#f8fafc' }}>
+            <div style={{ position: 'relative', height: '180px', overflow: 'hidden', background: '#f8fafc' }}>
               <img
                 src="/images/guide/step3.png"
                 loading="lazy"
@@ -853,13 +852,13 @@ export default function LandingPage() {
               />
               <div style={{
                 position: 'absolute',
-                top: '14px',
-                left: '14px',
+                top: '12px',
+                left: '12px',
                 background: '#16a34a',
                 color: '#ffffff',
-                padding: '6px 14px',
-                borderRadius: '12px',
-                fontSize: '12px',
+                padding: '5px 12px',
+                borderRadius: '10px',
+                fontSize: '11px',
                 fontWeight: '800',
                 letterSpacing: '0.5px',
                 boxShadow: '0 4px 10px rgba(22, 163, 74, 0.3)'
@@ -869,104 +868,94 @@ export default function LandingPage() {
             </div>
 
             {/* Step Info */}
-            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '10px' }}>
+            <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
                 3. Xem Minh Bạch Giá Phòng & Hóa Đơn
               </h3>
-              <p style={{ fontSize: '14px', color: '#64748b', lineHeight: '1.6', marginBottom: '16px', flex: 1 }}>
-                Trang Cổng Cư Dân sẽ hiển thị đầy đủ: <b>Giá tiền phòng</b>, số kWh điện, số m³ nước, ảnh chụp công tơ thực tế bằng AI, tổng tiền và hợp đồng thuê số.
+              <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6', marginBottom: '14px', flex: 1 }}>
+                Trang Cổng Cư Dân sẽ hiển thị đầy đủ: <b>Giá tiền phòng</b>, số kWh điện, số m³ nước, ảnh chụp công tơ thực tế rõ nét, tổng tiền và hợp đồng thuê số.
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0284c7', fontSize: '13px', fontWeight: '600' }}>
-                <Zap size={16} /> Kiểm tra hóa đơn & thanh toán online tức thì
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0284c7', fontSize: '12px', fontWeight: '600' }}>
+                <Zap size={15} /> Kiểm tra hóa đơn & thanh toán online tức thì
               </div>
             </div>
           </div>
         </div>
 
         {/* Quick action bar */}
-        <div style={{
-          marginTop: '36px',
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-          borderRadius: '20px',
-          padding: '24px 32px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '16px',
-          color: '#ffffff',
-          boxShadow: '0 10px 25px rgba(37, 99, 235, 0.25)'
-        }}>
+        <div className="landing-banner">
           <div>
-            <div style={{ fontSize: '18px', fontWeight: '800', marginBottom: '4px' }}>
+            <div style={{ fontSize: '17px', fontWeight: '800', marginBottom: '4px' }}>
               Bạn muốn trải nghiệm tra cứu ngay bây giờ?
             </div>
-            <div style={{ fontSize: '14px', color: '#bfdbfe' }}>
+            <div style={{ fontSize: '13px', color: '#bfdbfe', lineHeight: '1.5' }}>
               Bấm chọn một phòng trên danh mục phòng trọ bên trên để thử nghiệm tra cứu giá tiền và hóa đơn.
             </div>
           </div>
           <a
             href="#rooms"
             style={{
-              padding: '12px 24px',
+              padding: '11px 20px',
               background: '#ffffff',
               color: '#1e3a8a',
               borderRadius: '12px',
               fontWeight: '800',
-              fontSize: '14px',
+              fontSize: '13px',
               textDecoration: 'none',
               display: 'inline-flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '8px',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-              transition: 'transform 0.15s ease'
+              transition: 'transform 0.15s ease',
+              whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
             onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
           >
-            <DoorOpen size={18} color="#2563eb" />
+            <DoorOpen size={16} color="#2563eb" />
             Chọn Phòng Tra Cứu Ngay
           </a>
         </div>
       </section>
 
       {/* 6. FOOTER & CONTACT (#contact) */}
-      <footer id="contact" style={{ background: '#0f172a', color: '#ffffff', padding: '60px 24px 30px' }}>
+      <footer id="contact" style={{ background: '#0f172a', color: '#ffffff', padding: '40px 16px 28px' }}>
         <div className="landing-footer-grid" style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
               <div style={{ background: '#2563eb', padding: '8px', borderRadius: '10px' }}>
                 <Home size={22} color="#ffffff" />
               </div>
-              <div style={{ fontSize: '20px', fontWeight: '900' }}>NHÀ TRỌ THANH TÂM</div>
+              <div style={{ fontSize: '18px', fontWeight: '900' }}>NHÀ TRỌ THANH TÂM</div>
             </div>
-            <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: '1.6', maxWidth: '380px' }}>
-              Hệ thống phòng trọ cho thuê uy tín, văn minh và tiện nghi. Ứng dụng công nghệ quản lý điện nước AI và hợp đồng số minh bạch hàng đầu.
+            <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.6', maxWidth: '380px' }}>
+              Hệ thống phòng trọ cho thuê uy tín, văn minh và tiện nghi. Ứng dụng công nghệ quản lý điện nước minh bạch và hợp đồng số hàng đầu.
             </p>
           </div>
 
           <div>
-            <h4 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px', color: '#f8fafc' }}>Thông Tin Liên Hệ</h4>
-            <div style={{ fontSize: '14px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <h4 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '12px', color: '#f8fafc' }}>Thông Tin Liên Hệ</h4>
+            <div style={{ fontSize: '13px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <a href="tel:0909256680" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', textDecoration: 'none' }}>
+                <PhoneCall size={15} color="#38bdf8" />
+                <span>0909.256.680</span>
+              </a>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <PhoneCall size={16} color="#38bdf8" />
-                <span>0909.256.680 </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin size={16} color="#38bdf8" />
-                <span>Trục 16, Phường Tân Triệu, TP. Đồng Nai, Việt Nam</span>
+                <MapPin size={15} color="#38bdf8" />
+                <span>Trục 16, Phường Tân Triệu, TP. Đồng Nai</span>
               </div>
             </div>
           </div>
 
           <div>
-            <h4 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px', color: '#f8fafc' }}>Cổng Truy Cập</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <h4 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '12px', color: '#f8fafc' }}>Cổng Truy Cập</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <a
                 href="#rooms"
                 style={{
                   color: '#38bdf8',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   textDecoration: 'none'
                 }}
               >
@@ -976,8 +965,8 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div style={{ textAlign: 'center', fontSize: '13px', color: '#64748b', borderTop: '1px solid #1e293b', paddingTop: '20px' }}>
-          © 2026 Hệ Thống Quản Lý Nhà Trọ Thanh Tâm. Bảo lưu mọi quyền. Powered by <a href="https://hoanghuynh-potfolio.netlify.app/" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>Hoàng Huynh</a>
+        <div style={{ textAlign: 'center', fontSize: '12px', color: '#64748b', borderTop: '1px solid #1e293b', paddingTop: '20px' }}>
+          © 2026 Hệ Thống Quản Lý Nhà Trọ Thanh Tâm. Bảo lưu mọi quyền. Powered by <a href="https://hoanghuynh-portfolio.netlify.app/" target="_blank" rel="noopener noreferrer" style={{ color: '#38bdf8' }}>Hoàng Huynh</a>
         </div>
       </footer>
 
@@ -987,7 +976,14 @@ export default function LandingPage() {
           <div
             className="modal-card"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: '440px', padding: '32px 24px', position: 'relative' }}
+            style={{
+              maxWidth: '440px',
+              width: 'calc(100% - 24px)',
+              padding: '24px 18px',
+              position: 'relative',
+              maxHeight: '92vh',
+              overflowY: 'auto'
+            }}
           >
             {/* Close Button */}
             <button
