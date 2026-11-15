@@ -360,7 +360,7 @@ export default function TenantLayout() {
   return (
     <div className="tenant-layout-wrapper">
       {/* Top Header - Apple Frosted Glass with Safe Area Support */}
-      <header style={{
+      <header className="tenant-top-header" style={{
         background: 'rgba(30, 58, 138, 0.92)',
         backdropFilter: 'blur(20px) saturate(180%)',
         WebkitBackdropFilter: 'blur(20px) saturate(180%)',
@@ -369,7 +369,7 @@ export default function TenantLayout() {
         top: 0,
         zIndex: 100,
         borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
-        boxShadow: '0 4px 20px rgba(30, 58, 138, 0.15)',
+        boxShadow: 'none',
         paddingTop: 'env(safe-area-inset-top, 0px)'
       }}>
         <div className="tenant-header-inner">

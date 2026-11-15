@@ -30,7 +30,7 @@ export default function BrandLogo({
           fontSize: `${Math.round(size * 0.44)}px`,
           letterSpacing: '-0.03em',
           fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
-          boxShadow: '0 4px 12px rgba(30, 58, 138, 0.22)',
+          boxShadow: 'none',
           flexShrink: 0,
           userSelect: 'none',
           ...style
@@ -57,7 +57,6 @@ export default function BrandLogo({
         objectFit: 'contain',
         display: 'block',
         flexShrink: 0,
-        filter: 'drop-shadow(0 3px 8px rgba(30, 58, 138, 0.18))',
         ...style
       }}
     />
