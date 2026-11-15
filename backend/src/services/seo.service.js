@@ -6,8 +6,8 @@ import * as roomRepo from '../repositories/room.repo.js';
 import * as auditService from './audit.service.js';
 
 const SEO_SETTINGS_ACTION = 'SEO_SETTINGS';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const projectRoot = process.env.LAMBDA_TASK_ROOT
+  || (import.meta.url ? fileURLToPath(new URL('../../../', import.meta.url)) : process.cwd());
 
 export const DEFAULT_GSC_VERIFICATION_FILE = 'googlece2476463a9f3baa.html';
 export const DEFAULT_GSC_VERIFICATION_CONTENT = 'google-site-verification: googlece2476463a9f3baa.html';
@@ -59,7 +59,7 @@ const normalizePhoneE164 = (phone) => {
 };
 
 const resolvePublicFileCandidates = (filename) => [
-  path.resolve(__dirname, '../../../frontend/public', filename),
+  path.resolve(projectRoot, 'frontend/public', filename),
   path.resolve(process.cwd(), 'frontend/public', filename),
   path.resolve(process.cwd(), '../frontend/public', filename),
   path.resolve(process.cwd(), 'frontend/dist', filename),
